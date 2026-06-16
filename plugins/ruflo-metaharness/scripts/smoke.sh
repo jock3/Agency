@@ -191,6 +191,30 @@ grep -q "execCli(\[\s*'-y'\s*,\s*'metaharness@latest'" "$F" 2>/dev/null || \
 grep -q "cwd: opts" "$F" || miss="$miss no-cwd-passthrough"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
+step "17z16. drift-from-history one-command primitive (iter 53)"
+miss=""
+F="$ROOT/scripts/drift-from-history.mjs"
+[[ -x "$F" ]] || miss="$miss not-executable"
+node --check "$F" 2>/dev/null || miss="$miss syntax-error"
+# Required flags
+grep -q -- "--baseline-since" "$F" 2>/dev/null || miss="$miss no-baseline-since"
+grep -q -- "--threshold" "$F" 2>/dev/null || miss="$miss no-threshold"
+grep -q -- "--dry-run" "$F" 2>/dev/null || miss="$miss no-dry-run"
+# Composes the 3 sub-scripts
+grep -q "audit-list.mjs" "$F" 2>/dev/null || miss="$miss no-audit-list-compose"
+grep -q "oia-audit.mjs" "$F" 2>/dev/null || miss="$miss no-oia-audit-compose"
+grep -q "audit-trend.mjs" "$F" 2>/dev/null || miss="$miss no-audit-trend-compose"
+# Skill manifest + dispatcher entry
+SK="$ROOT/skills/harness-drift-from-history/SKILL.md"
+[[ -f "$SK" ]] || miss="$miss no-skill-md"
+grep -q "name: harness-drift-from-history" "$SK" 2>/dev/null || miss="$miss skill-name-wrong"
+DISP="$ROOT/../../v3/@claude-flow/cli/src/commands/metaharness.ts"
+grep -q "'drift-from-history': 'drift-from-history.mjs'" "$DISP" 2>/dev/null || miss="$miss no-dispatcher-entry"
+grep -q "drift-from-history.*iter 53" "$DISP" 2>/dev/null || miss="$miss no-help-line"
+# 4-exit-code semantic — script exits 0/1/2/3 based on threshold + dep state
+grep -q "process.exit(code)\|process.exit(2)\|process.exit(3)" "$F" 2>/dev/null || miss="$miss no-exit-semantics"
+[[ -z "$miss" ]] && ok || bad "$miss"
+
 step "17z15. iter-50 parser locked at MCP layer + doctor (iter 52)"
 miss=""
 # MCP runtime test enrolls mcp_scan positive case
