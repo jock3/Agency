@@ -151,9 +151,9 @@ F="$ROOT/../../v3/@claude-flow/cli/src/commands/metaharness.ts"
 miss=""
 [[ -f "$F" ]] || miss="$miss command-file-missing"
 grep -q "name: 'metaharness'" "$F" 2>/dev/null || miss="$miss no-name-field"
-# All 6 subcommands must each be present in the dispatch table.
+# All 8 subcommands must each be present in the dispatch table.
 # Match either quoted ('mcp-scan': ...) or unquoted shorthand (score: ...) keys.
-for sub in score genome mcp-scan threat-model oia-audit mint; do
+for sub in score genome mcp-scan threat-model oia-audit audit-list audit-trend mint; do
   grep -qE "(^|[[:space:]])'?${sub}'?:" "$F" 2>/dev/null || miss="$miss missing-$sub"
 done
 # Registered in the loader
