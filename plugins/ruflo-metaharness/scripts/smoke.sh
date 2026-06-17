@@ -191,6 +191,21 @@ grep -q "execCli(\[\s*'-y'\s*,\s*'metaharness@latest'" "$F" 2>/dev/null || \
 grep -q "cwd: opts" "$F" || miss="$miss no-cwd-passthrough"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
+step "17z36. CLI subcommand list current + mint anti-MCP guard (iter 73)"
+miss=""
+DISP="$ROOT/../../v3/@claude-flow/cli/src/commands/metaharness.ts"
+WRAPPER="$ROOT/../../v3/@claude-flow/cli/src/mcp-tools/metaharness-tools.ts"
+# iter-73 description string lists all 10 dispatchable subcommands
+for sub in score genome mcp-scan threat-model oia-audit audit-list audit-trend similarity drift-from-history mint; do
+  grep -q "${sub}" "$DISP" 2>/dev/null || miss="$miss subcommand-${sub}-not-listed"
+done
+# ANTI-MINT GUARD: mint is intentionally CLI-only per ADR-150 §Sandboxing
+# (writes to filesystem with explicit --confirm; never exposed via MCP).
+# A future iter that accidentally adds 'metaharness_mint' as an MCP tool
+# would violate the sandboxing rule. Negative grep fires the alarm.
+! grep -q "name: 'metaharness_mint'" "$WRAPPER" 2>/dev/null || miss="$miss mint-leaked-to-mcp"
+[[ -z "$miss" ]] && ok || bad "$miss"
+
 step "17z35. parseMcpScanText edge-case unit tests (iter 72)"
 miss=""
 F="$ROOT/scripts/test-similarity.mjs"

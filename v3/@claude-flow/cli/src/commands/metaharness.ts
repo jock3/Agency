@@ -112,7 +112,10 @@ export const metaharnessCommand: Command = {
   options: [
     {
       name: 'subcommand',
-      description: 'One of: score | genome | mcp-scan | threat-model | mint',
+      // iter 73 — list reflects all 10 dispatchable subcommands (was
+      // stale at the iter-3 list of 5). Keep this synced with the
+      // SUBCOMMANDS map above.
+      description: 'One of: score | genome | mcp-scan | threat-model | oia-audit | audit-list | audit-trend | similarity | drift-from-history | mint',
       type: 'string' as const,
     },
   ],
