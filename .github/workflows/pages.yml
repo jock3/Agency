@@ -6,27 +6,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build site structure
+      - name: Build site
         run: |
           mkdir -p _site/apps/musictheory
           cp -r apps/musictheory/* _site/apps/musictheory/
@@ -38,17 +26,13 @@ jobs:
             <meta http-equiv="refresh" content="0; url=apps/musictheory/">
             <title>Agency</title>
           </head>
-          <body>
-            <a href="apps/musictheory/">MusicTheory Pro</a>
-          </body>
+          <body><a href="apps/musictheory/">MusicTheory Pro</a></body>
           </html>
           HTML
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          folder: _site
+          branch: gh-pages
+          clean: true
