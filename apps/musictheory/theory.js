@@ -4,9 +4,18 @@
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_ALIASES = { Db:'C#', Eb:'D#', Fb:'E', Gb:'F#', Ab:'G#', Bb:'A#', Cb:'B' };
-const TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
-const STRING_NAMES = ['e','B','G','D','A','E'];
+let TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
+let STRING_NAMES = ['e','B','G','D','A','E'];
 const STRING_THICKNESS = [1, 1.2, 1.8, 2.2, 2.8, 3.4]; // px visual thickness
+
+const TUNING_PRESETS = {
+  'Standard': { notes: ['E','B','G','D','A','E'], names: ['e','B','G','D','A','E'] },
+  'Drop D':   { notes: ['E','B','G','D','A','D'], names: ['e','B','G','D','A','D'] },
+  'Open G':   { notes: ['D','B','G','D','G','D'], names: ['d','B','G','D','G','D'] },
+  'Open D':   { notes: ['D','A','F#','D','A','D'], names: ['d','A','F#','D','A','D'] },
+  'DADGAD':   { notes: ['D','A','G','D','A','D'], names: ['d','A','G','D','A','D'] },
+  'Open E':   { notes: ['E','B','G#','E','B','E'], names: ['e','B','G#','E','B','E'] },
+};
 
 // === INTERVAL COLORS & NAMES ===
 
@@ -319,4 +328,15 @@ function getRootPositions(key, scaleName, numFrets) {
     }
   }
   return frets;
+}
+
+// Returns the relative major or minor for a given key/scale, or null if not applicable
+function getRelativeScale(key, scaleName) {
+  if (scaleName === 'Major') {
+    return { key: NOTES[(noteIndex(key) + 9) % 12], scaleName: 'Natural Minor' };
+  }
+  if (scaleName === 'Natural Minor') {
+    return { key: NOTES[(noteIndex(key) + 3) % 12], scaleName: 'Major' };
+  }
+  return null;
 }
