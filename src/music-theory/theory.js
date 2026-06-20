@@ -1,0 +1,266 @@
+'use strict';
+
+// === NOTES & TUNING ===
+
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_ALIASES = { Db:'C#', Eb:'D#', Fb:'E', Gb:'F#', Ab:'G#', Bb:'A#', Cb:'B' };
+const TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
+const STRING_NAMES = ['e','B','G','D','A','E'];
+const STRING_THICKNESS = [1, 1.2, 1.8, 2.2, 2.8, 3.4]; // px visual thickness
+
+// === INTERVAL COLORS & NAMES ===
+
+const INTERVAL_INFO = {
+  0:  { color: '#ef4444', text: '#fff', name: 'R',   full: 'Root (Grundton)' },
+  1:  { color: '#f97316', text: '#fff', name: 'b2',  full: 'Minor 2nd (liten sekund)' },
+  2:  { color: '#f59e0b', text: '#000', name: '2',   full: 'Major 2nd (stor sekund)' },
+  3:  { color: '#eab308', text: '#000', name: 'b3',  full: 'Minor 3rd (liten ters)' },
+  4:  { color: '#84cc16', text: '#000', name: '3',   full: 'Major 3rd (stor ters)' },
+  5:  { color: '#22c55e', text: '#fff', name: '4',   full: 'Perfect 4th (kvart)' },
+  6:  { color: '#14b8a6', text: '#fff', name: 'b5',  full: 'Tritone / b5 (triton)' },
+  7:  { color: '#3b82f6', text: '#fff', name: '5',   full: 'Perfect 5th (kvint)' },
+  8:  { color: '#6366f1', text: '#fff', name: 'b6',  full: 'Minor 6th (liten sext)' },
+  9:  { color: '#a855f7', text: '#fff', name: '6',   full: 'Major 6th (stor sext)' },
+  10: { color: '#ec4899', text: '#fff', name: 'b7',  full: 'Minor 7th (liten septima)' },
+  11: { color: '#f43f5e', text: '#fff', name: '7',   full: 'Major 7th (stor septima)' },
+};
+
+// === SCALES ===
+
+const SCALES = {
+  'Major': {
+    intervals: [0,2,4,5,7,9,11],
+    desc: 'Ljus och glad karaktär. Grunden i västerländsk musik.',
+    formula: 'H-H-½-H-H-H-½',
+    category: 'Heptatonisk',
+    use: 'Pop, klassisk, country, folk',
+    color: '#84cc16'
+  },
+  'Natural Minor': {
+    intervals: [0,2,3,5,7,8,10],
+    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock.',
+    formula: 'H-½-H-H-½-H-H',
+    category: 'Heptatonisk',
+    use: 'Rock, pop, metal, folk',
+    color: '#6366f1'
+  },
+  'Harmonic Minor': {
+    intervals: [0,2,3,5,7,8,11],
+    desc: 'Dramatisk med förhöjd 7:a. Exotisk och intensiv känsla.',
+    formula: 'H-½-H-H-½-1½-½',
+    category: 'Heptatonisk',
+    use: 'Klassisk, metal, flamenco',
+    color: '#f43f5e'
+  },
+  'Melodic Minor': {
+    intervals: [0,2,3,5,7,9,11],
+    desc: 'Jazzskala med mollterst men durliknande övre del. Smidigt melodisk.',
+    formula: 'H-½-H-H-H-H-½',
+    category: 'Heptatonisk',
+    use: 'Jazz, fusion',
+    color: '#ec4899'
+  },
+  'Major Pentatonic': {
+    intervals: [0,2,4,7,9],
+    desc: 'Enkel och universell durskala. 5 noter utan dissonanta halvtonssteg.',
+    formula: 'H-H-1½-H-1½',
+    category: 'Pentatonisk',
+    use: 'Pop, country, blues, rock',
+    color: '#f59e0b'
+  },
+  'Minor Pentatonic': {
+    intervals: [0,3,5,7,10],
+    desc: 'Den mest använda gitarrskalan. Kärnan i blues och rock.',
+    formula: '1½-H-H-1½-H',
+    category: 'Pentatonisk',
+    use: 'Blues, rock, metal, funk',
+    color: '#a855f7'
+  },
+  'Blues': {
+    intervals: [0,3,5,6,7,10],
+    desc: 'Minor pentatonic + bluesstonen (b5). Det klassiska bluesljudet.',
+    formula: '1½-H-½-½-1½-H',
+    category: 'Hexatonisk',
+    use: 'Blues, rock, R&B',
+    color: '#14b8a6'
+  },
+  'Dorian': {
+    intervals: [0,2,3,5,7,9,10],
+    desc: 'Moll med stor 6:a. Kallad "jazzens mollskala". Sval och funky.',
+    formula: 'H-½-H-H-H-½-H',
+    category: 'Modal',
+    use: 'Jazz, funk, folk, rock',
+    color: '#22c55e'
+  },
+  'Phrygian': {
+    intervals: [0,1,3,5,7,8,10],
+    desc: 'Spansk och flamenco-karaktär med liten 2:a. Mörk och dramatisk.',
+    formula: '½-H-H-H-½-H-H',
+    category: 'Modal',
+    use: 'Flamenco, metal, fusion',
+    color: '#f97316'
+  },
+  'Lydian': {
+    intervals: [0,2,4,6,7,9,11],
+    desc: 'Dur med förhöjd 4:a (#4). Drömsk, flytande och surrealistisk.',
+    formula: 'H-H-H-½-H-H-½',
+    category: 'Modal',
+    use: 'Film, jazz, pop, fusion',
+    color: '#3b82f6'
+  },
+  'Mixolydian': {
+    intervals: [0,2,4,5,7,9,10],
+    desc: 'Dur med liten 7:a. Dominantens natur. Fundamentet i blues-rock.',
+    formula: 'H-H-½-H-H-½-H',
+    category: 'Modal',
+    use: 'Blues, rock, country, folk',
+    color: '#eab308'
+  },
+  'Locrian': {
+    intervals: [0,1,3,5,6,8,10],
+    desc: 'Mörkast av alla modusarna med liten 5:a. Sällsynt men effektfull.',
+    formula: '½-H-H-½-H-H-H',
+    category: 'Modal',
+    use: 'Metal, jazz (på vii-ackord)',
+    color: '#f43f5e'
+  },
+};
+
+// === CHORD TYPES ===
+
+const CHORD_INTERVALS = {
+  '':     [0,4,7],
+  'maj':  [0,4,7],
+  'M':    [0,4,7],
+  'm':    [0,3,7],
+  'min':  [0,3,7],
+  '-':    [0,3,7],
+  '5':    [0,7],
+  '7':    [0,4,7,10],
+  'dom7': [0,4,7,10],
+  'maj7': [0,4,7,11],
+  'M7':   [0,4,7,11],
+  'm7':   [0,3,7,10],
+  'min7': [0,3,7,10],
+  '-7':   [0,3,7,10],
+  'dim':  [0,3,6],
+  'dim7': [0,3,6,9],
+  'aug':  [0,4,8],
+  '+':    [0,4,8],
+  'sus2': [0,2,7],
+  'sus4': [0,5,7],
+  'sus':  [0,5,7],
+  'add9': [0,4,7,14],
+  'm7b5': [0,3,6,10],
+  '6':    [0,4,7,9],
+  'm6':   [0,3,7,9],
+  '9':    [0,4,7,10,14],
+  'maj9': [0,4,7,11,14],
+  'm9':   [0,3,7,10,14],
+  '11':   [0,4,7,10,14,17],
+  '13':   [0,4,7,10,14,17,21],
+};
+
+// === THEORY FUNCTIONS ===
+
+function normalizeNote(n) {
+  return NOTE_ALIASES[n] || n;
+}
+
+function noteIndex(note) {
+  return NOTES.indexOf(normalizeNote(note));
+}
+
+function noteAtFret(stringIdx, fret) {
+  const open = noteIndex(TUNING[stringIdx]);
+  return NOTES[(open + fret) % 12];
+}
+
+function getScaleNotes(key, scaleName) {
+  const scale = SCALES[scaleName];
+  if (!scale) return [];
+  const root = noteIndex(key);
+  return scale.intervals.map(i => NOTES[(root + i) % 12]);
+}
+
+function getIntervalAtFret(stringIdx, fret, key, scaleName) {
+  const scale = SCALES[scaleName];
+  if (!scale) return null;
+  const note = noteAtFret(stringIdx, fret);
+  const root = noteIndex(key);
+  const noteIdx = noteIndex(note);
+  const semitones = (noteIdx - root + 12) % 12;
+  return scale.intervals.includes(semitones) ? semitones : null;
+}
+
+function getDiatonicChords(key, scaleName) {
+  const scale = SCALES[scaleName];
+  if (!scale) return [];
+  const notes = getScaleNotes(key, scaleName);
+  const count = notes.length;
+  const ROMAN = ['I','II','III','IV','V','VI','VII'];
+
+  return notes.map((root, i) => {
+    const third = notes[(i + 2) % count];
+    const fifth = notes[(i + 4) % count];
+    const t = (noteIndex(third) - noteIndex(root) + 12) % 12;
+    const f = (noteIndex(fifth) - noteIndex(root) + 12) % 12;
+
+    let quality = '';
+    if (t === 4 && f === 7) quality = '';
+    else if (t === 3 && f === 7) quality = 'm';
+    else if (t === 3 && f === 6) quality = 'dim';
+    else if (t === 4 && f === 8) quality = 'aug';
+    else quality = '';
+
+    const minor = quality === 'm' || quality === 'dim';
+    const roman = minor ? ROMAN[i].toLowerCase() : ROMAN[i];
+    const suffix = quality === 'dim' ? '°' : quality === 'aug' ? '+' : quality;
+    return { root, quality, roman, name: root + (quality === 'm' ? 'm' : ''), suffix };
+  });
+}
+
+function parseChord(str) {
+  str = str.trim().replace(/\/[A-G][#b]?$/, '');
+  const m = str.match(/^([A-G][#b]?)(.*)/);
+  if (!m) return null;
+  const rootStr = m[1];
+  const quality = m[2] || '';
+  const root = normalizeNote(rootStr);
+  if (!NOTES.includes(root)) return null;
+  const intervals = CHORD_INTERVALS[quality] ?? CHORD_INTERVALS[''];
+  return { root, rootStr, quality, intervals, display: str };
+}
+
+function parseProgression(input) {
+  return input.split(/[\s,|\n—–-]+/)
+    .map(t => parseChord(t.trim()))
+    .filter(Boolean);
+}
+
+function chordNotes(chord) {
+  const r = noteIndex(chord.root);
+  return [...new Set(chord.intervals.map(i => NOTES[(r + i) % 12]))];
+}
+
+function analyzeProgression(chords) {
+  const allNotes = new Set(chords.flatMap(c => chordNotes(c)));
+  const noteArr = [...allNotes];
+  const results = [];
+
+  NOTES.forEach(key => {
+    Object.entries(SCALES).forEach(([scaleName, scale]) => {
+      const scaleNotes = getScaleNotes(key, scaleName);
+      const matched = noteArr.filter(n => scaleNotes.includes(n));
+      const pct = Math.round((matched.length / noteArr.length) * 100);
+      if (pct < 60) return;
+
+      const missing = noteArr.filter(n => !scaleNotes.includes(n));
+      results.push({ key, scaleName, pct, matched, missing, scaleNotes });
+    });
+  });
+
+  return results
+    .sort((a, b) => b.pct - a.pct || SCALES[a.scaleName].intervals.length - SCALES[b.scaleName].intervals.length)
+    .slice(0, 8);
+}
