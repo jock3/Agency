@@ -316,7 +316,7 @@ function playNote(stringIdx, fret) {
   } catch (_) { /* audio unavailable */ }
 }
 
-function playNoteAtTime(stringIdx, fret, startTime, duration) {
+function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
   try {
     const ctx = getAudioCtx();
     const midi = STRING_MIDI_BASE[stringIdx] + fret;
@@ -334,7 +334,7 @@ function playNoteAtTime(stringIdx, fret, startTime, duration) {
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(0.18 / 6, startTime + 0.008); // softer for chords
+    gain.gain.linearRampToValueAtTime(vol, startTime + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
     osc.connect(filter);
