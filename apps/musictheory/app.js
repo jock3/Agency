@@ -9,6 +9,7 @@ const state = {
   displayMode: 'intervals', // 'intervals' | 'notes'
   hiddenIntervals: new Set(),
   numFrets: 15,
+  focusFret: null,  // fret number of active position, or null = show all
   // Chord analyzer
   chordInput: '',
   parsedChords: [],
@@ -18,7 +19,7 @@ const state = {
 
 // ===== FRETBOARD BUILDER =====
 
-function buildFretboard(containerId, key, scaleName, displayMode, hiddenIntervals, numFrets) {
+function buildFretboard(containerId, key, scaleName, displayMode, hiddenIntervals, numFrets, focusFret = null) {
   const container = document.getElementById(containerId);
   const scale = SCALES[scaleName];
   if (!scale) return;
@@ -34,13 +35,13 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
     // Open string cell (nut)
     const openNote = noteAtFret(s, 0);
     const openInterval = getIntervalAtFret(s, 0, key, scaleName);
-    row += buildCell(openNote, openInterval, displayMode, hiddenIntervals, true);
+    row += buildCell(openNote, openInterval, displayMode, hiddenIntervals, true, 0, focusFret);
 
     // Frets 1 – numFrets
     for (let f = 1; f <= numFrets; f++) {
       const note = noteAtFret(s, f);
       const interval = getIntervalAtFret(s, f, key, scaleName);
-      row += buildCell(note, interval, displayMode, hiddenIntervals, false);
+      row += buildCell(note, interval, displayMode, hiddenIntervals, false, f, focusFret);
     }
 
     row += `</div>`;
@@ -60,7 +61,8 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
   let nums = `<div class="fret-numbers">`;
   nums += `<div class="num-spacer"></div><div class="num-nut"><span class="fret-num" style="width:42px">○</span></div>`;
   for (let f = 1; f <= numFrets; f++) {
-    nums += `<div class="fret-num">${f}</div>`;
+    const activeClass = focusFret !== null && f >= Math.max(0, focusFret - 1) && f <= focusFret + 4 ? ' class="fret-num active-fret-num"' : '';
+    nums += `<div class="fret-num"${activeClass}>${f}</div>`;
   }
   nums += `</div>`;
 
@@ -72,17 +74,30 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
     </div>`;
 }
 
-function buildCell(note, interval, displayMode, hiddenIntervals, isNut) {
+function buildCell(note, interval, displayMode, hiddenIntervals, isNut, fret, focusFret) {
   const cellClass = `fret-cell${isNut ? ' nut' : ''}`;
   let inner = '';
 
   if (interval !== null && !hiddenIntervals.has(interval)) {
     const info = INTERVAL_INFO[interval];
     const label = displayMode === 'intervals' ? info.name : note;
-    const dotClass = `note-dot${interval === 0 ? ' root-dot' : ''}`;
+
+    // Determine if this dot is inside the active position window
+    let inWindow = true;
+    if (focusFret !== null) {
+      const lo = Math.max(0, focusFret - 1);
+      const hi = focusFret + 4;
+      inWindow = fret >= lo && fret <= hi;
+    }
+
+    const isRoot = interval === 0;
+    const isActiveFocus = isRoot && focusFret === fret;
+    let dotClass = `note-dot${isRoot ? ' root-dot' : ''}${!inWindow ? ' dimmed' : ''}${isActiveFocus ? ' focus-active' : ''}`;
+    const clickAttr = isRoot ? ` onclick="setFocusFret(${fret})" title="${note} — ${info.full} · Klicka för att isolera position"` : ` title="${note} — ${info.full}"`;
+
     inner = `<div class="${dotClass}"
       style="background:${info.color};color:${info.text}"
-      title="${note} — ${info.full}">${label}</div>`;
+      ${clickAttr}>${label}</div>`;
   }
 
   return `<div class="${cellClass}">${inner}</div>`;
@@ -169,7 +184,7 @@ function buildScaleInfo(key, scaleName) {
 // ===== SCALE EXPLORER RENDER =====
 
 function renderScaleExplorer() {
-  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets);
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildLegend(state.scaleName);
   buildScaleInfo(state.key, state.scaleName);
 }
@@ -268,14 +283,19 @@ function toggleInterval(interval) {
   } else {
     state.hiddenIntervals.add(interval);
   }
-  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets);
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildLegend(state.scaleName);
 }
 
 function resetIntervals() {
   state.hiddenIntervals.clear();
-  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets);
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildLegend(state.scaleName);
+}
+
+function setFocusFret(fret) {
+  state.focusFret = state.focusFret === fret ? null : fret;
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
 }
 
 function selectMatch(i) {
@@ -304,6 +324,7 @@ function initSelects() {
   });
   keyEl.addEventListener('change', e => {
     state.key = e.target.value;
+    state.focusFret = null;
     renderScaleExplorer();
   });
 
@@ -321,6 +342,7 @@ function initSelects() {
   scaleEl.addEventListener('change', e => {
     state.scaleName = e.target.value;
     state.hiddenIntervals.clear();
+    state.focusFret = null;
     renderScaleExplorer();
   });
 
@@ -330,7 +352,7 @@ function initSelects() {
       document.querySelectorAll('.display-toggle button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.displayMode = btn.dataset.mode;
-      buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets);
+      buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
     });
   });
 
@@ -340,7 +362,7 @@ function initSelects() {
   fretSlider.addEventListener('input', () => {
     state.numFrets = parseInt(fretSlider.value);
     fretLabel.textContent = state.numFrets;
-    buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets);
+    buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   });
 }
 

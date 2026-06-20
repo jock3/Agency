@@ -363,7 +363,37 @@ input[type=range] {
 }
 
 .note-dot.root-dot {
+  cursor: pointer;
   box-shadow: 0 0 0 2px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.note-dot.root-dot:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.7), 0 0 16px currentColor;
+}
+
+/* Position focus: active root pulses */
+.note-dot.focus-active {
+  animation: pulse-ring 1.4s ease-out infinite;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(255,255,255,0.3), 0 0 20px currentColor;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(255,255,255,0.3), 0 0 20px currentColor; }
+  50%  { box-shadow: 0 0 0 3px #fff, 0 0 0 10px rgba(255,255,255,0.1), 0 0 28px currentColor; }
+  100% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(255,255,255,0.3), 0 0 20px currentColor; }
+}
+
+/* Dots outside the active position window fade out */
+.note-dot.dimmed {
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Highlight active fret numbers */
+.fret-num.active-fret-num {
+  color: var(--nut-color);
+  font-weight: 800;
 }
 
 /* Fret markers */
