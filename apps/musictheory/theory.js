@@ -264,3 +264,59 @@ function analyzeProgression(chords) {
     .sort((a, b) => b.pct - a.pct || SCALES[a.scaleName].intervals.length - SCALES[b.scaleName].intervals.length)
     .slice(0, 8);
 }
+
+// === AUDIO (Web Audio API — plucked string) ===
+
+const STRING_MIDI_BASE = [64, 59, 55, 50, 45, 40]; // high e, B, G, D, A, low E
+
+let _audioCtx = null;
+
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function playNote(stringIdx, fret) {
+  try {
+    const ctx = getAudioCtx();
+    const midi = STRING_MIDI_BASE[stringIdx] + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, now);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 900), now + 0.5);
+    filter.Q.setValueAtTime(2, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.6);
+  } catch (_) { /* audio unavailable */ }
+}
+
+// Returns sorted list of fret numbers where root note appears (one per fret)
+function getRootPositions(key, scaleName, numFrets) {
+  const frets = [];
+  for (let f = 0; f <= numFrets; f++) {
+    for (let s = 0; s < 6; s++) {
+      if (getIntervalAtFret(s, f, key, scaleName) === 0) {
+        frets.push(f);
+        break;
+      }
+    }
+  }
+  return frets;
+}
