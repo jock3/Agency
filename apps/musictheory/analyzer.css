@@ -84,12 +84,90 @@
   background: rgba(99,102,241,0.1);
 }
 
+/* Progression Player */
+.player-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.player-chords { flex: 1; min-width: 200px; }
+
+.player-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.player-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.tempo-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tempo-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.tempo-btn:hover { background: var(--card); }
+
+.tempo-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.88rem;
+  font-family: monospace;
+  font-weight: 700;
+  width: 52px;
+  text-align: center;
+}
+.tempo-input:focus { outline: none; border-color: var(--accent); }
+
+.play-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: background 0.2s, transform 0.1s;
+  width: 100%;
+}
+.play-btn:hover { background: #5254d4; }
+.play-btn:active { transform: scale(0.97); }
+
 /* Parsed chord display */
 .parsed-chords {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .parsed-chord {
@@ -101,6 +179,14 @@
   font-weight: 700;
   font-family: monospace;
   color: #a5b4fc;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.parsed-chord.playing {
+  background: rgba(99,102,241,0.35);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(99,102,241,0.4);
 }
 
 /* Scale match results */

@@ -316,6 +316,49 @@ function playNote(stringIdx, fret) {
   } catch (_) { /* audio unavailable */ }
 }
 
+function playNoteAtTime(stringIdx, fret, startTime, duration) {
+  try {
+    const ctx = getAudioCtx();
+    const midi = STRING_MIDI_BASE[stringIdx] + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, startTime);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), startTime);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 800), startTime + 0.4);
+    filter.Q.setValueAtTime(1.5, startTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.18 / 6, startTime + 0.008); // softer for chords
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  } catch (_) {}
+}
+
+// Strum chord notes across strings starting at startTime
+function strum(noteNames, startTime, duration) {
+  const noteSet = new Set(noteNames);
+  for (let si = 5; si >= 0; si--) {         // low E (si=5) first, strum upward
+    const delay = (5 - si) * 0.022;          // 22ms between strings
+    for (let f = 0; f <= 7; f++) {
+      if (noteSet.has(noteAtFret(si, f))) {
+        playNoteAtTime(si, f, startTime + delay, Math.max(0.2, duration - delay));
+        break;
+      }
+    }
+  }
+}
+
 // Returns sorted list of fret numbers where root note appears (one per fret)
 function getRootPositions(key, scaleName, numFrets) {
   const frets = [];
