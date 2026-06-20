@@ -35,13 +35,13 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
     // Open string cell (nut)
     const openNote = noteAtFret(s, 0);
     const openInterval = getIntervalAtFret(s, 0, key, scaleName);
-    row += buildCell(openNote, openInterval, displayMode, hiddenIntervals, true, 0, focusFret);
+    row += buildCell(openNote, openInterval, displayMode, hiddenIntervals, true, s, 0, focusFret);
 
     // Frets 1 – numFrets
     for (let f = 1; f <= numFrets; f++) {
       const note = noteAtFret(s, f);
       const interval = getIntervalAtFret(s, f, key, scaleName);
-      row += buildCell(note, interval, displayMode, hiddenIntervals, false, f, focusFret);
+      row += buildCell(note, interval, displayMode, hiddenIntervals, false, s, f, focusFret);
     }
 
     row += `</div>`;
@@ -74,7 +74,7 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
     </div>`;
 }
 
-function buildCell(note, interval, displayMode, hiddenIntervals, isNut, fret, focusFret) {
+function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringIdx, fret, focusFret) {
   const cellClass = `fret-cell${isNut ? ' nut' : ''}`;
   let inner = '';
 
@@ -82,7 +82,6 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, fret, fo
     const info = INTERVAL_INFO[interval];
     const label = displayMode === 'intervals' ? info.name : note;
 
-    // Determine if this dot is inside the active position window
     let inWindow = true;
     if (focusFret !== null) {
       const lo = Math.max(0, focusFret - 1);
@@ -92,12 +91,17 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, fret, fo
 
     const isRoot = interval === 0;
     const isActiveFocus = isRoot && focusFret === fret;
-    let dotClass = `note-dot${isRoot ? ' root-dot' : ''}${!inWindow ? ' dimmed' : ''}${isActiveFocus ? ' focus-active' : ''}`;
-    const clickAttr = isRoot ? ` onclick="setFocusFret(${fret})" title="${note} — ${info.full} · Klicka för att isolera position"` : ` title="${note} — ${info.full}"`;
+    const dotClass = `note-dot${isRoot ? ' root-dot' : ''}${!inWindow ? ' dimmed' : ''}${isActiveFocus ? ' focus-active' : ''}`;
+
+    const onclick = isRoot
+      ? `playNote(${stringIdx},${fret});setFocusFret(${fret})`
+      : `playNote(${stringIdx},${fret})`;
+    const tipSuffix = isRoot ? ' · Klicka för att isolera position' : '';
 
     inner = `<div class="${dotClass}"
       style="background:${info.color};color:${info.text}"
-      ${clickAttr}>${label}</div>`;
+      onclick="${onclick}"
+      title="${note} — ${info.full}${tipSuffix}">${label}</div>`;
   }
 
   return `<div class="${cellClass}">${inner}</div>`;
@@ -181,11 +185,39 @@ function buildScaleInfo(key, scaleName) {
     </div>`;
 }
 
+// ===== POSITION BUTTONS =====
+
+function buildPositionButtons(key, scaleName, numFrets) {
+  const container = document.getElementById('position-btns');
+  if (!container) return;
+
+  const positions = getRootPositions(key, scaleName, numFrets);
+  if (positions.length === 0) { container.innerHTML = ''; return; }
+
+  const btns = positions.map((f, i) => {
+    const active = state.focusFret === f ? ' active' : '';
+    const label = f === 0 ? 'öppen' : `band ${f}`;
+    return `<button class="pos-btn${active}" onclick="setFocusFret(${f})">Pos ${i + 1}<span class="pos-fret">${label}</span></button>`;
+  }).join('');
+
+  const clearBtn = state.focusFret !== null
+    ? `<button class="pos-btn pos-clear" onclick="clearFocus()">Visa hela halsen</button>` : '';
+
+  container.innerHTML = `<div class="position-row"><span class="position-label">Positioner</span>${btns}${clearBtn}</div>`;
+}
+
+function clearFocus() {
+  state.focusFret = null;
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, null);
+  buildPositionButtons(state.key, state.scaleName, state.numFrets);
+}
+
 // ===== SCALE EXPLORER RENDER =====
 
 function renderScaleExplorer() {
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildLegend(state.scaleName);
+  buildPositionButtons(state.key, state.scaleName, state.numFrets);
   buildScaleInfo(state.key, state.scaleName);
 }
 
@@ -296,6 +328,7 @@ function resetIntervals() {
 function setFocusFret(fret) {
   state.focusFret = state.focusFret === fret ? null : fret;
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+  buildPositionButtons(state.key, state.scaleName, state.numFrets);
 }
 
 function selectMatch(i) {
