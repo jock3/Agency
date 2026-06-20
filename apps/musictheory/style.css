@@ -91,7 +91,7 @@ nav {
 }
 
 /* ===== MAIN CONTENT ===== */
-main { padding: 24px; max-width: 1300px; }
+main { padding: 24px; max-width: 1300px; margin: 0 auto; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
