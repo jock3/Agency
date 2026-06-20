@@ -11,6 +11,7 @@ const state = {
   numFrets: 15,
   focusFret: null,  // fret number of active position, or null = show all
   tuning: 'Standard',
+  selectedDiatonicIdx: null,
   // Chord analyzer
   chordInput: '',
   parsedChords: [],
@@ -63,10 +64,58 @@ function goToScale(key, scaleName) {
   state.scaleName = scaleName;
   state.hiddenIntervals.clear();
   state.focusFret = null;
+  state.selectedDiatonicIdx = null;
   document.getElementById('key-select').value = key;
   document.getElementById('scale-select').value = scaleName;
   renderScaleExplorer();
   updateHashFromState();
+}
+
+// ===== CHORD DIAGRAM =====
+
+function renderChordDiagramSVG(name, voicing) {
+  const STR = 6, FRETS = 5, SX = 16, SY = 32, SW = 11, FH = 13;
+  const W = SX * 2 + SW * (STR - 1);
+  const H = SY + FH * FRETS + 16;
+
+  const playedFrets = voicing.filter(f => f > 0);
+  const minF = playedFrets.length ? Math.min(...playedFrets) : 0;
+  const startFret = minF > 1 ? minF : 1;
+  const showNut = startFret === 1;
+  const GY = SY + (showNut ? 3 : 0);
+
+  let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  o += `<text x="${W/2}" y="15" text-anchor="middle" fill="#e2e6f3" font-size="11" font-weight="700" font-family="monospace">${name}</text>`;
+  if (showNut) {
+    o += `<rect x="${SX}" y="${SY}" width="${SW*(STR-1)}" height="3" fill="#c8a84b" rx="1"/>`;
+  } else {
+    o += `<text x="${SX-3}" y="${GY + FH*0.55}" text-anchor="end" fill="#6b7599" font-size="8">${startFret}fr</text>`;
+  }
+  for (let f = 0; f <= FRETS; f++) {
+    o += `<line x1="${SX}" y1="${GY+f*FH}" x2="${SX+SW*(STR-1)}" y2="${GY+f*FH}" stroke="#2a3050" stroke-width="1"/>`;
+  }
+  for (let s = 0; s < STR; s++) {
+    o += `<line x1="${SX+s*SW}" y1="${GY}" x2="${SX+s*SW}" y2="${GY+FRETS*FH}" stroke="#3a4060" stroke-width="${(0.8+s*0.13).toFixed(2)}"/>`;
+  }
+  for (let s = 0; s < STR; s++) {
+    const x = SX + s * SW;
+    const f = voicing[s];
+    if (f < 0) {
+      o += `<text x="${x}" y="${SY-5}" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">×</text>`;
+    } else if (f === 0) {
+      o += `<circle cx="${x}" cy="${SY-9}" r="3.5" fill="none" stroke="#6b7599" stroke-width="1.3"/>`;
+    } else {
+      const rf = f - startFret + 1;
+      o += `<circle cx="${x}" cy="${GY+(rf-0.5)*FH}" r="5" fill="#6366f1"/>`;
+    }
+  }
+  o += `</svg>`;
+  return o;
+}
+
+function selectDiatonicChord(i) {
+  state.selectedDiatonicIdx = state.selectedDiatonicIdx === i ? null : i;
+  buildScaleInfo(state.key, state.scaleName);
 }
 
 // ===== FRETBOARD BUILDER =====
@@ -202,11 +251,34 @@ function buildScaleInfo(key, scaleName) {
   }).join('');
 
   // Diatonic chords
-  const chordChips = diatonic.slice(0, 7).map(c => `
-    <div class="chord-chip">
-      <span>${c.name}</span>
-      <span class="roman">${c.roman}${c.suffix}</span>
-    </div>`).join('');
+  const chordChips = diatonic.slice(0, 7).map((c, i) => {
+    const sel = state.selectedDiatonicIdx === i ? ' selected' : '';
+    return `<div class="chord-chip${sel}" onclick="selectDiatonicChord(${i})" title="Visa ackorddiagram">
+      <span>${c.root}${c.quality === 'm' ? 'm' : c.quality === 'dim' ? '°' : c.quality === 'aug' ? '+' : ''}</span>
+      <span class="roman">${c.roman}${c.quality === 'dim' ? '°' : c.quality === 'aug' ? '+' : ''}</span>
+    </div>`;
+  }).join('');
+
+  // Chord diagram for selected chord
+  let diagramHTML = '';
+  if (state.selectedDiatonicIdx !== null && diatonic[state.selectedDiatonicIdx]) {
+    const cd = diatonic[state.selectedDiatonicIdx];
+    const q = cd.quality || '';
+    const ivl = (CHORD_INTERVALS[q] || [0,4,7]).slice(0, 3);
+    const r = noteIndex(cd.root);
+    const ns = [...new Set(ivl.map(i => NOTES[(r + i) % 12]))];
+    const dn = cd.root + (q === 'm' ? 'm' : q === 'dim' ? '°' : q === 'aug' ? '+' : '');
+    const voicing = computeChordVoicing(ns, cd.root);
+    const noteLabels = ns.join(' · ');
+    diagramHTML = `<div class="chord-diagram-panel">
+      ${renderChordDiagramSVG(dn, voicing)}
+      <div class="chord-diagram-info">
+        <div class="chord-diagram-name">${dn}</div>
+        <div class="chord-diagram-notes">${noteLabels}</div>
+        <div class="chord-diagram-frets">${voicing.map((f,i) => f < 0 ? 'x' : f).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
 
   const rel = getRelativeScale(key, scaleName);
   const relCard = rel ? `
@@ -244,9 +316,9 @@ function buildScaleInfo(key, scaleName) {
       </div>
       ${diatonic.length > 0 ? `
       <div class="info-card">
-        <h3>Diatoniska ackord</h3>
-        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">Ackord som naturligt tillhör skalan</p>
+        <h3>Diatoniska ackord <span style="font-size:0.68rem;color:var(--muted);font-weight:400">— klicka för diagram</span></h3>
         <div class="chord-row">${chordChips}</div>
+        ${diagramHTML}
       </div>` : ''}
       ${relCard}
     </div>`;
@@ -427,6 +499,7 @@ function initSelects() {
   keyEl.addEventListener('change', e => {
     state.key = e.target.value;
     state.focusFret = null;
+    state.selectedDiatonicIdx = null;
     renderScaleExplorer();
     updateHashFromState();
   });
@@ -445,6 +518,7 @@ function initSelects() {
     state.scaleName = e.target.value;
     state.hiddenIntervals.clear();
     state.focusFret = null;
+    state.selectedDiatonicIdx = null;
     renderScaleExplorer();
     updateHashFromState();
   });
