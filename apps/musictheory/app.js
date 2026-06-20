@@ -212,10 +212,8 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringId
       isQuizTarget ? 'quiz-target' : '',
     ].filter(Boolean).join(' ');
 
-    const onclick = isRoot && !isQuizTarget
-      ? `playNote(${stringIdx},${fret});setFocusFret(${fret})`
-      : `playNote(${stringIdx},${fret})`;
-    const tip = isQuizTarget ? 'Vilket intervall är detta?' : `${note} — ${info.full}${isRoot ? ' · Klicka för att isolera position' : ''}`;
+    const onclick = `playNote(${stringIdx},${fret})`;
+    const tip = isQuizTarget ? 'Vilket intervall är detta?' : `${note} — ${info.full}`;
 
     inner = `<div class="${dotClass}"
       data-si="${stringIdx}" data-fret="${fret}"
