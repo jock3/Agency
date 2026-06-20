@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MusicTheory Pro — Gitarr Skalor & Ackordanalys</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="analyzer.css">
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🎸</div>
+  <div>
+    <h1>MusicTheory Pro</h1>
+    <p>Lär dig skalor och ackordanalys för gitarr — interaktivt och pedagogiskt</p>
+  </div>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="scale-explorer">🎼 Skala Explorer</button>
+  <button class="tab-btn" data-tab="chord-analyzer">🎵 Ackord Analys</button>
+</nav>
+
+<main>
+
+  <!-- ====== SCALE EXPLORER ====== -->
+  <section id="scale-explorer" class="tab-content active">
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Tonart (Key)</label>
+        <select id="key-select"></select>
+      </div>
+
+      <div class="control-group">
+        <label>Skala</label>
+        <select id="scale-select"></select>
+      </div>
+
+      <div class="control-group">
+        <label>Visa på halsen</label>
+        <div class="display-toggle">
+          <button class="active" data-mode="intervals">Intervaller</button>
+          <button data-mode="notes">Notnamn</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Antal band (frets)</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="fret-range" min="7" max="22" value="15">
+          <span class="fret-label" id="fret-count">15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interval toggle legend -->
+    <div id="interval-legend"></div>
+
+    <!-- Guitar fretboard -->
+    <div class="fretboard-outer">
+      <div id="fretboard"></div>
+    </div>
+
+    <!-- Scale info panel -->
+    <div id="scale-info"></div>
+
+  </section>
+
+  <!-- ====== CHORD ANALYZER ====== -->
+  <section id="chord-analyzer" class="tab-content">
+
+    <div class="analyzer-input-area">
+      <label>Ange ackordföljd — skriv ackord separerade med mellanslag</label>
+
+      <div class="chord-input-row">
+        <input
+          type="text"
+          id="chord-input"
+          placeholder="T.ex: Am G F E  eller  Dm7 G7 Cmaj7 Am7"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="analyze-btn" onclick="renderChordAnalyzer()">Analysera</button>
+      </div>
+
+      <div class="presets-label">Snabbval:</div>
+      <div class="preset-btns">
+        <button class="preset-btn" data-preset="Am G F E">Am G F E</button>
+        <button class="preset-btn" data-preset="C Am F G">C Am F G</button>
+        <button class="preset-btn" data-preset="Dm7 G7 Cmaj7 Am7">Dm7 G7 Cmaj7 Am7</button>
+        <button class="preset-btn" data-preset="Em D C B">Em D C B</button>
+        <button class="preset-btn" data-preset="A D E A">A D E A</button>
+        <button class="preset-btn" data-preset="Bm A G F#m">Bm A G F#m</button>
+        <button class="preset-btn" data-preset="Am F C G">Am F C G</button>
+        <button class="preset-btn" data-preset="E A B E">E A B E</button>
+      </div>
+    </div>
+
+    <div id="chord-results"></div>
+
+  </section>
+
+</main>
+
+<script src="theory.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
