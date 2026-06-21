@@ -114,9 +114,11 @@ function buildProgressionSuggestions(key, scaleName, diatonic) {
 function loadProgression(chordStr) {
   if (_isPlaying) stopProgression();
   if (_scaleIsPlaying) stopScale();
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector('[data-tab="chord-analyzer"]').classList.add('active');
+  const chordTabBtn = document.querySelector('[data-tab="chord-analyzer"]');
+  chordTabBtn.classList.add('active');
+  chordTabBtn.setAttribute('aria-selected', 'true');
   document.getElementById('chord-analyzer').classList.add('active');
   document.getElementById('chord-input').value = chordStr;
   state.chordInput = chordStr;
@@ -1107,9 +1109,10 @@ function initTabs() {
       if (_scaleIsPlaying) stopScale();
       if (typeof stopTuner === 'function') stopTuner();
       const tab = btn.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       document.getElementById(tab).classList.add('active');
     });
   });
