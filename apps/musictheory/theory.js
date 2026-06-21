@@ -8,6 +8,8 @@ let TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
 let STRING_NAMES = ['e','B','G','D','A','E'];
 const STRING_THICKNESS = [1, 1.2, 1.8, 2.2, 2.8, 3.4]; // px visual thickness
 
+let CAPO = 0; // capo fret (0 = ingen capo)
+
 const TUNING_PRESETS = {
   'Standard': { notes: ['E','B','G','D','A','E'], names: ['e','B','G','D','A','E'] },
   'Drop D':   { notes: ['E','B','G','D','A','D'], names: ['e','B','G','D','A','D'] },
@@ -47,11 +49,12 @@ const SCALES = {
   },
   'Natural Minor': {
     intervals: [0,2,3,5,7,8,10],
-    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock.',
+    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock. Identisk med Aeolian-modus.',
     formula: 'H-½-H-H-½-H-H',
     category: 'Heptatonisk',
     use: 'Rock, pop, metal, folk',
-    color: '#6366f1'
+    color: '#6366f1',
+    modeOf: { parent: 'Major', degree: 6, offset: 9 }
   },
   'Harmonic Minor': {
     intervals: [0,2,3,5,7,8,11],
@@ -99,7 +102,8 @@ const SCALES = {
     formula: 'H-½-H-H-H-½-H',
     category: 'Modal',
     use: 'Jazz, funk, folk, rock',
-    color: '#22c55e'
+    color: '#22c55e',
+    modeOf: { parent: 'Major', degree: 2, offset: 2 }
   },
   'Phrygian': {
     intervals: [0,1,3,5,7,8,10],
@@ -107,7 +111,8 @@ const SCALES = {
     formula: '½-H-H-H-½-H-H',
     category: 'Modal',
     use: 'Flamenco, metal, fusion',
-    color: '#f97316'
+    color: '#f97316',
+    modeOf: { parent: 'Major', degree: 3, offset: 4 }
   },
   'Lydian': {
     intervals: [0,2,4,6,7,9,11],
@@ -115,7 +120,8 @@ const SCALES = {
     formula: 'H-H-H-½-H-H-½',
     category: 'Modal',
     use: 'Film, jazz, pop, fusion',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    modeOf: { parent: 'Major', degree: 4, offset: 5 }
   },
   'Mixolydian': {
     intervals: [0,2,4,5,7,9,10],
@@ -123,7 +129,8 @@ const SCALES = {
     formula: 'H-H-½-H-H-½-H',
     category: 'Modal',
     use: 'Blues, rock, country, folk',
-    color: '#eab308'
+    color: '#eab308',
+    modeOf: { parent: 'Major', degree: 5, offset: 7 }
   },
   'Locrian': {
     intervals: [0,1,3,5,6,8,10],
@@ -131,8 +138,46 @@ const SCALES = {
     formula: '½-H-H-½-H-H-H',
     category: 'Modal',
     use: 'Metal, jazz (på vii-ackord)',
-    color: '#f43f5e'
+    color: '#f43f5e',
+    modeOf: { parent: 'Major', degree: 7, offset: 11 }
   },
+};
+
+// Common diatonic progressions per scale (idx = diatonic chord index)
+const COMMON_PROGRESSIONS = {
+  'Major': [
+    { name: 'I–IV–V–I',  idx: [0,3,4,0] },
+    { name: 'I–V–vi–IV', idx: [0,4,5,3] },
+    { name: 'I–vi–IV–V', idx: [0,5,3,4] },
+    { name: 'ii–V–I',    idx: [1,4,0] },
+    { name: 'I–IV–I–V',  idx: [0,3,0,4] },
+  ],
+  'Natural Minor': [
+    { name: 'i–iv–v',        idx: [0,3,4] },
+    { name: 'i–VI–III–VII',  idx: [0,5,2,6] },
+    { name: 'i–VII–VI–VII',  idx: [0,6,5,6] },
+    { name: 'i–iv–VII–III',  idx: [0,3,6,2] },
+  ],
+  'Harmonic Minor': [
+    { name: 'i–iv–V–i', idx: [0,3,4,0] },
+    { name: 'i–V–i',    idx: [0,4,0] },
+    { name: 'i–iv–V',   idx: [0,3,4] },
+  ],
+  'Dorian': [
+    { name: 'i–IV–i',       idx: [0,3,0] },
+    { name: 'i–IV–VII',     idx: [0,3,6] },
+    { name: 'i–III–VII–IV', idx: [0,2,6,3] },
+  ],
+  'Mixolydian': [
+    { name: 'I–VII–IV–I', idx: [0,6,3,0] },
+    { name: 'I–VII–I',    idx: [0,6,0] },
+    { name: 'I–IV–VII',   idx: [0,3,6] },
+  ],
+  'Phrygian': [
+    { name: 'i–II–i',     idx: [0,1,0] },
+    { name: 'i–VII–VI',   idx: [0,6,5] },
+    { name: 'i–II–VII–i', idx: [0,1,6,0] },
+  ],
 };
 
 // === CHORD TYPES ===
@@ -182,7 +227,7 @@ function noteIndex(note) {
 
 function noteAtFret(stringIdx, fret) {
   const open = noteIndex(TUNING[stringIdx]);
-  return NOTES[(open + fret) % 12];
+  return NOTES[(open + CAPO + fret) % 12];
 }
 
 function getScaleNotes(key, scaleName) {
@@ -289,7 +334,7 @@ function getAudioCtx() {
 function playNote(stringIdx, fret) {
   try {
     const ctx = getAudioCtx();
-    const midi = STRING_MIDI_BASE[stringIdx] + fret;
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const now = ctx.currentTime;
 
@@ -319,7 +364,7 @@ function playNote(stringIdx, fret) {
 function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
   try {
     const ctx = getAudioCtx();
-    const midi = STRING_MIDI_BASE[stringIdx] + fret;
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
 
     const osc = ctx.createOscillator();
