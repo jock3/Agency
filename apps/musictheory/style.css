@@ -509,11 +509,54 @@ input[type=range] {
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
+
+.chord-chip:hover { border-color: var(--accent); background: var(--card); }
+.chord-chip.selected { border-color: var(--accent); background: rgba(99,102,241,0.14); }
 
 .chord-chip .roman {
   font-size: 0.68rem;
   color: var(--muted);
+}
+
+/* Chord diagram */
+.chord-diagram-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.chord-diagram-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.chord-diagram-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: monospace;
+  color: var(--text);
+}
+
+.chord-diagram-notes {
+  font-size: 0.82rem;
+  font-family: monospace;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.chord-diagram-frets {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: var(--muted);
+  margin-top: 2px;
 }
 
 /* ===== POSITION BUTTONS ===== */

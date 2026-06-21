@@ -340,3 +340,24 @@ function getRelativeScale(key, scaleName) {
   }
   return null;
 }
+
+// Compute an open-position guitar voicing for a chord.
+// chordNoteNames: array of note name strings; rootNote: root of chord
+// Returns [lowE, A, D, G, B, highE] fret numbers, -1 = muted.
+function computeChordVoicing(chordNoteNames, rootNote) {
+  const noteSet = new Set(chordNoteNames);
+  const root = normalizeNote(rootNote);
+  const fifth = NOTES[(noteIndex(root) + 7) % 12];
+  const bassOK = new Set([root, fifth]);
+  const result = [];
+  for (let si = 5; si >= 0; si--) {
+    let found = -1;
+    const maxF = si >= 4 ? 4 : 5; // tighter window on bass strings
+    for (let f = 0; f <= maxF; f++) {
+      const n = noteAtFret(si, f);
+      if (noteSet.has(n) && (si < 4 || bassOK.has(n))) { found = f; break; }
+    }
+    result.push(found);
+  }
+  return result; // index 0 = low E, index 5 = high e
+}
