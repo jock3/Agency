@@ -4,9 +4,20 @@
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_ALIASES = { Db:'C#', Eb:'D#', Fb:'E', Gb:'F#', Ab:'G#', Bb:'A#', Cb:'B' };
-const TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
-const STRING_NAMES = ['e','B','G','D','A','E'];
+let TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
+let STRING_NAMES = ['e','B','G','D','A','E'];
 const STRING_THICKNESS = [1, 1.2, 1.8, 2.2, 2.8, 3.4]; // px visual thickness
+
+let CAPO = 0; // capo fret (0 = ingen capo)
+
+const TUNING_PRESETS = {
+  'Standard': { notes: ['E','B','G','D','A','E'], names: ['e','B','G','D','A','E'] },
+  'Drop D':   { notes: ['E','B','G','D','A','D'], names: ['e','B','G','D','A','D'] },
+  'Open G':   { notes: ['D','B','G','D','G','D'], names: ['d','B','G','D','G','D'] },
+  'Open D':   { notes: ['D','A','F#','D','A','D'], names: ['d','A','F#','D','A','D'] },
+  'DADGAD':   { notes: ['D','A','G','D','A','D'], names: ['d','A','G','D','A','D'] },
+  'Open E':   { notes: ['E','B','G#','E','B','E'], names: ['e','B','G#','E','B','E'] },
+};
 
 // === INTERVAL COLORS & NAMES ===
 
@@ -38,11 +49,12 @@ const SCALES = {
   },
   'Natural Minor': {
     intervals: [0,2,3,5,7,8,10],
-    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock.',
+    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock. Identisk med Aeolian-modus.',
     formula: 'H-½-H-H-½-H-H',
     category: 'Heptatonisk',
     use: 'Rock, pop, metal, folk',
-    color: '#6366f1'
+    color: '#6366f1',
+    modeOf: { parent: 'Major', degree: 6, offset: 9 }
   },
   'Harmonic Minor': {
     intervals: [0,2,3,5,7,8,11],
@@ -90,7 +102,8 @@ const SCALES = {
     formula: 'H-½-H-H-H-½-H',
     category: 'Modal',
     use: 'Jazz, funk, folk, rock',
-    color: '#22c55e'
+    color: '#22c55e',
+    modeOf: { parent: 'Major', degree: 2, offset: 2 }
   },
   'Phrygian': {
     intervals: [0,1,3,5,7,8,10],
@@ -98,7 +111,8 @@ const SCALES = {
     formula: '½-H-H-H-½-H-H',
     category: 'Modal',
     use: 'Flamenco, metal, fusion',
-    color: '#f97316'
+    color: '#f97316',
+    modeOf: { parent: 'Major', degree: 3, offset: 4 }
   },
   'Lydian': {
     intervals: [0,2,4,6,7,9,11],
@@ -106,7 +120,8 @@ const SCALES = {
     formula: 'H-H-H-½-H-H-½',
     category: 'Modal',
     use: 'Film, jazz, pop, fusion',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    modeOf: { parent: 'Major', degree: 4, offset: 5 }
   },
   'Mixolydian': {
     intervals: [0,2,4,5,7,9,10],
@@ -114,7 +129,8 @@ const SCALES = {
     formula: 'H-H-½-H-H-½-H',
     category: 'Modal',
     use: 'Blues, rock, country, folk',
-    color: '#eab308'
+    color: '#eab308',
+    modeOf: { parent: 'Major', degree: 5, offset: 7 }
   },
   'Locrian': {
     intervals: [0,1,3,5,6,8,10],
@@ -122,8 +138,46 @@ const SCALES = {
     formula: '½-H-H-½-H-H-H',
     category: 'Modal',
     use: 'Metal, jazz (på vii-ackord)',
-    color: '#f43f5e'
+    color: '#f43f5e',
+    modeOf: { parent: 'Major', degree: 7, offset: 11 }
   },
+};
+
+// Common diatonic progressions per scale (idx = diatonic chord index)
+const COMMON_PROGRESSIONS = {
+  'Major': [
+    { name: 'I–IV–V–I',  idx: [0,3,4,0] },
+    { name: 'I–V–vi–IV', idx: [0,4,5,3] },
+    { name: 'I–vi–IV–V', idx: [0,5,3,4] },
+    { name: 'ii–V–I',    idx: [1,4,0] },
+    { name: 'I–IV–I–V',  idx: [0,3,0,4] },
+  ],
+  'Natural Minor': [
+    { name: 'i–iv–v',        idx: [0,3,4] },
+    { name: 'i–VI–III–VII',  idx: [0,5,2,6] },
+    { name: 'i–VII–VI–VII',  idx: [0,6,5,6] },
+    { name: 'i–iv–VII–III',  idx: [0,3,6,2] },
+  ],
+  'Harmonic Minor': [
+    { name: 'i–iv–V–i', idx: [0,3,4,0] },
+    { name: 'i–V–i',    idx: [0,4,0] },
+    { name: 'i–iv–V',   idx: [0,3,4] },
+  ],
+  'Dorian': [
+    { name: 'i–IV–i',       idx: [0,3,0] },
+    { name: 'i–IV–VII',     idx: [0,3,6] },
+    { name: 'i–III–VII–IV', idx: [0,2,6,3] },
+  ],
+  'Mixolydian': [
+    { name: 'I–VII–IV–I', idx: [0,6,3,0] },
+    { name: 'I–VII–I',    idx: [0,6,0] },
+    { name: 'I–IV–VII',   idx: [0,3,6] },
+  ],
+  'Phrygian': [
+    { name: 'i–II–i',     idx: [0,1,0] },
+    { name: 'i–VII–VI',   idx: [0,6,5] },
+    { name: 'i–II–VII–i', idx: [0,1,6,0] },
+  ],
 };
 
 // === CHORD TYPES ===
@@ -173,7 +227,7 @@ function noteIndex(note) {
 
 function noteAtFret(stringIdx, fret) {
   const open = noteIndex(TUNING[stringIdx]);
-  return NOTES[(open + fret) % 12];
+  return NOTES[(open + CAPO + fret) % 12];
 }
 
 function getScaleNotes(key, scaleName) {
@@ -263,4 +317,135 @@ function analyzeProgression(chords) {
   return results
     .sort((a, b) => b.pct - a.pct || SCALES[a.scaleName].intervals.length - SCALES[b.scaleName].intervals.length)
     .slice(0, 8);
+}
+
+// === AUDIO (Web Audio API — plucked string) ===
+
+const STRING_MIDI_BASE = [64, 59, 55, 50, 45, 40]; // high e, B, G, D, A, low E
+
+let _audioCtx = null;
+
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function playNote(stringIdx, fret) {
+  try {
+    const ctx = getAudioCtx();
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, now);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 900), now + 0.5);
+    filter.Q.setValueAtTime(2, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.6);
+  } catch (_) { /* audio unavailable */ }
+}
+
+function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
+  try {
+    const ctx = getAudioCtx();
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, startTime);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), startTime);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 800), startTime + 0.4);
+    filter.Q.setValueAtTime(1.5, startTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(vol, startTime + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  } catch (_) {}
+}
+
+// Strum chord notes across strings starting at startTime
+function strum(noteNames, startTime, duration) {
+  const noteSet = new Set(noteNames);
+  for (let si = 5; si >= 0; si--) {         // low E (si=5) first, strum upward
+    const delay = (5 - si) * 0.022;          // 22ms between strings
+    for (let f = 0; f <= 7; f++) {
+      if (noteSet.has(noteAtFret(si, f))) {
+        playNoteAtTime(si, f, startTime + delay, Math.max(0.2, duration - delay));
+        break;
+      }
+    }
+  }
+}
+
+// Returns sorted list of fret numbers where root note appears (one per fret)
+function getRootPositions(key, scaleName, numFrets) {
+  const frets = [];
+  for (let f = 0; f <= numFrets; f++) {
+    for (let s = 0; s < 6; s++) {
+      if (getIntervalAtFret(s, f, key, scaleName) === 0) {
+        frets.push(f);
+        break;
+      }
+    }
+  }
+  return frets;
+}
+
+// Returns the relative major or minor for a given key/scale, or null if not applicable
+function getRelativeScale(key, scaleName) {
+  if (scaleName === 'Major') {
+    return { key: NOTES[(noteIndex(key) + 9) % 12], scaleName: 'Natural Minor' };
+  }
+  if (scaleName === 'Natural Minor') {
+    return { key: NOTES[(noteIndex(key) + 3) % 12], scaleName: 'Major' };
+  }
+  return null;
+}
+
+// Compute an open-position guitar voicing for a chord.
+// chordNoteNames: array of note name strings; rootNote: root of chord
+// Returns [lowE, A, D, G, B, highE] fret numbers, -1 = muted.
+function computeChordVoicing(chordNoteNames, rootNote) {
+  const noteSet = new Set(chordNoteNames);
+  const root = normalizeNote(rootNote);
+  const fifth = NOTES[(noteIndex(root) + 7) % 12];
+  const bassOK = new Set([root, fifth]);
+  const result = [];
+  for (let si = 5; si >= 0; si--) {
+    let found = -1;
+    const maxF = si >= 4 ? 4 : 5; // tighter window on bass strings
+    for (let f = 0; f <= maxF; f++) {
+      const n = noteAtFret(si, f);
+      if (noteSet.has(n) && (si < 4 || bassOK.has(n))) { found = f; break; }
+    }
+    result.push(found);
+  }
+  return result; // index 0 = low E, index 5 = high e
 }
