@@ -75,7 +75,7 @@ function buildHistoryBar() {
   if (hist.length < 2) { container.innerHTML = ''; return; }
   const chips = hist.map(h => {
     const isCur = h.key === state.key && h.scaleName === state.scaleName;
-    return `<button class="history-chip${isCur ? ' current' : ''}" onclick="goToScale('${h.key}','${h.scaleName}')">${h.key} ${h.scaleName}</button>`;
+    return `<button class="history-chip${isCur ? ' current' : ''}" data-action="go-scale" data-key="${h.key}" data-scale="${h.scaleName}">${h.key} ${h.scaleName}</button>`;
   }).join('');
   container.innerHTML = `<div class="history-bar"><span class="history-label">Historik:</span>${chips}</div>`;
 }
@@ -144,7 +144,15 @@ function copyShareLink() {
     const old = btn.textContent;
     btn.textContent = '✓ Kopierad!';
     setTimeout(() => { btn.textContent = old; }, 2000);
-  }).catch(() => { prompt('Kopiera länken:', window.location.href); });
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = window.location.href;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
 }
 
 function goToScale(key, scaleName) {
@@ -359,7 +367,7 @@ function buildScaleInfo(key, scaleName) {
   // Diatonic chords
   const chordChips = diatonic.slice(0, 7).map((c, i) => {
     const sel = state.selectedDiatonicIdx === i ? ' selected' : '';
-    return `<div class="chord-chip${sel}" onclick="selectDiatonicChord(${i})" title="Visa ackorddiagram">
+    return `<div class="chord-chip${sel}" data-action="focus-chord" data-idx="${i}" title="Visa ackorddiagram">
       <span>${c.root}${c.quality === 'm' ? 'm' : c.quality === 'dim' ? '°' : c.quality === 'aug' ? '+' : ''}</span>
       <span class="roman">${c.roman}${c.quality === 'dim' ? '°' : c.quality === 'aug' ? '+' : ''}</span>
     </div>`;
@@ -395,7 +403,7 @@ function buildScaleInfo(key, scaleName) {
           ? 'Relativmoll delar samma noter men börjar på den 6:e graden.'
           : 'Relativdur delar samma noter men börjar på den 3:e graden.'}
       </p>
-      <button class="rel-scale-btn" onclick="goToScale('${rel.key}','${rel.scaleName}')">
+      <button class="rel-scale-btn" data-action="go-scale" data-key="${rel.key}" data-scale="${rel.scaleName}">
         → ${rel.key} ${rel.scaleName}
       </button>
     </div>` : '';
@@ -406,7 +414,7 @@ function buildScaleInfo(key, scaleName) {
     const parentKey = NOTES[(noteIndex(key) - scale.modeOf.offset + 12) % 12];
     modeParentHTML = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--muted)">
       <strong>Modusur:</strong> ${scaleName} är grad ${scale.modeOf.degree} av
-      <button class="rel-scale-btn" style="display:inline-block;padding:2px 10px;font-size:0.78rem;margin-left:4px" onclick="goToScale('${parentKey}','${scale.modeOf.parent}')">→ ${parentKey} ${scale.modeOf.parent}</button>
+      <button class="rel-scale-btn" style="display:inline-block;padding:2px 10px;font-size:0.78rem;margin-left:4px" data-action="go-scale" data-key="${parentKey}" data-scale="${scale.modeOf.parent}">→ ${parentKey} ${scale.modeOf.parent}</button>
     </div>`;
   }
 
@@ -649,7 +657,7 @@ function buildQuizPanel() {
         else if (i === state.quiz.chosen) cls += ' wrong';
         else cls += ' dimmed';
       }
-      const action = state.quiz.answered ? 'disabled' : `onclick="answerQuiz(${i})"`;
+      const action = state.quiz.answered ? 'disabled' : `data-action="answer-quiz" data-interval="${i}"`;
       return `<button class="${cls}" ${action}>
         <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
         <span class="quiz-choice-label">${info.full}</span>
@@ -669,7 +677,7 @@ function buildQuizPanel() {
         else if (n === state.quiz.chosenNote) cls += ' wrong';
         else cls += ' dimmed';
       }
-      const action = state.quiz.answered ? 'disabled' : `onclick="answerNoteQuiz('${n}')"`;
+      const action = state.quiz.answered ? 'disabled' : `data-action="answer-note" data-note="${n}"`;
       return `<button class="${cls}" ${action}>
         <span style="font-family:monospace;font-size:1.05rem;font-weight:800">${n}</span>
       </button>`;
@@ -1100,4 +1108,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initChordAnalyzer();
   renderScaleExplorer();
   renderChordAnalyzer();
+
+  // Delegated listener for data-action buttons (XSS-safe replacement for inline onclicks)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'go-scale') goToScale(btn.dataset.key, btn.dataset.scale);
+    else if (action === 'focus-chord') selectDiatonicChord(parseInt(btn.dataset.idx));
+    else if (action === 'answer-quiz') answerQuiz(parseInt(btn.dataset.interval));
+    else if (action === 'answer-note') answerNoteQuiz(btn.dataset.note);
+  });
 });

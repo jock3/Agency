@@ -180,6 +180,28 @@ const COMMON_PROGRESSIONS = {
   ],
 };
 
+// ── Audio constants ──────────────────────────────────────────────
+const MIDI_A4            = 69;       // MIDI number of A4
+const FREQ_A4            = 440;      // Hz of A4 reference pitch
+const STRUM_DELAY_SEC    = 0.022;    // seconds between strings when strumming
+const NOTE_ATTACK_SEC    = 0.005;    // gain ramp-up time
+const NOTE_DECAY_SEC     = 1.6;      // gain ramp-down time
+const NOTE_TIME_ATTACK   = 0.008;    // attack for playNoteAtTime
+const NOTE_TIME_DECAY    = 0.4;      // gain ramp-down for playNoteAtTime
+const NOTE_TIME_SUSTAIN  = 1.5;      // total duration for playNoteAtTime
+const NOTE_DEFAULT_VOL   = 0.03;     // default volume for playNoteAtTime
+const FILTER_HIGH_MULT   = 8;        // highpass cutoff = freq * this
+const FILTER_HIGH_MAX    = 5000;     // highpass cutoff ceiling Hz
+const FILTER_LOW_MULT    = 2;        // lowpass cutoff = freq * this
+const FILTER_LOW_MAX     = 900;      // lowpass cutoff ceiling Hz
+
+// ── Scale matching constants ─────────────────────────────────────
+const SCALE_MATCH_THRESHOLD   = 60;  // min % match to include a result
+const SCALE_MATCH_MAX_RESULTS = 8;   // max results returned
+
+// ── Chord voicing constants ──────────────────────────────────────
+const CHORD_SEARCH_FRETS = 7;        // frets to scan when voicing chords
+
 // === CHORD TYPES ===
 
 const CHORD_INTERVALS = {
@@ -307,7 +329,7 @@ function analyzeProgression(chords) {
       const scaleNotes = getScaleNotes(key, scaleName);
       const matched = noteArr.filter(n => scaleNotes.includes(n));
       const pct = Math.round((matched.length / noteArr.length) * 100);
-      if (pct < 60) return;
+      if (pct < SCALE_MATCH_THRESHOLD) return;
 
       const missing = noteArr.filter(n => !scaleNotes.includes(n));
       results.push({ key, scaleName, pct, matched, missing, scaleNotes });
@@ -335,7 +357,7 @@ function playNote(stringIdx, fret) {
   try {
     const ctx = getAudioCtx();
     const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const freq = FREQ_A4 * Math.pow(2, (midi - MIDI_A4) / 12);
     const now = ctx.currentTime;
 
     const osc = ctx.createOscillator();
@@ -344,28 +366,28 @@ function playNote(stringIdx, fret) {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 900), now + 0.5);
+    filter.frequency.setValueAtTime(Math.min(freq * FILTER_HIGH_MULT, FILTER_HIGH_MAX), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * FILTER_LOW_MULT, FILTER_LOW_MAX), now + 0.5);
     filter.Q.setValueAtTime(2, now);
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.26, now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+    gain.gain.linearRampToValueAtTime(0.26, now + NOTE_ATTACK_SEC);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + NOTE_DECAY_SEC);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 1.6);
+    osc.stop(now + NOTE_DECAY_SEC);
   } catch (_) { /* audio unavailable */ }
 }
 
-function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
+function playNoteAtTime(stringIdx, fret, startTime, duration, vol = NOTE_DEFAULT_VOL) {
   try {
     const ctx = getAudioCtx();
     const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const freq = FREQ_A4 * Math.pow(2, (midi - MIDI_A4) / 12);
 
     const osc = ctx.createOscillator();
     osc.type = 'sawtooth';
@@ -373,13 +395,13 @@ function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), startTime);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 800), startTime + 0.4);
+    filter.frequency.setValueAtTime(Math.min(freq * FILTER_HIGH_MULT, FILTER_HIGH_MAX), startTime);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * FILTER_LOW_MULT, 800), startTime + NOTE_TIME_DECAY);
     filter.Q.setValueAtTime(1.5, startTime);
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(vol, startTime + 0.008);
+    gain.gain.linearRampToValueAtTime(vol, startTime + NOTE_TIME_ATTACK);
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
     osc.connect(filter);
@@ -394,8 +416,8 @@ function playNoteAtTime(stringIdx, fret, startTime, duration, vol = 0.03) {
 function strum(noteNames, startTime, duration) {
   const noteSet = new Set(noteNames);
   for (let si = 5; si >= 0; si--) {         // low E (si=5) first, strum upward
-    const delay = (5 - si) * 0.022;          // 22ms between strings
-    for (let f = 0; f <= 7; f++) {
+    const delay = (5 - si) * STRUM_DELAY_SEC; // 22ms between strings
+    for (let f = 0; f <= CHORD_SEARCH_FRETS; f++) {
       if (noteSet.has(noteAtFret(si, f))) {
         playNoteAtTime(si, f, startTime + delay, Math.max(0.2, duration - delay));
         break;
