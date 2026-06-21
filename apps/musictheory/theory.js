@@ -338,7 +338,7 @@ function analyzeProgression(chords) {
 
   return results
     .sort((a, b) => b.pct - a.pct || SCALES[a.scaleName].intervals.length - SCALES[b.scaleName].intervals.length)
-    .slice(0, 8);
+    .slice(0, SCALE_MATCH_MAX_RESULTS);
 }
 
 // === AUDIO (Web Audio API — plucked string) ===
