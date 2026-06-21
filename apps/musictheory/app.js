@@ -12,6 +12,8 @@ const state = {
   focusFret: null,  // fret number of active position, or null = show all
   tuning: 'Standard',
   selectedDiatonicIdx: null,
+  // Quiz
+  quiz: { active: false, si: null, fret: null, interval: null, answered: false, correct: 0, total: 0, lastCorrect: null, chosen: null, choices: null },
   // Chord analyzer
   chordInput: '',
   parsedChords: [],
@@ -67,7 +69,14 @@ function goToScale(key, scaleName) {
   state.selectedDiatonicIdx = null;
   document.getElementById('key-select').value = key;
   document.getElementById('scale-select').value = scaleName;
-  renderScaleExplorer();
+  if (state.quiz.active) {
+    state.quiz.answered = false;
+    state.quiz.chosen = null;
+    state.quiz.choices = null;
+    nextQuizQuestion();
+  } else {
+    renderScaleExplorer();
+  }
   updateHashFromState();
 }
 
@@ -181,7 +190,10 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringId
 
   if (interval !== null && !hiddenIntervals.has(interval)) {
     const info = INTERVAL_INFO[interval];
-    const label = displayMode === 'intervals' ? info.name : note;
+    const isQuizTarget = state.quiz.active && stringIdx === state.quiz.si && fret === state.quiz.fret;
+    const label = isQuizTarget ? '?' : (displayMode === 'intervals' ? info.name : note);
+    const bg = isQuizTarget ? '#ffffff' : info.color;
+    const fg = isQuizTarget ? '#000000' : info.text;
 
     let inWindow = true;
     if (focusFret !== null) {
@@ -191,18 +203,24 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringId
     }
 
     const isRoot = interval === 0;
-    const isActiveFocus = isRoot && focusFret === fret;
-    const dotClass = `note-dot${isRoot ? ' root-dot' : ''}${!inWindow ? ' dimmed' : ''}${isActiveFocus ? ' focus-active' : ''}`;
+    const isActiveFocus = isRoot && focusFret === fret && !isQuizTarget;
+    const dotClass = [
+      'note-dot',
+      isRoot && !isQuizTarget ? 'root-dot' : '',
+      !inWindow ? 'dimmed' : '',
+      isActiveFocus ? 'focus-active' : '',
+      isQuizTarget ? 'quiz-target' : '',
+    ].filter(Boolean).join(' ');
 
-    const onclick = isRoot
+    const onclick = isRoot && !isQuizTarget
       ? `playNote(${stringIdx},${fret});setFocusFret(${fret})`
       : `playNote(${stringIdx},${fret})`;
-    const tipSuffix = isRoot ? ' · Klicka för att isolera position' : '';
+    const tip = isQuizTarget ? 'Vilket intervall är detta?' : `${note} — ${info.full}${isRoot ? ' · Klicka för att isolera position' : ''}`;
 
     inner = `<div class="${dotClass}"
-      style="background:${info.color};color:${info.text}"
+      style="background:${bg};color:${fg}"
       onclick="${onclick}"
-      title="${note} — ${info.full}${tipSuffix}">${label}</div>`;
+      title="${tip}">${label}</div>`;
   }
 
   return `<div class="${cellClass}">${inner}</div>`;
@@ -359,6 +377,137 @@ function renderScaleExplorer() {
   buildLegend(state.scaleName);
   buildPositionButtons(state.key, state.scaleName, state.numFrets);
   buildScaleInfo(state.key, state.scaleName);
+  buildQuizPanel();
+}
+
+// ===== QUIZ MODE =====
+
+function toggleQuiz() {
+  state.quiz.active = !state.quiz.active;
+  if (state.quiz.active) {
+    state.quiz.correct = 0;
+    state.quiz.total = 0;
+    state.quiz.answered = false;
+    state.quiz.chosen = null;
+    state.quiz.choices = null;
+    nextQuizQuestion();
+  } else {
+    state.quiz.si = null;
+    state.quiz.fret = null;
+    state.quiz.interval = null;
+    state.quiz.answered = false;
+    state.quiz.chosen = null;
+    state.quiz.choices = null;
+    renderScaleExplorer();
+  }
+}
+
+function nextQuizQuestion() {
+  const scale = SCALES[state.scaleName];
+  if (!scale) return;
+
+  const lo = state.focusFret !== null ? Math.max(0, state.focusFret - 1) : 0;
+  const hi = state.focusFret !== null ? state.focusFret + 4 : state.numFrets;
+
+  const candidates = [];
+  for (let s = 0; s < 6; s++) {
+    for (let f = lo; f <= Math.min(hi, state.numFrets); f++) {
+      const interval = getIntervalAtFret(s, f, state.key, state.scaleName);
+      if (interval !== null && !state.hiddenIntervals.has(interval)) {
+        if (!(s === state.quiz.si && f === state.quiz.fret)) {
+          candidates.push({ si: s, fret: f, interval });
+        }
+      }
+    }
+  }
+
+  if (!candidates.length) return;
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  state.quiz.si = pick.si;
+  state.quiz.fret = pick.fret;
+  state.quiz.interval = pick.interval;
+  state.quiz.answered = false;
+  state.quiz.lastCorrect = null;
+  state.quiz.chosen = null;
+
+  const allIntervals = scale.intervals.filter(i => !state.hiddenIntervals.has(i));
+  const wrong = allIntervals.filter(i => i !== pick.interval).sort(() => Math.random() - 0.5).slice(0, 3);
+  state.quiz.choices = [...wrong, pick.interval].sort(() => Math.random() - 0.5);
+
+  renderScaleExplorer();
+}
+
+function answerQuiz(chosenInterval) {
+  if (state.quiz.answered) return;
+  state.quiz.answered = true;
+  state.quiz.chosen = chosenInterval;
+  state.quiz.total++;
+  state.quiz.lastCorrect = chosenInterval === state.quiz.interval;
+  if (state.quiz.lastCorrect) state.quiz.correct++;
+  buildQuizPanel();
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+}
+
+function buildQuizPanel() {
+  const container = document.getElementById('quiz-panel');
+  if (!container) return;
+
+  if (!state.quiz.active) {
+    container.innerHTML = '';
+    const btn = document.getElementById('quiz-btn');
+    if (btn) btn.classList.remove('active');
+    return;
+  }
+
+  // If the quiz target is no longer valid for the current scale, pick a fresh question
+  if (state.quiz.interval !== null) {
+    const current = getIntervalAtFret(state.quiz.si, state.quiz.fret, state.key, state.scaleName);
+    if (current !== state.quiz.interval) {
+      nextQuizQuestion();
+      return;
+    }
+  }
+
+  const btn = document.getElementById('quiz-btn');
+  if (btn) btn.classList.add('active');
+
+  const choices = state.quiz.choices || [];
+  const { correct, total, lastCorrect, chosen, interval: correctInterval, answered } = state.quiz;
+  const pct = total > 0 ? Math.round(100 * correct / total) : null;
+  const scoreStr = total > 0 ? `${correct}/${total}${pct !== null ? ` (${pct}%)` : ''}` : '—';
+
+  const choicesHTML = choices.map(i => {
+    const info = INTERVAL_INFO[i];
+    let cls = 'quiz-choice';
+    if (answered) {
+      if (i === correctInterval) cls += ' correct';
+      else if (i === chosen) cls += ' wrong';
+      else cls += ' dimmed';
+    }
+    const action = answered ? 'disabled' : `onclick="answerQuiz(${i})"`;
+    return `<button class="${cls}" ${action}>
+      <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
+      <span class="quiz-choice-label">${info.full}</span>
+    </button>`;
+  }).join('');
+
+  const feedbackHTML = answered ? `
+    <div class="quiz-feedback ${lastCorrect ? 'ok' : 'fail'}">
+      ${lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${INTERVAL_INFO[correctInterval].full}`}
+      <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
+    </div>` : '';
+
+  container.innerHTML = `
+    <div class="quiz-panel-inner">
+      <div class="quiz-header">
+        <span class="quiz-title">🧠 Intervallquiz</span>
+        <span class="quiz-score">${scoreStr}</span>
+        <button class="quiz-close" onclick="toggleQuiz()" title="Avsluta quiz">✕</button>
+      </div>
+      <p class="quiz-question">Vilket intervall är det markerade notet <strong>(?)</strong>?</p>
+      <div class="quiz-choices">${choicesHTML}</div>
+      ${feedbackHTML}
+    </div>`;
 }
 
 // ===== CHORD ANALYZER =====
