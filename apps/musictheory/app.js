@@ -433,10 +433,24 @@ function renderChordAnalyzer() {
       </div>`;
   }
 
+  const wasPlaying = _isPlaying;
+  if (wasPlaying) stopProgression();
+
   resultsEl.innerHTML = `
-    <div style="margin-bottom:12px">
-      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Tolkade ackord</div>
-      <div class="parsed-chords">${parsedHTML}</div>
+    <div class="player-bar">
+      <div class="player-chords">
+        <span class="player-label">Ackord</span>
+        <div class="parsed-chords">${parsedHTML}</div>
+      </div>
+      <div class="player-controls">
+        <label class="player-label">BPM</label>
+        <div class="tempo-row">
+          <button class="tempo-btn" onclick="adjustTempo(-5)">−</button>
+          <input id="tempo-input" type="number" value="80" min="40" max="220" class="tempo-input">
+          <button class="tempo-btn" onclick="adjustTempo(5)">+</button>
+        </div>
+        <button id="play-btn" class="play-btn" onclick="playProgression()">▶ Spela</button>
+      </div>
     </div>
     ${matchHTML}
     ${previewHTML}`;
@@ -445,6 +459,56 @@ function renderChordAnalyzer() {
     const m = matches[state.selectedMatch];
     buildFretboard('analyzer-fretboard', m.key, m.scaleName, 'intervals', new Set(), 12);
   }
+}
+
+// ===== PROGRESSION PLAYER =====
+
+const _playTimeouts = [];
+let _isPlaying = false;
+
+function playProgression() {
+  if (_isPlaying) { stopProgression(); return; }
+  const chords = state.parsedChords;
+  if (!chords.length) return;
+
+  _isPlaying = true;
+  _syncPlayBtn();
+
+  const bpm = Math.max(40, Math.min(220, parseInt(document.getElementById('tempo-input')?.value) || 80));
+  const secPerChord = (60 / bpm) * 4;  // 4 beats per chord
+
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime + 0.08;
+
+  chords.forEach((chord, i) => {
+    const t = t0 + i * secPerChord;
+    strum(chordNotes(chord), t, secPerChord * 0.88);
+    _playTimeouts.push(setTimeout(() => highlightPlayingChord(i), i * secPerChord * 1000 + 80));
+  });
+
+  _playTimeouts.push(setTimeout(() => {
+    _isPlaying = false;
+    _syncPlayBtn();
+    highlightPlayingChord(null);
+  }, chords.length * secPerChord * 1000 + 200));
+}
+
+function stopProgression() {
+  _isPlaying = false;
+  _playTimeouts.splice(0).forEach(clearTimeout);
+  _syncPlayBtn();
+  highlightPlayingChord(null);
+}
+
+function _syncPlayBtn() {
+  const btn = document.getElementById('play-btn');
+  if (btn) btn.textContent = _isPlaying ? '⏹ Stopp' : '▶ Spela';
+}
+
+function highlightPlayingChord(idx) {
+  document.querySelectorAll('.parsed-chord').forEach((el, i) => {
+    el.classList.toggle('playing', i === idx);
+  });
 }
 
 // ===== EVENT HANDLERS =====
@@ -475,6 +539,12 @@ function setFocusFret(fret) {
 function selectMatch(i) {
   state.selectedMatch = i;
   renderChordAnalyzer();
+}
+
+function adjustTempo(delta) {
+  const input = document.getElementById('tempo-input');
+  if (!input) return;
+  input.value = Math.max(40, Math.min(220, (parseInt(input.value) || 80) + delta));
 }
 
 function setPreset(val) {
@@ -571,6 +641,7 @@ function initSelects() {
 function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (_isPlaying) stopProgression();
       const tab = btn.dataset.tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
