@@ -11,6 +11,17 @@ const GUITAR_STRINGS = [
 
 const TUNER_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
+// ── Tuner constants ──────────────────────────────────────────────
+const TUNER_FFT_SIZE             = 4096;  // samples for autocorrelation
+const TUNER_RMS_THRESHOLD        = 0.008; // minimum signal level to process
+const TUNER_SILENCE_GATE         = 0.2;   // amplitude below which sample is "silent"
+const TUNER_CORR_STRENGTH        = 0.5;   // autocorr peak must exceed this × corr[0]
+const CENTS_IN_TUNE              = 5;     // cents — shown as green
+const CENTS_NEAR                 = 15;    // cents — shown as amber
+const CENTS_RANGE                = 50;    // max cents displayed on needle
+const STRING_HIGHLIGHT_THRESHOLD = 0.25;  // log2 octaves distance for string match
+const TUNER_CANVAS_PAD_X         = 20;    // horizontal padding in canvas
+
 let _tunerCtx = null;
 let _tunerStream = null;
 let _tunerAnalyser = null;
@@ -44,7 +55,7 @@ async function startTuner() {
     _tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = _tunerCtx.createMediaStreamSource(_tunerStream);
     _tunerAnalyser = _tunerCtx.createAnalyser();
-    _tunerAnalyser.fftSize = 4096;
+    _tunerAnalyser.fftSize = TUNER_FFT_SIZE;
     src.connect(_tunerAnalyser);
     _tunerBuf = new Float32Array(_tunerAnalyser.fftSize);
     _tunerActive = true;
@@ -95,7 +106,7 @@ function updateTuner() {
   if (noteEl) noteEl.textContent = noteName + octave;
   if (centsEl) {
     centsEl.textContent = (cents >= 0 ? '+' : '') + cents + ' cents';
-    centsEl.className = 'tuner-cents ' + (Math.abs(cents) < 5 ? 'in-tune' : Math.abs(cents) < 15 ? 'near' : 'off');
+    centsEl.className = 'tuner-cents ' + (Math.abs(cents) < CENTS_IN_TUNE ? 'in-tune' : Math.abs(cents) < CENTS_NEAR ? 'near' : 'off');
   }
   if (freqEl) freqEl.textContent = freq.toFixed(1) + ' Hz';
 
@@ -108,11 +119,11 @@ function _autoCorrelate(buf, sampleRate) {
   const n = buf.length;
   for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / n);
-  if (rms < 0.008) return -1;
+  if (rms < TUNER_RMS_THRESHOLD) return -1;
 
   let r1 = 0, r2 = n - 1;
-  for (let i = 0; i < n / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
-  for (let i = 1; i < n / 2; i++) { if (Math.abs(buf[n - i]) < 0.2) { r2 = n - i; break; } }
+  for (let i = 0; i < n / 2; i++) { if (Math.abs(buf[i]) < TUNER_SILENCE_GATE) { r1 = i; break; } }
+  for (let i = 1; i < n / 2; i++) { if (Math.abs(buf[n - i]) < TUNER_SILENCE_GATE) { r2 = n - i; break; } }
 
   const c = buf.slice(r1, r2 + 1);
   const len = c.length;
@@ -128,7 +139,7 @@ function _autoCorrelate(buf, sampleRate) {
   for (let i = d; i < len; i++) {
     if (corr[i] > maxVal) { maxVal = corr[i]; maxLag = i; }
   }
-  if (maxLag < 1 || maxVal < corr[0] * 0.5) return -1;
+  if (maxLag < 1 || maxVal < corr[0] * TUNER_CORR_STRENGTH) return -1;
 
   let x = maxLag;
   if (x > 0 && x < len - 1) {
@@ -146,7 +157,7 @@ function _drawNeedle(cents) {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  const trackY = H / 2, padX = 20;
+  const trackY = H / 2, padX = TUNER_CANVAS_PAD_X;
 
   ctx.fillStyle = '#1c2432';
   ctx.beginPath();
@@ -155,8 +166,8 @@ function _drawNeedle(cents) {
   ctx.fill();
 
   ctx.fillStyle = '#28364a';
-  for (let t = -50; t <= 50; t += 10) {
-    const tx = W / 2 + (t / 50) * (W / 2 - padX);
+  for (let t = -CENTS_RANGE; t <= CENTS_RANGE; t += 10) {
+    const tx = W / 2 + (t / CENTS_RANGE) * (W / 2 - padX);
     const th = t === 0 ? 22 : 10;
     ctx.fillRect(tx - 0.5, trackY - th / 2, 1, th);
   }
@@ -164,10 +175,10 @@ function _drawNeedle(cents) {
   ctx.fillStyle = '#14b8a6';
   ctx.fillRect(W / 2 - 1, trackY - 18, 2, 36);
 
-  const clamp = Math.max(-50, Math.min(50, cents));
-  const nx = W / 2 + (clamp / 50) * (W / 2 - padX);
-  const inTune = Math.abs(cents) < 5;
-  const near = Math.abs(cents) < 15;
+  const clamp = Math.max(-CENTS_RANGE, Math.min(CENTS_RANGE, cents));
+  const nx = W / 2 + (clamp / CENTS_RANGE) * (W / 2 - padX);
+  const inTune = Math.abs(cents) < CENTS_IN_TUNE;
+  const near = Math.abs(cents) < CENTS_NEAR;
   const color = inTune ? '#22c55e' : near ? '#f59e0b' : '#ef4444';
 
   ctx.shadowColor = color;
@@ -191,7 +202,7 @@ function _highlightNearestString(freq) {
     if (dist < bestDist) { bestDist = dist; bestIdx = i; }
   });
   document.querySelectorAll('.tuner-string').forEach((el, i) => {
-    el.classList.toggle('active', i === bestIdx && bestDist < 0.25);
+    el.classList.toggle('active', i === bestIdx && bestDist < STRING_HIGHLIGHT_THRESHOLD);
   });
 }
 

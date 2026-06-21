@@ -349,22 +349,16 @@ function buildLegend(scaleName) {
 
 // ===== SCALE INFO PANEL =====
 
-function buildScaleInfo(key, scaleName) {
-  const container = document.getElementById('scale-info');
-  const scale = SCALES[scaleName];
-  if (!scale) return;
-
-  const scaleNotes = getScaleNotes(key, scaleName);
-  const diatonic = getDiatonicChords(key, scaleName);
-
-  // Notes in scale
+function _buildNoteSection(scaleNotes, intervals) {
   const notePills = scaleNotes.map((note, i) => {
-    const interval = scale.intervals[i];
+    const interval = intervals[i];
     const info = INTERVAL_INFO[interval];
     return `<span class="note-pill" style="background:${info.color}22;color:${info.color};border:1px solid ${info.color}55">${note}</span>`;
   }).join('');
+  return notePills;
+}
 
-  // Diatonic chords
+function _buildChordSection(key, scaleName, diatonic) {
   const chordChips = diatonic.slice(0, 7).map((c, i) => {
     const sel = state.selectedDiatonicIdx === i ? ' selected' : '';
     return `<div class="chord-chip${sel}" data-action="focus-chord" data-idx="${i}" title="Visa ackorddiagram">
@@ -373,7 +367,6 @@ function buildScaleInfo(key, scaleName) {
     </div>`;
   }).join('');
 
-  // Chord diagram for selected chord
   let diagramHTML = '';
   if (state.selectedDiatonicIdx !== null && diatonic[state.selectedDiatonicIdx]) {
     const cd = diatonic[state.selectedDiatonicIdx];
@@ -394,6 +387,19 @@ function buildScaleInfo(key, scaleName) {
     </div>`;
   }
 
+  if (diatonic.length === 0) return '';
+  return `<div class="info-card">
+    <h3>Diatoniska ackord <span style="font-size:0.68rem;color:var(--muted);font-weight:400">— klicka för diagram</span></h3>
+    <div class="chord-row">${chordChips}</div>
+    ${diagramHTML}
+  </div>`;
+}
+
+function _buildProgressionSection(key, scaleName, diatonic) {
+  return buildProgressionSuggestions(key, scaleName, diatonic);
+}
+
+function _buildRelativeSection(key, scaleName, scale) {
   const rel = getRelativeScale(key, scaleName);
   const relCard = rel ? `
     <div class="info-card">
@@ -408,7 +414,6 @@ function buildScaleInfo(key, scaleName) {
       </button>
     </div>` : '';
 
-  // Mode parent info
   let modeParentHTML = '';
   if (scale.modeOf) {
     const parentKey = NOTES[(noteIndex(key) - scale.modeOf.offset + 12) % 12];
@@ -418,7 +423,21 @@ function buildScaleInfo(key, scaleName) {
     </div>`;
   }
 
-  const progHTML = buildProgressionSuggestions(key, scaleName, diatonic);
+  return { relCard, modeParentHTML };
+}
+
+function buildScaleInfo(key, scaleName) {
+  const container = document.getElementById('scale-info');
+  const scale = SCALES[scaleName];
+  if (!scale) return;
+
+  const scaleNotes = getScaleNotes(key, scaleName);
+  const diatonic = getDiatonicChords(key, scaleName);
+
+  const notePills = _buildNoteSection(scaleNotes, scale.intervals);
+  const chordSectionHTML = _buildChordSection(key, scaleName, diatonic);
+  const progHTML = _buildProgressionSection(key, scaleName, diatonic);
+  const { relCard, modeParentHTML } = _buildRelativeSection(key, scaleName, scale);
 
   container.innerHTML = `
     <div class="scale-info">
@@ -441,12 +460,7 @@ function buildScaleInfo(key, scaleName) {
           <strong>Kategori:</strong> ${scale.category}
         </div>
       </div>
-      ${diatonic.length > 0 ? `
-      <div class="info-card">
-        <h3>Diatoniska ackord <span style="font-size:0.68rem;color:var(--muted);font-weight:400">— klicka för diagram</span></h3>
-        <div class="chord-row">${chordChips}</div>
-        ${diagramHTML}
-      </div>` : ''}
+      ${chordSectionHTML}
       ${progHTML}
       ${relCard}
     </div>`;
@@ -615,6 +629,52 @@ function setQuizMode(mode) {
   nextQuizQuestion();
 }
 
+function _buildIntervalQuiz(q) {
+  const choices = q.choices || [];
+  const choicesHTML = choices.map(i => {
+    const info = INTERVAL_INFO[i];
+    let cls = 'quiz-choice';
+    if (q.answered) {
+      if (i === q.interval) cls += ' correct';
+      else if (i === q.chosen) cls += ' wrong';
+      else cls += ' dimmed';
+    }
+    const action = q.answered ? 'disabled' : `data-action="answer-quiz" data-interval="${i}"`;
+    return `<button class="${cls}" ${action}>
+      <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
+      <span class="quiz-choice-label">${info.full}</span>
+    </button>`;
+  }).join('');
+  const feedbackHTML = q.answered ? `
+    <div class="quiz-feedback ${q.lastCorrect ? 'ok' : 'fail'}">
+      ${q.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${INTERVAL_INFO[q.interval].full}`}
+      <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
+    </div>` : '';
+  return { choicesHTML, feedbackHTML };
+}
+
+function _buildNoteQuiz(q) {
+  const noteChoices = q.noteChoices || [];
+  const choicesHTML = noteChoices.map(n => {
+    let cls = 'quiz-choice';
+    if (q.answered) {
+      if (n === q.noteAnswer) cls += ' correct';
+      else if (n === q.chosenNote) cls += ' wrong';
+      else cls += ' dimmed';
+    }
+    const action = q.answered ? 'disabled' : `data-action="answer-note" data-note="${n}"`;
+    return `<button class="${cls}" ${action}>
+      <span style="font-family:monospace;font-size:1.05rem;font-weight:800">${n}</span>
+    </button>`;
+  }).join('');
+  const feedbackHTML = q.answered ? `
+    <div class="quiz-feedback ${q.lastCorrect ? 'ok' : 'fail'}">
+      ${q.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${q.noteAnswer}`}
+      <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
+    </div>` : '';
+  return { choicesHTML, feedbackHTML };
+}
+
 function buildQuizPanel() {
   const container = document.getElementById('quiz-panel');
   if (!container) return;
@@ -645,49 +705,9 @@ function buildQuizPanel() {
     <button class="${state.quizMode === 'note' ? 'active' : ''}" onclick="setQuizMode('note')">Notnamn</button>
   </div>`;
 
-  let choicesHTML = '', feedbackHTML = '';
-
-  if (state.quizMode === 'interval') {
-    const choices = state.quiz.choices || [];
-    choicesHTML = choices.map(i => {
-      const info = INTERVAL_INFO[i];
-      let cls = 'quiz-choice';
-      if (state.quiz.answered) {
-        if (i === state.quiz.interval) cls += ' correct';
-        else if (i === state.quiz.chosen) cls += ' wrong';
-        else cls += ' dimmed';
-      }
-      const action = state.quiz.answered ? 'disabled' : `data-action="answer-quiz" data-interval="${i}"`;
-      return `<button class="${cls}" ${action}>
-        <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
-        <span class="quiz-choice-label">${info.full}</span>
-      </button>`;
-    }).join('');
-    feedbackHTML = state.quiz.answered ? `
-      <div class="quiz-feedback ${state.quiz.lastCorrect ? 'ok' : 'fail'}">
-        ${state.quiz.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${INTERVAL_INFO[state.quiz.interval].full}`}
-        <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
-      </div>` : '';
-  } else {
-    const noteChoices = state.quiz.noteChoices || [];
-    choicesHTML = noteChoices.map(n => {
-      let cls = 'quiz-choice';
-      if (state.quiz.answered) {
-        if (n === state.quiz.noteAnswer) cls += ' correct';
-        else if (n === state.quiz.chosenNote) cls += ' wrong';
-        else cls += ' dimmed';
-      }
-      const action = state.quiz.answered ? 'disabled' : `data-action="answer-note" data-note="${n}"`;
-      return `<button class="${cls}" ${action}>
-        <span style="font-family:monospace;font-size:1.05rem;font-weight:800">${n}</span>
-      </button>`;
-    }).join('');
-    feedbackHTML = state.quiz.answered ? `
-      <div class="quiz-feedback ${state.quiz.lastCorrect ? 'ok' : 'fail'}">
-        ${state.quiz.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${state.quiz.noteAnswer}`}
-        <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
-      </div>` : '';
-  }
+  const { choicesHTML, feedbackHTML } = state.quizMode === 'interval'
+    ? _buildIntervalQuiz(state.quiz)
+    : _buildNoteQuiz(state.quiz);
 
   const questionText = state.quizMode === 'interval'
     ? 'Vilket intervall är det markerade notet <strong>(?)</strong>?'
@@ -969,6 +989,13 @@ function setPreset(val) {
 
 // ===== INIT =====
 
+function _makeSelectHandler(id, onchange) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  el.addEventListener('change', e => onchange(e.target.value, el));
+  return el;
+}
+
 function initSelects() {
   // Key select
   const keyEl = document.getElementById('key-select');
@@ -979,8 +1006,8 @@ function initSelects() {
     if (n === state.key) opt.selected = true;
     keyEl.appendChild(opt);
   });
-  keyEl.addEventListener('change', e => {
-    state.key = e.target.value;
+  _makeSelectHandler('key-select', val => {
+    state.key = val;
     state.focusFret = null;
     state.selectedDiatonicIdx = null;
     saveToHistory(state.key, state.scaleName);
@@ -998,8 +1025,8 @@ function initSelects() {
     if (name === state.scaleName) opt.selected = true;
     scaleEl.appendChild(opt);
   });
-  scaleEl.addEventListener('change', e => {
-    state.scaleName = e.target.value;
+  _makeSelectHandler('scale-select', val => {
+    state.scaleName = val;
     state.hiddenIntervals.clear();
     state.focusFret = null;
     state.selectedDiatonicIdx = null;
@@ -1042,8 +1069,8 @@ function initSelects() {
     if (name === state.tuning) opt.selected = true;
     tuningEl.appendChild(opt);
   });
-  tuningEl.addEventListener('change', e => {
-    state.tuning = e.target.value;
+  _makeSelectHandler('tuning-select', val => {
+    state.tuning = val;
     const preset = TUNING_PRESETS[state.tuning];
     TUNING = preset.notes.slice();
     STRING_NAMES = preset.names.slice();
@@ -1061,8 +1088,8 @@ function initSelects() {
     if (c === state.capo) opt.selected = true;
     capoEl.appendChild(opt);
   }
-  capoEl.addEventListener('change', e => {
-    state.capo = parseInt(e.target.value);
+  _makeSelectHandler('capo-select', val => {
+    state.capo = parseInt(val);
     CAPO = state.capo;
     state.focusFret = null;
     renderScaleExplorer();
