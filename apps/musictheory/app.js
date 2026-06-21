@@ -218,6 +218,7 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringId
     const tip = isQuizTarget ? 'Vilket intervall är detta?' : `${note} — ${info.full}${isRoot ? ' · Klicka för att isolera position' : ''}`;
 
     inner = `<div class="${dotClass}"
+      data-si="${stringIdx}" data-fret="${fret}"
       style="background:${bg};color:${fg}"
       onclick="${onclick}"
       title="${tip}">${label}</div>`;
@@ -349,7 +350,12 @@ function buildPositionButtons(key, scaleName, numFrets) {
   if (!container) return;
 
   const positions = getRootPositions(key, scaleName, numFrets);
-  if (positions.length === 0) { container.innerHTML = ''; return; }
+  const scalePlayBtn = `<button id="play-scale-btn" class="play-scale-btn" onclick="playScale()">${_scaleIsPlaying ? '⏹ Stopp' : '▶ Spela skala'}</button>`;
+
+  if (positions.length === 0) {
+    container.innerHTML = `<div class="position-row">${scalePlayBtn}</div>`;
+    return;
+  }
 
   const btns = positions.map((f, i) => {
     const active = state.focusFret === f ? ' active' : '';
@@ -360,7 +366,7 @@ function buildPositionButtons(key, scaleName, numFrets) {
   const clearBtn = state.focusFret !== null
     ? `<button class="pos-btn pos-clear" onclick="clearFocus()">Visa hela halsen</button>` : '';
 
-  container.innerHTML = `<div class="position-row"><span class="position-label">Positioner</span>${btns}${clearBtn}</div>`;
+  container.innerHTML = `<div class="position-row"><span class="position-label">Positioner</span>${btns}${clearBtn}${scalePlayBtn}</div>`;
 }
 
 function clearFocus() {
@@ -373,6 +379,7 @@ function clearFocus() {
 // ===== SCALE EXPLORER RENDER =====
 
 function renderScaleExplorer() {
+  if (_scaleIsPlaying) stopScale();
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildLegend(state.scaleName);
   buildPositionButtons(state.key, state.scaleName, state.numFrets);
@@ -508,6 +515,73 @@ function buildQuizPanel() {
       <div class="quiz-choices">${choicesHTML}</div>
       ${feedbackHTML}
     </div>`;
+}
+
+// ===== SCALE PLAYBACK =====
+
+const _scaleTimeouts = [];
+let _scaleIsPlaying = false;
+
+function playScale() {
+  if (_scaleIsPlaying) { stopScale(); return; }
+
+  const lo = state.focusFret !== null ? Math.max(0, state.focusFret - 1) : 0;
+  const hi = state.focusFret !== null ? state.focusFret + 4 : Math.min(state.numFrets, 12);
+
+  // Collect all visible scale notes in the window
+  const raw = [];
+  for (let s = 0; s < 6; s++) {
+    for (let f = lo; f <= hi; f++) {
+      const interval = getIntervalAtFret(s, f, state.key, state.scaleName);
+      if (interval !== null && !state.hiddenIntervals.has(interval)) {
+        raw.push({ si: s, fret: f, midi: STRING_MIDI_BASE[s] + f });
+      }
+    }
+  }
+
+  // Sort by pitch, deduplicate MIDI notes (prefer higher si = cleaner sounding open strings)
+  raw.sort((a, b) => a.midi - b.midi || b.si - a.si);
+  const seenMidi = new Set();
+  const notes = raw.filter(n => { if (seenMidi.has(n.midi)) return false; seenMidi.add(n.midi); return true; });
+  if (!notes.length) return;
+
+  // Ascending then descending (don't repeat the top note)
+  const sequence = [...notes, ...[...notes].slice(0, -1).reverse()];
+
+  _scaleIsPlaying = true;
+  _syncScaleBtn();
+
+  const stepMs = 220;
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime + 0.05;
+
+  sequence.forEach(({ si, fret }, i) => {
+    playNoteAtTime(si, fret, t0 + i * stepMs / 1000, stepMs / 1000 * 0.85, 0.22);
+    _scaleTimeouts.push(setTimeout(() => highlightScaleNote(si, fret, true),  i * stepMs + 50));
+    _scaleTimeouts.push(setTimeout(() => highlightScaleNote(si, fret, false), i * stepMs + stepMs * 0.78));
+  });
+
+  _scaleTimeouts.push(setTimeout(() => {
+    _scaleIsPlaying = false;
+    _syncScaleBtn();
+  }, sequence.length * stepMs + 200));
+}
+
+function stopScale() {
+  _scaleIsPlaying = false;
+  _scaleTimeouts.splice(0).forEach(clearTimeout);
+  document.querySelectorAll('.note-dot.scale-active').forEach(el => el.classList.remove('scale-active'));
+  _syncScaleBtn();
+}
+
+function _syncScaleBtn() {
+  const btn = document.getElementById('play-scale-btn');
+  if (btn) btn.textContent = _scaleIsPlaying ? '⏹ Stopp' : '▶ Spela skala';
+}
+
+function highlightScaleNote(si, fret, on) {
+  const el = document.querySelector(`.note-dot[data-si="${si}"][data-fret="${fret}"]`);
+  if (el) el.classList.toggle('scale-active', on);
 }
 
 // ===== CHORD ANALYZER =====
@@ -791,6 +865,7 @@ function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (_isPlaying) stopProgression();
+      if (_scaleIsPlaying) stopScale();
       const tab = btn.dataset.tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));

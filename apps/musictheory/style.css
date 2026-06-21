@@ -567,7 +567,29 @@ input[type=range] {
 .pos-btn.active { background:rgba(99,102,241,0.14); border-color:var(--accent); color:var(--text); }
 .pos-fret { font-size:0.63rem; font-weight:600; color:var(--muted); }
 .pos-btn.active .pos-fret { color:#a5b4fc; }
-.pos-clear { margin-left:auto; font-size:0.72rem; padding:4px 10px; }
+.pos-clear { font-size:0.72rem; padding:4px 10px; }
+
+.play-scale-btn {
+  margin-left: auto;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.35);
+  color: #a5b4fc;
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.play-scale-btn:hover { background: rgba(99,102,241,0.25); border-color: var(--accent); color: #fff; }
+
+/* Scale playback: active note flash */
+.note-dot.scale-active {
+  transform: scale(1.28) !important;
+  box-shadow: 0 0 0 3px #fff, 0 0 18px currentColor !important;
+  z-index: 4;
+  transition: none;
+}
 
 /* Share button */
 .share-btn {
