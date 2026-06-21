@@ -9,11 +9,14 @@ const state = {
   displayMode: 'intervals', // 'intervals' | 'notes'
   hiddenIntervals: new Set(),
   numFrets: 15,
-  focusFret: null,  // fret number of active position, or null = show all
+  focusFret: null,
   tuning: 'Standard',
   selectedDiatonicIdx: null,
+  capo: 0,
+  leftHanded: false,
   // Quiz
-  quiz: { active: false, si: null, fret: null, interval: null, answered: false, correct: 0, total: 0, lastCorrect: null, chosen: null, choices: null },
+  quizMode: 'interval', // 'interval' | 'note'
+  quiz: { active: false, si: null, fret: null, interval: null, noteAnswer: null, noteChoices: null, answered: false, correct: 0, total: 0, lastCorrect: null, chosen: null, chosenNote: null, choices: null },
   // Chord analyzer
   chordInput: '',
   parsedChords: [],
@@ -31,6 +34,7 @@ function updateHashFromState() {
   p.set('f', state.numFrets);
   if (state.focusFret !== null) p.set('pos', state.focusFret);
   if (state.tuning !== 'Standard') p.set('t', state.tuning);
+  if (state.capo > 0) p.set('capo', state.capo);
   history.replaceState(null, '', '#' + p.toString());
 }
 
@@ -49,6 +53,88 @@ function loadStateFromHash() {
     TUNING = preset.notes.slice();
     STRING_NAMES = preset.names.slice();
   }
+  if (p.has('capo')) {
+    const c = parseInt(p.get('capo'));
+    if (c >= 0 && c <= 7) { state.capo = c; CAPO = c; }
+  }
+}
+
+// ===== SCALE HISTORY =====
+
+function saveToHistory(key, scaleName) {
+  let hist = JSON.parse(localStorage.getItem('mtp-history') || '[]');
+  hist = hist.filter(h => !(h.key === key && h.scaleName === scaleName));
+  hist.unshift({ key, scaleName });
+  localStorage.setItem('mtp-history', JSON.stringify(hist.slice(0, 8)));
+}
+
+function buildHistoryBar() {
+  const container = document.getElementById('scale-history');
+  if (!container) return;
+  const hist = JSON.parse(localStorage.getItem('mtp-history') || '[]');
+  if (hist.length < 2) { container.innerHTML = ''; return; }
+  const chips = hist.map(h => {
+    const isCur = h.key === state.key && h.scaleName === state.scaleName;
+    return `<button class="history-chip${isCur ? ' current' : ''}" onclick="goToScale('${h.key}','${h.scaleName}')">${h.key} ${h.scaleName}</button>`;
+  }).join('');
+  container.innerHTML = `<div class="history-bar"><span class="history-label">Historik:</span>${chips}</div>`;
+}
+
+// ===== LEFT-HANDED MODE =====
+
+function toggleLeftHanded() {
+  state.leftHanded = !state.leftHanded;
+  document.querySelectorAll('.fretboard-outer').forEach(el => el.classList.toggle('left-handed', state.leftHanded));
+  const btn = document.getElementById('lefty-btn');
+  if (btn) btn.classList.toggle('active', state.leftHanded);
+}
+
+// ===== PROGRESSION SUGGESTIONS =====
+
+function buildProgressionSuggestions(key, scaleName, diatonic) {
+  const progs = COMMON_PROGRESSIONS[scaleName];
+  if (!progs || diatonic.length < 3) return '';
+  const chips = progs.map(p => {
+    const chordNames = p.idx.map(i => {
+      const c = diatonic[i % diatonic.length];
+      if (!c) return '?';
+      return c.root + (c.quality === 'm' ? 'm' : c.quality === 'dim' ? 'dim' : c.quality === 'aug' ? 'aug' : '');
+    }).join(' ');
+    return `<div class="prog-chip" onclick="loadProgression('${chordNames}')">
+      <div class="prog-name">${p.name}</div>
+      <div class="prog-chords">${chordNames}</div>
+    </div>`;
+  }).join('');
+  return `<div class="info-card">
+    <h3>Typiska ackordföljder <span style="font-size:0.68rem;color:var(--muted);font-weight:400">— klicka för att ladda i Ackord Analys</span></h3>
+    <div class="prog-suggestions">${chips}</div>
+  </div>`;
+}
+
+function loadProgression(chordStr) {
+  if (_isPlaying) stopProgression();
+  if (_scaleIsPlaying) stopScale();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="chord-analyzer"]').classList.add('active');
+  document.getElementById('chord-analyzer').classList.add('active');
+  document.getElementById('chord-input').value = chordStr;
+  state.chordInput = chordStr;
+  state.selectedMatch = null;
+  renderChordAnalyzer();
+}
+
+// ===== QUIZ STATS PERSISTENCE =====
+
+function saveQuizStats() {
+  try {
+    const stats = JSON.parse(localStorage.getItem('mtp-quiz-stats') || '{"sessions":[]}');
+    const entry = { key: state.key, scaleName: state.scaleName, correct: state.quiz.correct, total: state.quiz.total, date: new Date().toLocaleDateString('sv-SE') };
+    stats.sessions = stats.sessions.filter(s => !(s.key === entry.key && s.scaleName === entry.scaleName && s.date === entry.date));
+    stats.sessions.unshift(entry);
+    stats.sessions = stats.sessions.slice(0, 30);
+    localStorage.setItem('mtp-quiz-stats', JSON.stringify(stats));
+  } catch (_) {}
 }
 
 function copyShareLink() {
@@ -69,10 +155,13 @@ function goToScale(key, scaleName) {
   state.selectedDiatonicIdx = null;
   document.getElementById('key-select').value = key;
   document.getElementById('scale-select').value = scaleName;
+  saveToHistory(key, scaleName);
   if (state.quiz.active) {
     state.quiz.answered = false;
     state.quiz.chosen = null;
+    state.quiz.chosenNote = null;
     state.quiz.choices = null;
+    state.quiz.noteChoices = null;
     nextQuizQuestion();
   } else {
     renderScaleExplorer();
@@ -115,7 +204,7 @@ function renderChordDiagramSVG(name, voicing) {
       o += `<circle cx="${x}" cy="${SY-9}" r="3.5" fill="none" stroke="#6b7599" stroke-width="1.3"/>`;
     } else {
       const rf = f - startFret + 1;
-      o += `<circle cx="${x}" cy="${GY+(rf-0.5)*FH}" r="5" fill="#6366f1"/>`;
+      o += `<circle cx="${x}" cy="${GY+(rf-0.5)*FH}" r="5" fill="#14b8a6"/>`;
     }
   }
   o += `</svg>`;
@@ -311,6 +400,18 @@ function buildScaleInfo(key, scaleName) {
       </button>
     </div>` : '';
 
+  // Mode parent info
+  let modeParentHTML = '';
+  if (scale.modeOf) {
+    const parentKey = NOTES[(noteIndex(key) - scale.modeOf.offset + 12) % 12];
+    modeParentHTML = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--muted)">
+      <strong>Modusur:</strong> ${scaleName} är grad ${scale.modeOf.degree} av
+      <button class="rel-scale-btn" style="display:inline-block;padding:2px 10px;font-size:0.78rem;margin-left:4px" onclick="goToScale('${parentKey}','${scale.modeOf.parent}')">→ ${parentKey} ${scale.modeOf.parent}</button>
+    </div>`;
+  }
+
+  const progHTML = buildProgressionSuggestions(key, scaleName, diatonic);
+
   container.innerHTML = `
     <div class="scale-info">
       <div class="info-card">
@@ -319,6 +420,7 @@ function buildScaleInfo(key, scaleName) {
         <div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">
           <strong>Används i:</strong> ${scale.use}
         </div>
+        ${modeParentHTML}
       </div>
       <div class="info-card">
         <h3>Noterna i ${key} ${scaleName}</h3>
@@ -337,6 +439,7 @@ function buildScaleInfo(key, scaleName) {
         <div class="chord-row">${chordChips}</div>
         ${diagramHTML}
       </div>` : ''}
+      ${progHTML}
       ${relCard}
     </div>`;
 }
@@ -378,7 +481,9 @@ function clearFocus() {
 
 function renderScaleExplorer() {
   if (_scaleIsPlaying) stopScale();
+  buildHistoryBar();
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+  document.querySelectorAll('.fretboard-outer').forEach(el => el.classList.toggle('left-handed', state.leftHanded));
   buildLegend(state.scaleName);
   buildPositionButtons(state.key, state.scaleName, state.numFrets);
   buildScaleInfo(state.key, state.scaleName);
@@ -394,15 +499,21 @@ function toggleQuiz() {
     state.quiz.total = 0;
     state.quiz.answered = false;
     state.quiz.chosen = null;
+    state.quiz.chosenNote = null;
     state.quiz.choices = null;
+    state.quiz.noteChoices = null;
+    state.quiz.noteAnswer = null;
     nextQuizQuestion();
   } else {
     state.quiz.si = null;
     state.quiz.fret = null;
     state.quiz.interval = null;
+    state.quiz.noteAnswer = null;
     state.quiz.answered = false;
     state.quiz.chosen = null;
+    state.quiz.chosenNote = null;
     state.quiz.choices = null;
+    state.quiz.noteChoices = null;
     renderScaleExplorer();
   }
 }
@@ -434,10 +545,28 @@ function nextQuizQuestion() {
   state.quiz.answered = false;
   state.quiz.lastCorrect = null;
   state.quiz.chosen = null;
+  state.quiz.chosenNote = null;
 
-  const allIntervals = scale.intervals.filter(i => !state.hiddenIntervals.has(i));
-  const wrong = allIntervals.filter(i => i !== pick.interval).sort(() => Math.random() - 0.5).slice(0, 3);
-  state.quiz.choices = [...wrong, pick.interval].sort(() => Math.random() - 0.5);
+  if (state.quizMode === 'note') {
+    const note = noteAtFret(pick.si, pick.fret);
+    state.quiz.noteAnswer = note;
+    const scaleNotes = getScaleNotes(state.key, state.scaleName);
+    const wrong = scaleNotes.filter(n => n !== note).sort(() => Math.random() - 0.5).slice(0, 3);
+    let attempts = 0;
+    while (wrong.length < 3 && attempts < 24) {
+      const n = NOTES[Math.floor(Math.random() * 12)];
+      if (n !== note && !wrong.includes(n)) wrong.push(n);
+      attempts++;
+    }
+    state.quiz.noteChoices = [...wrong.slice(0, 3), note].sort(() => Math.random() - 0.5);
+    state.quiz.choices = null;
+  } else {
+    const allIntervals = scale.intervals.filter(i => !state.hiddenIntervals.has(i));
+    const wrong = allIntervals.filter(i => i !== pick.interval).sort(() => Math.random() - 0.5).slice(0, 3);
+    state.quiz.choices = [...wrong, pick.interval].sort(() => Math.random() - 0.5);
+    state.quiz.noteAnswer = null;
+    state.quiz.noteChoices = null;
+  }
 
   renderScaleExplorer();
 }
@@ -449,8 +578,33 @@ function answerQuiz(chosenInterval) {
   state.quiz.total++;
   state.quiz.lastCorrect = chosenInterval === state.quiz.interval;
   if (state.quiz.lastCorrect) state.quiz.correct++;
+  saveQuizStats();
   buildQuizPanel();
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+}
+
+function answerNoteQuiz(note) {
+  if (state.quiz.answered) return;
+  state.quiz.answered = true;
+  state.quiz.chosenNote = note;
+  state.quiz.total++;
+  state.quiz.lastCorrect = note === state.quiz.noteAnswer;
+  if (state.quiz.lastCorrect) state.quiz.correct++;
+  saveQuizStats();
+  buildQuizPanel();
+  buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+}
+
+function setQuizMode(mode) {
+  if (state.quizMode === mode) return;
+  state.quizMode = mode;
+  state.quiz.answered = false;
+  state.quiz.chosen = null;
+  state.quiz.chosenNote = null;
+  state.quiz.choices = null;
+  state.quiz.noteChoices = null;
+  state.quiz.noteAnswer = null;
+  nextQuizQuestion();
 }
 
 function buildQuizPanel() {
@@ -464,7 +618,6 @@ function buildQuizPanel() {
     return;
   }
 
-  // If the quiz target is no longer valid for the current scale, pick a fresh question
   if (state.quiz.interval !== null) {
     const current = getIntervalAtFret(state.quiz.si, state.quiz.fret, state.key, state.scaleName);
     if (current !== state.quiz.interval) {
@@ -476,40 +629,71 @@ function buildQuizPanel() {
   const btn = document.getElementById('quiz-btn');
   if (btn) btn.classList.add('active');
 
-  const choices = state.quiz.choices || [];
-  const { correct, total, lastCorrect, chosen, interval: correctInterval, answered } = state.quiz;
-  const pct = total > 0 ? Math.round(100 * correct / total) : null;
-  const scoreStr = total > 0 ? `${correct}/${total}${pct !== null ? ` (${pct}%)` : ''}` : '—';
+  const pct = state.quiz.total > 0 ? Math.round(100 * state.quiz.correct / state.quiz.total) : null;
+  const scoreStr = state.quiz.total > 0 ? `${state.quiz.correct}/${state.quiz.total}${pct !== null ? ` (${pct}%)` : ''}` : '—';
 
-  const choicesHTML = choices.map(i => {
-    const info = INTERVAL_INFO[i];
-    let cls = 'quiz-choice';
-    if (answered) {
-      if (i === correctInterval) cls += ' correct';
-      else if (i === chosen) cls += ' wrong';
-      else cls += ' dimmed';
-    }
-    const action = answered ? 'disabled' : `onclick="answerQuiz(${i})"`;
-    return `<button class="${cls}" ${action}>
-      <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
-      <span class="quiz-choice-label">${info.full}</span>
-    </button>`;
-  }).join('');
+  const modeToggle = `<div class="quiz-mode-toggle">
+    <button class="${state.quizMode === 'interval' ? 'active' : ''}" onclick="setQuizMode('interval')">Intervaller</button>
+    <button class="${state.quizMode === 'note' ? 'active' : ''}" onclick="setQuizMode('note')">Notnamn</button>
+  </div>`;
 
-  const feedbackHTML = answered ? `
-    <div class="quiz-feedback ${lastCorrect ? 'ok' : 'fail'}">
-      ${lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${INTERVAL_INFO[correctInterval].full}`}
-      <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
-    </div>` : '';
+  let choicesHTML = '', feedbackHTML = '';
+
+  if (state.quizMode === 'interval') {
+    const choices = state.quiz.choices || [];
+    choicesHTML = choices.map(i => {
+      const info = INTERVAL_INFO[i];
+      let cls = 'quiz-choice';
+      if (state.quiz.answered) {
+        if (i === state.quiz.interval) cls += ' correct';
+        else if (i === state.quiz.chosen) cls += ' wrong';
+        else cls += ' dimmed';
+      }
+      const action = state.quiz.answered ? 'disabled' : `onclick="answerQuiz(${i})"`;
+      return `<button class="${cls}" ${action}>
+        <span class="quiz-dot" style="background:${info.color};color:${info.text}">${info.name}</span>
+        <span class="quiz-choice-label">${info.full}</span>
+      </button>`;
+    }).join('');
+    feedbackHTML = state.quiz.answered ? `
+      <div class="quiz-feedback ${state.quiz.lastCorrect ? 'ok' : 'fail'}">
+        ${state.quiz.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${INTERVAL_INFO[state.quiz.interval].full}`}
+        <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
+      </div>` : '';
+  } else {
+    const noteChoices = state.quiz.noteChoices || [];
+    choicesHTML = noteChoices.map(n => {
+      let cls = 'quiz-choice';
+      if (state.quiz.answered) {
+        if (n === state.quiz.noteAnswer) cls += ' correct';
+        else if (n === state.quiz.chosenNote) cls += ' wrong';
+        else cls += ' dimmed';
+      }
+      const action = state.quiz.answered ? 'disabled' : `onclick="answerNoteQuiz('${n}')"`;
+      return `<button class="${cls}" ${action}>
+        <span style="font-family:monospace;font-size:1.05rem;font-weight:800">${n}</span>
+      </button>`;
+    }).join('');
+    feedbackHTML = state.quiz.answered ? `
+      <div class="quiz-feedback ${state.quiz.lastCorrect ? 'ok' : 'fail'}">
+        ${state.quiz.lastCorrect ? '✓ Rätt!' : `✗ Fel — rätt svar: ${state.quiz.noteAnswer}`}
+        <button class="quiz-next-btn" onclick="nextQuizQuestion()">Nästa →</button>
+      </div>` : '';
+  }
+
+  const questionText = state.quizMode === 'interval'
+    ? 'Vilket intervall är det markerade notet <strong>(?)</strong>?'
+    : 'Vad heter det markerade notet <strong>(?)</strong>?';
 
   container.innerHTML = `
     <div class="quiz-panel-inner">
       <div class="quiz-header">
-        <span class="quiz-title">🧠 Intervallquiz</span>
+        <span class="quiz-title">🧠 Quiz</span>
         <span class="quiz-score">${scoreStr}</span>
+        ${modeToggle}
         <button class="quiz-close" onclick="toggleQuiz()" title="Avsluta quiz">✕</button>
       </div>
-      <p class="quiz-question">Vilket intervall är det markerade notet <strong>(?)</strong>?</p>
+      <p class="quiz-question">${questionText}</p>
       <div class="quiz-choices">${choicesHTML}</div>
       ${feedbackHTML}
     </div>`;
@@ -791,6 +975,7 @@ function initSelects() {
     state.key = e.target.value;
     state.focusFret = null;
     state.selectedDiatonicIdx = null;
+    saveToHistory(state.key, state.scaleName);
     renderScaleExplorer();
     updateHashFromState();
   });
@@ -810,6 +995,7 @@ function initSelects() {
     state.hiddenIntervals.clear();
     state.focusFret = null;
     state.selectedDiatonicIdx = null;
+    saveToHistory(state.key, state.scaleName);
     renderScaleExplorer();
     updateHashFromState();
   });
@@ -857,6 +1043,23 @@ function initSelects() {
     renderScaleExplorer();
     updateHashFromState();
   });
+
+  // Capo select
+  const capoEl = document.getElementById('capo-select');
+  for (let c = 0; c <= 7; c++) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c === 0 ? 'Ingen' : `Capo ${c}`;
+    if (c === state.capo) opt.selected = true;
+    capoEl.appendChild(opt);
+  }
+  capoEl.addEventListener('change', e => {
+    state.capo = parseInt(e.target.value);
+    CAPO = state.capo;
+    state.focusFret = null;
+    renderScaleExplorer();
+    updateHashFromState();
+  });
 }
 
 function initTabs() {
@@ -864,6 +1067,7 @@ function initTabs() {
     btn.addEventListener('click', () => {
       if (_isPlaying) stopProgression();
       if (_scaleIsPlaying) stopScale();
+      if (typeof stopTuner === 'function') stopTuner();
       const tab = btn.dataset.tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));

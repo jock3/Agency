@@ -39,6 +39,7 @@
 <nav>
   <button class="tab-btn active" data-tab="scale-explorer">🎼 Skala Explorer</button>
   <button class="tab-btn" data-tab="chord-analyzer">🎵 Ackord Analys</button>
+  <button class="tab-btn" data-tab="tuner">🎤 Stämmaren</button>
 </nav>
 
 <main>
@@ -79,8 +80,18 @@
       </div>
 
       <div class="control-group">
+        <label>Capo</label>
+        <select id="capo-select"></select>
+      </div>
+
+      <div class="control-group">
         <label>&nbsp;</label>
-        <button id="quiz-btn" class="quiz-toggle-btn" onclick="toggleQuiz()">🧠 Quiz-läge</button>
+        <button id="quiz-btn" class="quiz-toggle-btn" onclick="toggleQuiz()">🧠 Quiz</button>
+      </div>
+
+      <div class="control-group">
+        <label>&nbsp;</label>
+        <button id="lefty-btn" class="share-btn" onclick="toggleLeftHanded()">↔ Vänsterhänt</button>
       </div>
 
       <div class="control-group" style="margin-left:auto;justify-content:flex-end">
@@ -88,6 +99,9 @@
         <button id="share-btn" class="share-btn" onclick="copyShareLink()">🔗 Dela länk</button>
       </div>
     </div>
+
+    <!-- Scale history -->
+    <div id="scale-history"></div>
 
     <!-- Interval toggle legend -->
     <div id="interval-legend"></div>
@@ -142,9 +156,25 @@
 
   </section>
 
+  <!-- ====== TUNER ====== -->
+  <section id="tuner" class="tab-content">
+    <div class="tuner-panel">
+      <div class="tuner-status" id="tuner-status">Klicka på knappen nedan för att starta stämaren — kräver mikrofonåtkomst.</div>
+      <div class="tuner-display">
+        <div class="tuner-note" id="tuner-note">—</div>
+        <div class="tuner-cents" id="tuner-cents"></div>
+        <canvas id="tuner-canvas" width="360" height="72"></canvas>
+        <div class="tuner-freq" id="tuner-freq"></div>
+      </div>
+      <div class="tuner-strings" id="tuner-strings"></div>
+      <button id="tuner-toggle" class="tuner-start-btn" onclick="toggleTuner()">🎤 Starta stämmare</button>
+    </div>
+  </section>
+
 </main>
 
 <script src="theory.js"></script>
+<script src="tuner.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
