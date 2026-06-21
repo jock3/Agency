@@ -471,3 +471,19 @@ function computeChordVoicing(chordNoteNames, rootNote) {
   }
   return result; // index 0 = low E, index 5 = high e
 }
+
+// CommonJS compatibility shim — no-op in the browser
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    normalizeNote,
+    noteIndex,
+    getScaleNotes,
+    getIntervalAtFret,
+    getDiatonicChords,
+    analyzeProgression,
+    parseChord,
+    parseProgression,
+    NOTES,
+    SCALES,
+  };
+}
