@@ -191,7 +191,6 @@ function renderChordDiagramSVG(name, voicing) {
   const GY = SY + (showNut ? 3 : 0);
 
   let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  o += `<defs><radialGradient id="dotGrad" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#5eead4"/><stop offset="100%" stop-color="#0d9488"/></radialGradient></defs>`;
   o += `<text x="${W/2}" y="15" text-anchor="middle" fill="#e2e6f3" font-size="11" font-weight="700" font-family="monospace">${name}</text>`;
   if (showNut) {
     o += `<rect x="${SX}" y="${SY}" width="${SW*(STR-1)}" height="3" fill="#c8a84b" rx="1"/>`;
@@ -199,7 +198,7 @@ function renderChordDiagramSVG(name, voicing) {
     o += `<text x="${SX-3}" y="${GY + FH*0.55}" text-anchor="end" fill="#6b7599" font-size="8">${startFret}fr</text>`;
   }
   for (let f = 0; f <= FRETS; f++) {
-    o += `<line x1="${SX}" y1="${GY+f*FH}" x2="${SX+SW*(STR-1)}" y2="${GY+f*FH}" stroke="#2a3050" stroke-width="${f === 0 ? '3' : '1'}"/>`;
+    o += `<line x1="${SX}" y1="${GY+f*FH}" x2="${SX+SW*(STR-1)}" y2="${GY+f*FH}" stroke="#2a3050" stroke-width="1"/>`;
   }
   for (let s = 0; s < STR; s++) {
     o += `<line x1="${SX+s*SW}" y1="${GY}" x2="${SX+s*SW}" y2="${GY+FRETS*FH}" stroke="#3a4060" stroke-width="${(0.8+s*0.13).toFixed(2)}"/>`;
@@ -208,13 +207,12 @@ function renderChordDiagramSVG(name, voicing) {
     const x = SX + s * SW;
     const f = voicing[s];
     if (f < 0) {
-      o += `<line x1="${x-4}" y1="${SY-13}" x2="${x+4}" y2="${SY-5}" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>`;
-      o += `<line x1="${x+4}" y1="${SY-13}" x2="${x-4}" y2="${SY-5}" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>`;
+      o += `<text x="${x}" y="${SY-5}" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">×</text>`;
     } else if (f === 0) {
-      o += `<circle cx="${x}" cy="${SY-9}" r="4" fill="none" stroke="#94a3b8" stroke-width="1.5"/>`;
+      o += `<circle cx="${x}" cy="${SY-9}" r="3.5" fill="none" stroke="#6b7599" stroke-width="1.3"/>`;
     } else {
       const rf = f - startFret + 1;
-      o += `<circle cx="${x}" cy="${GY+(rf-0.5)*FH}" r="5" fill="url(#dotGrad)"/>`;
+      o += `<circle cx="${x}" cy="${GY+(rf-0.5)*FH}" r="5" fill="#14b8a6"/>`;
     }
   }
   o += `</svg>`;
@@ -262,7 +260,7 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
   let markers = `<div class="fret-markers">`;
   markers += `<div class="marker-spacer"></div><div class="marker-nut"></div>`;
   for (let f = 1; f <= numFrets; f++) {
-    markers += `<div class="marker-cell${MARKERS[f] ? ' fret-marker' : ''}">${MARKERS[f] || ''}</div>`;
+    markers += `<div class="marker-cell">${MARKERS[f] || ''}</div>`;
   }
   markers += `</div>`;
 
@@ -306,7 +304,6 @@ function buildCell(note, interval, displayMode, hiddenIntervals, isNut, stringId
     const dotClass = [
       'note-dot',
       isRoot && !isQuizTarget ? 'root-dot' : '',
-      isRoot && !isQuizTarget ? 'root-note' : '',
       !inWindow ? 'dimmed' : '',
       isActiveFocus ? 'focus-active' : '',
       isQuizTarget ? 'quiz-target' : '',
