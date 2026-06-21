@@ -10,12 +10,64 @@ const state = {
   hiddenIntervals: new Set(),
   numFrets: 15,
   focusFret: null,  // fret number of active position, or null = show all
+  tuning: 'Standard',
   // Chord analyzer
   chordInput: '',
   parsedChords: [],
   matches: [],
   selectedMatch: null,
 };
+
+// ===== URL STATE SYNC =====
+
+function updateHashFromState() {
+  const p = new URLSearchParams();
+  p.set('k', state.key);
+  p.set('s', state.scaleName);
+  p.set('m', state.displayMode);
+  p.set('f', state.numFrets);
+  if (state.focusFret !== null) p.set('pos', state.focusFret);
+  if (state.tuning !== 'Standard') p.set('t', state.tuning);
+  history.replaceState(null, '', '#' + p.toString());
+}
+
+function loadStateFromHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return;
+  const p = new URLSearchParams(hash);
+  if (p.has('k') && NOTES.includes(p.get('k'))) state.key = p.get('k');
+  if (p.has('s') && SCALES[p.get('s')]) state.scaleName = p.get('s');
+  if (p.has('m') && ['intervals','notes'].includes(p.get('m'))) state.displayMode = p.get('m');
+  if (p.has('f')) { const f = parseInt(p.get('f')); if (f >= 7 && f <= 22) state.numFrets = f; }
+  if (p.has('pos')) { const pos = parseInt(p.get('pos')); if (!isNaN(pos)) state.focusFret = pos; }
+  if (p.has('t') && TUNING_PRESETS[p.get('t')]) {
+    state.tuning = p.get('t');
+    const preset = TUNING_PRESETS[state.tuning];
+    TUNING = preset.notes.slice();
+    STRING_NAMES = preset.names.slice();
+  }
+}
+
+function copyShareLink() {
+  updateHashFromState();
+  const btn = document.getElementById('share-btn');
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const old = btn.textContent;
+    btn.textContent = '✓ Kopierad!';
+    setTimeout(() => { btn.textContent = old; }, 2000);
+  }).catch(() => { prompt('Kopiera länken:', window.location.href); });
+}
+
+function goToScale(key, scaleName) {
+  state.key = key;
+  state.scaleName = scaleName;
+  state.hiddenIntervals.clear();
+  state.focusFret = null;
+  document.getElementById('key-select').value = key;
+  document.getElementById('scale-select').value = scaleName;
+  renderScaleExplorer();
+  updateHashFromState();
+}
 
 // ===== FRETBOARD BUILDER =====
 
@@ -61,8 +113,8 @@ function buildFretboard(containerId, key, scaleName, displayMode, hiddenInterval
   let nums = `<div class="fret-numbers">`;
   nums += `<div class="num-spacer"></div><div class="num-nut"><span class="fret-num" style="width:42px">○</span></div>`;
   for (let f = 1; f <= numFrets; f++) {
-    const activeClass = focusFret !== null && f >= Math.max(0, focusFret - 1) && f <= focusFret + 4 ? ' class="fret-num active-fret-num"' : '';
-    nums += `<div class="fret-num"${activeClass}>${f}</div>`;
+    const isActiveFret = focusFret !== null && f >= Math.max(0, focusFret - 1) && f <= focusFret + 4;
+    nums += `<div class="${isActiveFret ? 'fret-num active-fret-num' : 'fret-num'}">${f}</div>`;
   }
   nums += `</div>`;
 
@@ -156,6 +208,20 @@ function buildScaleInfo(key, scaleName) {
       <span class="roman">${c.roman}${c.suffix}</span>
     </div>`).join('');
 
+  const rel = getRelativeScale(key, scaleName);
+  const relCard = rel ? `
+    <div class="info-card">
+      <h3>Relativskala</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">
+        ${scaleName === 'Major'
+          ? 'Relativmoll delar samma noter men börjar på den 6:e graden.'
+          : 'Relativdur delar samma noter men börjar på den 3:e graden.'}
+      </p>
+      <button class="rel-scale-btn" onclick="goToScale('${rel.key}','${rel.scaleName}')">
+        → ${rel.key} ${rel.scaleName}
+      </button>
+    </div>` : '';
+
   container.innerHTML = `
     <div class="scale-info">
       <div class="info-card">
@@ -182,6 +248,7 @@ function buildScaleInfo(key, scaleName) {
         <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">Ackord som naturligt tillhör skalan</p>
         <div class="chord-row">${chordChips}</div>
       </div>` : ''}
+      ${relCard}
     </div>`;
 }
 
@@ -210,6 +277,7 @@ function clearFocus() {
   state.focusFret = null;
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, null);
   buildPositionButtons(state.key, state.scaleName, state.numFrets);
+  updateHashFromState();
 }
 
 // ===== SCALE EXPLORER RENDER =====
@@ -329,6 +397,7 @@ function setFocusFret(fret) {
   state.focusFret = state.focusFret === fret ? null : fret;
   buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
   buildPositionButtons(state.key, state.scaleName, state.numFrets);
+  updateHashFromState();
 }
 
 function selectMatch(i) {
@@ -359,6 +428,7 @@ function initSelects() {
     state.key = e.target.value;
     state.focusFret = null;
     renderScaleExplorer();
+    updateHashFromState();
   });
 
   // Scale select
@@ -366,9 +436,8 @@ function initSelects() {
   Object.keys(SCALES).forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
-    const cat = SCALES[name].category;
-    opt.textContent = `${name}`;
-    opt.dataset.cat = cat;
+    opt.textContent = name;
+    opt.dataset.cat = SCALES[name].category;
     if (name === state.scaleName) opt.selected = true;
     scaleEl.appendChild(opt);
   });
@@ -377,25 +446,51 @@ function initSelects() {
     state.hiddenIntervals.clear();
     state.focusFret = null;
     renderScaleExplorer();
+    updateHashFromState();
   });
 
-  // Display mode toggle
+  // Display mode toggle — sync initial active state from state.displayMode
   document.querySelectorAll('.display-toggle button').forEach(btn => {
+    if (btn.dataset.mode === state.displayMode) btn.classList.add('active');
+    else btn.classList.remove('active');
     btn.addEventListener('click', () => {
       document.querySelectorAll('.display-toggle button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.displayMode = btn.dataset.mode;
       buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+      updateHashFromState();
     });
   });
 
-  // Fret range
+  // Fret range — sync initial value from state
   const fretSlider = document.getElementById('fret-range');
   const fretLabel = document.getElementById('fret-count');
+  fretSlider.value = state.numFrets;
+  fretLabel.textContent = state.numFrets;
   fretSlider.addEventListener('input', () => {
     state.numFrets = parseInt(fretSlider.value);
     fretLabel.textContent = state.numFrets;
     buildFretboard('fretboard', state.key, state.scaleName, state.displayMode, state.hiddenIntervals, state.numFrets, state.focusFret);
+    updateHashFromState();
+  });
+
+  // Tuning select
+  const tuningEl = document.getElementById('tuning-select');
+  Object.keys(TUNING_PRESETS).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + ' (' + TUNING_PRESETS[name].names.join(' ') + ')';
+    if (name === state.tuning) opt.selected = true;
+    tuningEl.appendChild(opt);
+  });
+  tuningEl.addEventListener('change', e => {
+    state.tuning = e.target.value;
+    const preset = TUNING_PRESETS[state.tuning];
+    TUNING = preset.notes.slice();
+    STRING_NAMES = preset.names.slice();
+    state.focusFret = null;
+    renderScaleExplorer();
+    updateHashFromState();
   });
 }
 
@@ -428,6 +523,7 @@ function initChordAnalyzer() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadStateFromHash();
   initTabs();
   initSelects();
   initChordAnalyzer();

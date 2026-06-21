@@ -526,3 +526,30 @@ input[type=range] {
 .pos-btn.active .pos-fret { color:#a5b4fc; }
 .pos-clear { margin-left:auto; font-size:0.72rem; padding:4px 10px; }
 
+/* Share button */
+.share-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.share-btn:hover { color: var(--text); border-color: var(--accent); }
+
+/* Relative scale button */
+.rel-scale-btn {
+  background: rgba(99,102,241,0.1);
+  border: 1px solid var(--accent);
+  color: #a5b4fc;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+.rel-scale-btn:hover { background: rgba(99,102,241,0.25); color: #fff; }
+
