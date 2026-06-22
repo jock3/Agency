@@ -56,7 +56,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
   };
 
   const handleAddCategory = async () => {
-    await createCategory(plan.id, "Ny kategori");
+    await createCategory(plan.id, "Ny kategori", plan.categories.length);
     onPlanChanged();
   };
 
@@ -301,26 +301,34 @@ function GanttCategorySection({
     <>
       {/* Category header */}
       <div
-        className={`${cellClass} ${stickyClass} bg-gray-800 text-white font-semibold text-xs`}
-        style={{ gridColumn: `1 / span ${infoColCount}` }}
+        className={`${cellClass} ${stickyClass} font-semibold text-xs`}
+        style={{
+          gridColumn: `1 / span ${infoColCount}`,
+          backgroundColor: category.color + "22",
+          borderLeft: `3px solid ${category.color}`,
+        }}
       >
         {readOnly ? (
-          <span>{category.name}</span>
+          <span style={{ color: category.color }}>{category.name}</span>
         ) : (
           <div className="flex items-center gap-2 w-full">
+            <ColorDot
+              color={category.color}
+              onChange={(color) => onCategoryUpdate({ color })}
+            />
             <InlineEdit
               value={category.name}
               onSave={(name) => onCategoryUpdate({ name })}
-              className="font-semibold text-white"
-              darkMode
+              className="font-semibold text-xs"
+              style={{ color: category.color }}
             />
-            <span className="ml-auto text-gray-400 text-xs">{formatSEK(total)}</span>
+            <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>
             <button onClick={onDeleteCategory} className="text-red-300 hover:text-red-500 text-xs ml-1">×</button>
           </div>
         )}
-        {readOnly && <span className="ml-auto text-gray-400 text-xs">{formatSEK(total)}</span>}
+        {readOnly && <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>}
       </div>
-      <div style={{ gridColumn: `span ${weekCount}` }} className="bg-gray-800 border-b border-gray-700" />
+      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11" }} className="border-b border-gray-100" />
 
       {/* Media lines */}
       {category.lines.map((line) => (
@@ -453,25 +461,6 @@ function GanttLineRow({
         style={{ gridColumn: `span ${weekCount}` }}
         className="relative border-b border-gray-100 bg-white"
       >
-        {!readOnly && (
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-            <div className="flex gap-1 px-1 text-xs text-gray-300">
-              <input
-                type="date"
-                value={line.start_date ?? ""}
-                onChange={(e) => onUpdate({ start_date: e.target.value })}
-                className="border-0 bg-transparent text-xs w-26 text-gray-400 cursor-pointer"
-              />
-              <input
-                type="date"
-                value={line.end_date ?? ""}
-                onChange={(e) => onUpdate({ end_date: e.target.value })}
-                className="border-0 bg-transparent text-xs w-26 text-gray-400 cursor-pointer"
-              />
-            </div>
-          </div>
-        )}
-
         {span && (
           <div
             style={{
@@ -485,6 +474,25 @@ function GanttLineRow({
             }}
             title={`${line.platform_name}: ${line.start_date} → ${line.end_date}`}
           />
+        )}
+
+        {!readOnly && (
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center" style={{ position: "absolute", zIndex: 1 }}>
+            <div className="flex gap-1 px-1">
+              <input
+                type="date"
+                value={line.start_date ?? ""}
+                onChange={(e) => onUpdate({ start_date: e.target.value })}
+                className="border-0 bg-transparent text-xs w-26 text-gray-600 cursor-pointer"
+              />
+              <input
+                type="date"
+                value={line.end_date ?? ""}
+                onChange={(e) => onUpdate({ end_date: e.target.value })}
+                className="border-0 bg-transparent text-xs w-26 text-gray-600 cursor-pointer"
+              />
+            </div>
+          </div>
         )}
       </div>
     </>

@@ -24,6 +24,7 @@ export interface MediaCategory {
   plan_id: string;
   name: string;
   budget: number | null;
+  color: string;
   sort_order: number;
 }
 
