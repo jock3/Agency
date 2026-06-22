@@ -503,17 +503,28 @@ function GanttLineRow({
 
   const [isDragging, setIsDragging] = useState(false);
   const [displaySpan, setDisplaySpan] = useState(span);
-  const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
+  const [deadlineDragging, setDeadlineDragging] = useState(false);
+  const [displayDeadlineDate, setDisplayDeadlineDate] = useState<string | null>(line.deadline_date);
+  const displayDeadlineDateRef = useRef<string | null>(line.deadline_date);
+  const deadlineDragRef = useRef<{ startX: number; startWeekIdx: number } | null>(null);
   const displaySpanRef = useRef(span);
   const dragStateRef = useRef<DragState | null>(null);
 
-  // Sync from prop when not dragging
+  // Sync bar span from prop when not dragging
   useEffect(() => {
     if (!isDragging) {
       setDisplaySpan(span);
       displaySpanRef.current = span;
     }
   }, [span, isDragging]);
+
+  // Sync deadline from prop when not dragging
+  useEffect(() => {
+    if (!deadlineDragging) {
+      setDisplayDeadlineDate(line.deadline_date);
+      displayDeadlineDateRef.current = line.deadline_date;
+    }
+  }, [line.deadline_date, deadlineDragging]);
 
   const startDrag = useCallback((e: React.MouseEvent, type: DragState["type"]) => {
     if (readOnly || !span) return;
@@ -570,6 +581,46 @@ function GanttLineRow({
       document.removeEventListener("mouseup", onMouseUp);
     };
   }, [isDragging, weekCount, weeks]);
+
+  useEffect(() => {
+    if (!deadlineDragging) return;
+    const onMouseMove = (e: MouseEvent) => {
+      const drag = deadlineDragRef.current;
+      if (!drag || !containerRef.current) return;
+      const colWidth = containerRef.current.offsetWidth / weekCount;
+      const delta = Math.round((e.clientX - drag.startX) / colWidth);
+      const newIdx = Math.max(0, Math.min(drag.startWeekIdx + delta, weekCount - 1));
+      const newDate = format(weeks[newIdx].startDate, "yyyy-MM-dd");
+      displayDeadlineDateRef.current = newDate;
+      setDisplayDeadlineDate(newDate);
+    };
+    const onMouseUp = () => {
+      if (displayDeadlineDateRef.current) onUpdateRef.current({ deadline_date: displayDeadlineDateRef.current, deadline_label: null });
+      setDeadlineDragging(false);
+      deadlineDragRef.current = null;
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => { document.removeEventListener("mousemove", onMouseMove); document.removeEventListener("mouseup", onMouseUp); };
+  }, [deadlineDragging, weekCount, weeks]);
+
+  const startDeadlineDrag = useCallback((e: React.MouseEvent) => {
+    if (!displayDeadlineDateRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const weekIdx = weeks.findIndex(
+      (w) => displayDeadlineDateRef.current! >= format(w.startDate, "yyyy-MM-dd") && displayDeadlineDateRef.current! <= format(w.endDate, "yyyy-MM-dd")
+    );
+    deadlineDragRef.current = { startX: e.clientX, startWeekIdx: weekIdx >= 0 ? weekIdx : 0 };
+    setDeadlineDragging(true);
+  }, [weeks]);
+
+  const handleAddDeadline = useCallback(() => {
+    const date = displaySpanRef.current
+      ? format(weeks[Math.max(0, displaySpanRef.current.colStart - 1)].startDate, "yyyy-MM-dd")
+      : format(weeks[Math.floor(weekCount / 2)].startDate, "yyyy-MM-dd");
+    onUpdateRef.current({ deadline_date: date, deadline_label: null });
+  }, [weeks, weekCount]);
 
   return (
     <>
@@ -650,69 +701,41 @@ function GanttLineRow({
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
 
-        {/* Row-level deadline */}
-        {line.deadline_date && (() => {
-          const dlLeft = getDeadlineLeft(line.deadline_date, weeks, weekCount);
+        {/* Row-level deadline marker — draggable, shows week date to the left */}
+        {displayDeadlineDate && (() => {
+          const dlLeft = getDeadlineLeft(displayDeadlineDate, weeks, weekCount);
           if (dlLeft === null) return null;
+          const dlWeekIdx = weeks.findIndex(
+            (w) => displayDeadlineDate >= format(w.startDate, "yyyy-MM-dd") && displayDeadlineDate <= format(w.endDate, "yyyy-MM-dd")
+          );
+          const dlLabel = dlWeekIdx >= 0 ? weeks[dlWeekIdx].label : displayDeadlineDate;
           return (
-            <div style={{ position: "absolute", left: `${dlLeft}%`, top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 6 }}>
-              <div style={{ position: "absolute", top: "2px", left: "4px", display: "flex", alignItems: "center", gap: "2px" }}>
-                {readOnly ? (
-                  <span style={{ fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap" }}>{line.deadline_label || "Deadline"}</span>
-                ) : (
-                  <>
-                    <InlineEdit
-                      value={line.deadline_label || "Deadline"}
-                      onSave={(v) => onUpdate({ deadline_label: v })}
-                      style={{ fontSize: "9px", color: "#ef4444" }}
-                    />
-                    <input
-                      type="date"
-                      value={line.deadline_date}
-                      onChange={(e) => onUpdate({ deadline_date: e.target.value || null })}
-                      className="border-0 bg-transparent cursor-pointer"
-                      style={{ fontSize: "9px", color: "#ef4444", width: "90px" }}
-                    />
-                    <button
-                      onClick={() => onUpdate({ deadline_date: null, deadline_label: null })}
-                      style={{ color: "#ef4444", fontSize: "11px", lineHeight: 1 }}
-                      title="Ta bort deadline"
-                    >×</button>
-                  </>
-                )}
-              </div>
+            <div
+              style={{ position: "absolute", left: `${dlLeft}%`, top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 6, cursor: deadlineDragging ? "grabbing" : (readOnly ? "default" : "grab"), userSelect: "none" }}
+              onMouseDown={!readOnly ? startDeadlineDrag : undefined}
+            >
+              <span style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap", fontWeight: 700, backgroundColor: "rgba(255,255,255,0.92)", padding: "0 2px", borderRadius: "2px", pointerEvents: "none" }}>
+                {dlLabel}
+              </span>
+              {!readOnly && !deadlineDragging && (
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onUpdate({ deadline_date: null, deadline_label: null }); }}
+                  style={{ position: "absolute", top: "2px", left: "4px", fontSize: "11px", color: "#ef4444", lineHeight: 1 }}
+                  title="Ta bort deadline"
+                >×</button>
+              )}
             </div>
           );
         })()}
 
-        {!readOnly && !line.deadline_date && (
-          deadlinePickerOpen ? (
-            <div style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", zIndex: 7, backgroundColor: "white", borderRadius: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.15)", padding: "2px 6px", display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: "10px", color: "#ef4444" }}>📌</span>
-              <input
-                type="date"
-                autoFocus
-                className="text-xs border-0 bg-transparent outline-none"
-                style={{ color: "#ef4444", width: "100px" }}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    onUpdate({ deadline_date: e.target.value, deadline_label: "Materialdeadline" });
-                    setDeadlinePickerOpen(false);
-                  }
-                }}
-                onBlur={() => setDeadlinePickerOpen(false)}
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => setDeadlinePickerOpen(true)}
-              style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#d1d5db", zIndex: 6 }}
-              className="hover:!text-red-500"
-              title="Lägg till deadline"
-            >
-              + Deadline
-            </button>
-          )
+        {!readOnly && !line.deadline_date && !isDragging && (
+          <button
+            onClick={handleAddDeadline}
+            style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#d1d5db", zIndex: 6, userSelect: "none" }}
+            className="hover:!text-red-400"
+            title="Lägg till deadline"
+          >📌</button>
         )}
 
         {displaySpan ? (
