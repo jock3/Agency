@@ -5,7 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Komet", "system-ui", "sans-serif"],
+        accent: ["Verveine", "cursive"],
       },
       colors: {
         milou: {
