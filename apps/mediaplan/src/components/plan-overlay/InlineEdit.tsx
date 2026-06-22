@@ -46,7 +46,7 @@ export default function InlineEdit({ value, onSave, onTabOut, type = "text", cla
           if (e.key === "Tab" && !e.shiftKey && onTabOut) { e.preventDefault(); commit(); onTabOut(); }
         }}
         className={clsx(
-          "border-0 outline-none bg-transparent px-0 focus:ring-1 focus:ring-indigo-400 rounded",
+          "border-0 outline-none bg-transparent px-0 focus:ring-1 focus:ring-milou-400 rounded",
           darkMode ? "text-white caret-white" : "text-gray-900",
           className
         )}

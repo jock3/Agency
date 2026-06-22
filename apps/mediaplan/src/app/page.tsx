@@ -52,13 +52,13 @@ export default function Dashboard() {
       {/* Top nav */}
       <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between shadow">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center font-bold text-sm">M</div>
+          <div className="w-8 h-8 bg-milou-500 rounded-md flex items-center justify-center font-bold text-sm">M</div>
           <h1 className="text-lg font-semibold tracking-tight">Mediaplaner</h1>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowNewModal(true)}
-            className="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="bg-milou-500 hover:bg-milou-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             + Ny mediaplan
           </button>

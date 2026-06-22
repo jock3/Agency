@@ -7,6 +7,19 @@ const config: Config = {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
+      colors: {
+        milou: {
+          "100": "#FEE5EA",
+          "200": "#FDB0BF",
+          "300": "#FB7A94",
+          "400": "#F54366",
+          "500": "#E60330",
+          "600": "#C20028",
+          "700": "#931644",
+          "800": "#5B173C",
+          "900": "#35132B",
+        },
+      },
     },
   },
   plugins: [],

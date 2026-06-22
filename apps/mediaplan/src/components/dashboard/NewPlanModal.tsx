@@ -51,7 +51,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
               value={name}
               onChange={(e) => { setName(e.target.value); setError(""); }}
               placeholder="t.ex. Sommarkampanj 2025"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-milou-500"
             />
           </div>
 
@@ -62,7 +62,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-milou-500"
               />
             </div>
             <div className="flex-1">
@@ -72,7 +72,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
                 value={end}
                 min={start}
                 onChange={(e) => setEnd(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-milou-500"
               />
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              className="flex-1 px-4 py-2 rounded-lg bg-milou-500 text-white text-sm font-medium hover:bg-milou-600 disabled:opacity-50 transition-colors"
             >
               {saving ? "Skapar…" : "Skapa plan"}
             </button>

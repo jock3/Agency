@@ -172,7 +172,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     {undoToast && (
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
         <span>Ändring sparad</span>
-        <button onClick={handleUndo} className="font-semibold text-indigo-300 hover:text-indigo-200 transition-colors">
+        <button onClick={handleUndo} className="font-semibold text-milou-300 hover:text-milou-200 transition-colors">
           Ångra
         </button>
       </div>
@@ -300,7 +300,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
             >
               <button
                 onClick={handleAddConcept}
-                className="text-xs text-indigo-500 hover:text-indigo-700 font-medium"
+                className="text-xs text-milou-500 hover:text-milou-700 font-medium"
               >
                 + Lägg till koncept
               </button>
@@ -342,7 +342,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
             >
               <button
                 onClick={handleAddCategory}
-                className="text-xs text-indigo-500 hover:text-indigo-700 font-medium"
+                className="text-xs text-milou-500 hover:text-milou-700 font-medium"
               >
                 + Lägg till kategori
               </button>
@@ -541,7 +541,7 @@ function GanttCategorySection({
           >
             <button
               onClick={onAddLine}
-              className="text-xs text-indigo-500 hover:text-indigo-700"
+              className="text-xs text-milou-500 hover:text-milou-700"
             >
               + Lägg till rad
             </button>

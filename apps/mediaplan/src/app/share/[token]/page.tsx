@@ -56,7 +56,7 @@ export default function SharePage() {
         <div className="bg-gray-900 text-white px-6 py-4">
           <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center font-bold text-sm shrink-0">M</div>
+              <div className="w-8 h-8 bg-milou-500 rounded-md flex items-center justify-center font-bold text-sm shrink-0">M</div>
               <div className="min-w-0">
                 <h1 className="text-base font-semibold truncate">{plan.campaign_name}</h1>
                 <p className="text-sm text-gray-400">
@@ -73,7 +73,7 @@ export default function SharePage() {
                 <div className="text-xs text-gray-400">Beräknad räckvidd</div>
                 <div className="text-sm font-bold text-white">{formatReach(calcPlanReach(plan))}</div>
               </div>
-              <span className="text-xs bg-indigo-900 text-indigo-300 px-2 py-1 rounded-full shrink-0 no-print">
+              <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1 rounded-full shrink-0 no-print">
                 Visningsläge
               </span>
               <button
