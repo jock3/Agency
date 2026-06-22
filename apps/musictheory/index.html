@@ -10,7 +10,26 @@
 <body>
 
 <header>
-  <div class="header-icon">🎸</div>
+  <div class="header-icon">
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="logo-grad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#0d9488"/>
+          <stop offset="100%" stop-color="#0e7490"/>
+        </linearGradient>
+      </defs>
+      <rect width="44" height="44" rx="11" fill="#0a1f1e"/>
+      <rect width="44" height="44" rx="11" fill="url(#logo-grad)" opacity="0.4"/>
+      <line x1="9" y1="17" x2="35" y2="17" stroke="#e2e8f0" stroke-width="1.1" stroke-opacity="0.3"/>
+      <line x1="9" y1="22" x2="35" y2="22" stroke="#e2e8f0" stroke-width="1.5" stroke-opacity="0.4"/>
+      <line x1="9" y1="27" x2="35" y2="27" stroke="#e2e8f0" stroke-width="2" stroke-opacity="0.45"/>
+      <rect x="9" y="12" width="2.5" height="20" rx="1.25" fill="#c8a84b" opacity="0.9"/>
+      <line x1="22" y1="12" x2="22" y2="32" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+      <circle cx="16" cy="22" r="5.5" fill="#14b8a6"/>
+      <circle cx="16" cy="22" r="2.8" fill="white"/>
+      <circle cx="29" cy="17" r="3.5" fill="#5eead4" opacity="0.75"/>
+    </svg>
+  </div>
   <div>
     <h1>MusicTheory Pro</h1>
     <p>Lär dig skalor och ackordanalys för gitarr — interaktivt och pedagogiskt</p>
@@ -18,8 +37,9 @@
 </header>
 
 <nav>
-  <button class="tab-btn active" data-tab="scale-explorer">🎼 Skala Explorer</button>
-  <button class="tab-btn" data-tab="chord-analyzer">🎵 Ackord Analys</button>
+  <button class="tab-btn active" type="button" data-tab="scale-explorer" aria-label="Skala Explorer" aria-selected="true"><span aria-hidden="true">🎼</span> Skala Explorer</button>
+  <button class="tab-btn" type="button" data-tab="chord-analyzer" aria-label="Ackord Analys" aria-selected="false"><span aria-hidden="true">🎵</span> Ackord Analys</button>
+  <button class="tab-btn" type="button" data-tab="tuner" aria-label="Stämmaren" aria-selected="false"><span aria-hidden="true">🎤</span> Stämmaren</button>
 </nav>
 
 <main>
@@ -29,25 +49,25 @@
 
     <div class="controls">
       <div class="control-group">
-        <label>Tonart (Key)</label>
+        <label for="key-select">Tonart (Key)</label>
         <select id="key-select"></select>
       </div>
 
       <div class="control-group">
-        <label>Skala</label>
+        <label for="scale-select">Skala</label>
         <select id="scale-select"></select>
       </div>
 
       <div class="control-group">
         <label>Visa på halsen</label>
         <div class="display-toggle">
-          <button class="active" data-mode="intervals">Intervaller</button>
-          <button data-mode="notes">Notnamn</button>
+          <button class="active" type="button" data-mode="intervals">Intervaller</button>
+          <button type="button" data-mode="notes">Notnamn</button>
         </div>
       </div>
 
       <div class="control-group">
-        <label>Antal band (frets)</label>
+        <label for="fret-range">Antal band (frets)</label>
         <div style="display:flex;align-items:center;gap:8px">
           <input type="range" id="fret-range" min="7" max="22" value="15">
           <span class="fret-label" id="fret-count">15</span>
@@ -55,21 +75,42 @@
       </div>
 
       <div class="control-group">
-        <label>Stämning</label>
+        <label for="tuning-select">Stämning</label>
         <select id="tuning-select"></select>
       </div>
 
+      <div class="control-group">
+        <label for="capo-select">Capo</label>
+        <select id="capo-select"></select>
+      </div>
+
+      <div class="control-group">
+        <label for="quiz-btn">Quiz-läge</label>
+        <button id="quiz-btn" type="button" class="quiz-toggle-btn" onclick="toggleQuiz()"><span aria-hidden="true">🧠</span> Quiz</button>
+      </div>
+
+      <div class="control-group">
+        <label for="lefty-btn">Vänsterhänt läge</label>
+        <button id="lefty-btn" type="button" class="share-btn" onclick="toggleLeftHanded()">↔ Vänsterhänt</button>
+      </div>
+
       <div class="control-group" style="margin-left:auto;justify-content:flex-end">
-        <label>&nbsp;</label>
-        <button id="share-btn" class="share-btn" onclick="copyShareLink()">🔗 Dela länk</button>
+        <label for="share-btn">Dela länk</label>
+        <button id="share-btn" type="button" class="share-btn" onclick="copyShareLink()"><span aria-hidden="true">🔗</span> Dela länk</button>
       </div>
     </div>
+
+    <!-- Scale history -->
+    <div id="scale-history"></div>
 
     <!-- Interval toggle legend -->
     <div id="interval-legend"></div>
 
     <!-- Scale position buttons -->
     <div id="position-btns"></div>
+
+    <!-- Quiz panel -->
+    <div id="quiz-panel" aria-live="polite"></div>
 
     <!-- Guitar fretboard -->
     <div class="fretboard-outer">
@@ -85,7 +126,7 @@
   <section id="chord-analyzer" class="tab-content">
 
     <div class="analyzer-input-area">
-      <label>Ange ackordföljd — skriv ackord separerade med mellanslag</label>
+      <label for="chord-input">Ange ackordföljd — skriv ackord separerade med mellanslag</label>
 
       <div class="chord-input-row">
         <input
@@ -95,19 +136,19 @@
           autocomplete="off"
           spellcheck="false"
         >
-        <button id="analyze-btn" onclick="renderChordAnalyzer()">Analysera</button>
+        <button id="analyze-btn" type="button" onclick="renderChordAnalyzer()">Analysera</button>
       </div>
 
       <div class="presets-label">Snabbval:</div>
       <div class="preset-btns">
-        <button class="preset-btn" data-preset="Am G F E">Am G F E</button>
-        <button class="preset-btn" data-preset="C Am F G">C Am F G</button>
-        <button class="preset-btn" data-preset="Dm7 G7 Cmaj7 Am7">Dm7 G7 Cmaj7 Am7</button>
-        <button class="preset-btn" data-preset="Em D C B">Em D C B</button>
-        <button class="preset-btn" data-preset="A D E A">A D E A</button>
-        <button class="preset-btn" data-preset="Bm A G F#m">Bm A G F#m</button>
-        <button class="preset-btn" data-preset="Am F C G">Am F C G</button>
-        <button class="preset-btn" data-preset="E A B E">E A B E</button>
+        <button class="preset-btn" type="button" data-preset="Am G F E">Am G F E</button>
+        <button class="preset-btn" type="button" data-preset="C Am F G">C Am F G</button>
+        <button class="preset-btn" type="button" data-preset="Dm7 G7 Cmaj7 Am7">Dm7 G7 Cmaj7 Am7</button>
+        <button class="preset-btn" type="button" data-preset="Em D C B">Em D C B</button>
+        <button class="preset-btn" type="button" data-preset="A D E A">A D E A</button>
+        <button class="preset-btn" type="button" data-preset="Bm A G F#m">Bm A G F#m</button>
+        <button class="preset-btn" type="button" data-preset="Am F C G">Am F C G</button>
+        <button class="preset-btn" type="button" data-preset="E A B E">E A B E</button>
       </div>
     </div>
 
@@ -115,9 +156,25 @@
 
   </section>
 
+  <!-- ====== TUNER ====== -->
+  <section id="tuner" class="tab-content">
+    <div class="tuner-panel">
+      <div class="tuner-status" id="tuner-status" aria-live="polite" aria-atomic="true">Klicka på knappen nedan för att starta stämaren — kräver mikrofonåtkomst.</div>
+      <div class="tuner-display">
+        <div class="tuner-note" id="tuner-note">—</div>
+        <div class="tuner-cents" id="tuner-cents"></div>
+        <canvas id="tuner-canvas" width="360" height="72" role="img" aria-label="Stämnings-indikator — visar hur nära stämning noten är"></canvas>
+        <div class="tuner-freq" id="tuner-freq"></div>
+      </div>
+      <div class="tuner-strings" id="tuner-strings"></div>
+      <button id="tuner-toggle" type="button" class="tuner-start-btn" onclick="toggleTuner()"><span aria-hidden="true">🎤</span> Starta stämmare</button>
+    </div>
+  </section>
+
 </main>
 
 <script src="theory.js"></script>
+<script src="tuner.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

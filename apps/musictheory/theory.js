@@ -8,6 +8,8 @@ let TUNING = ['E','B','G','D','A','E']; // index 0 = high E, index 5 = low E
 let STRING_NAMES = ['e','B','G','D','A','E'];
 const STRING_THICKNESS = [1, 1.2, 1.8, 2.2, 2.8, 3.4]; // px visual thickness
 
+let CAPO = 0; // capo fret (0 = ingen capo)
+
 const TUNING_PRESETS = {
   'Standard': { notes: ['E','B','G','D','A','E'], names: ['e','B','G','D','A','E'] },
   'Drop D':   { notes: ['E','B','G','D','A','D'], names: ['e','B','G','D','A','D'] },
@@ -47,11 +49,12 @@ const SCALES = {
   },
   'Natural Minor': {
     intervals: [0,2,3,5,7,8,10],
-    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock.',
+    desc: 'Mörk och melankolisk. Den vanligaste mollskalan i pop och rock. Identisk med Aeolian-modus.',
     formula: 'H-½-H-H-½-H-H',
     category: 'Heptatonisk',
     use: 'Rock, pop, metal, folk',
-    color: '#6366f1'
+    color: '#6366f1',
+    modeOf: { parent: 'Major', degree: 6, offset: 9 }
   },
   'Harmonic Minor': {
     intervals: [0,2,3,5,7,8,11],
@@ -99,7 +102,8 @@ const SCALES = {
     formula: 'H-½-H-H-H-½-H',
     category: 'Modal',
     use: 'Jazz, funk, folk, rock',
-    color: '#22c55e'
+    color: '#22c55e',
+    modeOf: { parent: 'Major', degree: 2, offset: 2 }
   },
   'Phrygian': {
     intervals: [0,1,3,5,7,8,10],
@@ -107,7 +111,8 @@ const SCALES = {
     formula: '½-H-H-H-½-H-H',
     category: 'Modal',
     use: 'Flamenco, metal, fusion',
-    color: '#f97316'
+    color: '#f97316',
+    modeOf: { parent: 'Major', degree: 3, offset: 4 }
   },
   'Lydian': {
     intervals: [0,2,4,6,7,9,11],
@@ -115,7 +120,8 @@ const SCALES = {
     formula: 'H-H-H-½-H-H-½',
     category: 'Modal',
     use: 'Film, jazz, pop, fusion',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    modeOf: { parent: 'Major', degree: 4, offset: 5 }
   },
   'Mixolydian': {
     intervals: [0,2,4,5,7,9,10],
@@ -123,7 +129,8 @@ const SCALES = {
     formula: 'H-H-½-H-H-½-H',
     category: 'Modal',
     use: 'Blues, rock, country, folk',
-    color: '#eab308'
+    color: '#eab308',
+    modeOf: { parent: 'Major', degree: 5, offset: 7 }
   },
   'Locrian': {
     intervals: [0,1,3,5,6,8,10],
@@ -131,9 +138,69 @@ const SCALES = {
     formula: '½-H-H-½-H-H-H',
     category: 'Modal',
     use: 'Metal, jazz (på vii-ackord)',
-    color: '#f43f5e'
+    color: '#f43f5e',
+    modeOf: { parent: 'Major', degree: 7, offset: 11 }
   },
 };
+
+// Common diatonic progressions per scale (idx = diatonic chord index)
+const COMMON_PROGRESSIONS = {
+  'Major': [
+    { name: 'I–IV–V–I',  idx: [0,3,4,0] },
+    { name: 'I–V–vi–IV', idx: [0,4,5,3] },
+    { name: 'I–vi–IV–V', idx: [0,5,3,4] },
+    { name: 'ii–V–I',    idx: [1,4,0] },
+    { name: 'I–IV–I–V',  idx: [0,3,0,4] },
+  ],
+  'Natural Minor': [
+    { name: 'i–iv–v',        idx: [0,3,4] },
+    { name: 'i–VI–III–VII',  idx: [0,5,2,6] },
+    { name: 'i–VII–VI–VII',  idx: [0,6,5,6] },
+    { name: 'i–iv–VII–III',  idx: [0,3,6,2] },
+  ],
+  'Harmonic Minor': [
+    { name: 'i–iv–V–i', idx: [0,3,4,0] },
+    { name: 'i–V–i',    idx: [0,4,0] },
+    { name: 'i–iv–V',   idx: [0,3,4] },
+  ],
+  'Dorian': [
+    { name: 'i–IV–i',       idx: [0,3,0] },
+    { name: 'i–IV–VII',     idx: [0,3,6] },
+    { name: 'i–III–VII–IV', idx: [0,2,6,3] },
+  ],
+  'Mixolydian': [
+    { name: 'I–VII–IV–I', idx: [0,6,3,0] },
+    { name: 'I–VII–I',    idx: [0,6,0] },
+    { name: 'I–IV–VII',   idx: [0,3,6] },
+  ],
+  'Phrygian': [
+    { name: 'i–II–i',     idx: [0,1,0] },
+    { name: 'i–VII–VI',   idx: [0,6,5] },
+    { name: 'i–II–VII–i', idx: [0,1,6,0] },
+  ],
+};
+
+// ── Audio constants ──────────────────────────────────────────────
+const MIDI_A4            = 69;       // MIDI number of A4
+const FREQ_A4            = 440;      // Hz of A4 reference pitch
+const STRUM_DELAY_SEC    = 0.022;    // seconds between strings when strumming
+const NOTE_ATTACK_SEC    = 0.005;    // gain ramp-up time
+const NOTE_DECAY_SEC     = 1.6;      // gain ramp-down time
+const NOTE_TIME_ATTACK   = 0.008;    // attack for playNoteAtTime
+const NOTE_TIME_DECAY    = 0.4;      // gain ramp-down for playNoteAtTime
+const NOTE_TIME_SUSTAIN  = 1.5;      // total duration for playNoteAtTime
+const NOTE_DEFAULT_VOL   = 0.03;     // default volume for playNoteAtTime
+const FILTER_HIGH_MULT   = 8;        // highpass cutoff = freq * this
+const FILTER_HIGH_MAX    = 5000;     // highpass cutoff ceiling Hz
+const FILTER_LOW_MULT    = 2;        // lowpass cutoff = freq * this
+const FILTER_LOW_MAX     = 900;      // lowpass cutoff ceiling Hz
+
+// ── Scale matching constants ─────────────────────────────────────
+const SCALE_MATCH_THRESHOLD   = 60;  // min % match to include a result
+const SCALE_MATCH_MAX_RESULTS = 8;   // max results returned
+
+// ── Chord voicing constants ──────────────────────────────────────
+const CHORD_SEARCH_FRETS = 7;        // frets to scan when voicing chords
 
 // === CHORD TYPES ===
 
@@ -182,7 +249,7 @@ function noteIndex(note) {
 
 function noteAtFret(stringIdx, fret) {
   const open = noteIndex(TUNING[stringIdx]);
-  return NOTES[(open + fret) % 12];
+  return NOTES[(open + CAPO + fret) % 12];
 }
 
 function getScaleNotes(key, scaleName) {
@@ -262,7 +329,7 @@ function analyzeProgression(chords) {
       const scaleNotes = getScaleNotes(key, scaleName);
       const matched = noteArr.filter(n => scaleNotes.includes(n));
       const pct = Math.round((matched.length / noteArr.length) * 100);
-      if (pct < 60) return;
+      if (pct < SCALE_MATCH_THRESHOLD) return;
 
       const missing = noteArr.filter(n => !scaleNotes.includes(n));
       results.push({ key, scaleName, pct, matched, missing, scaleNotes });
@@ -271,7 +338,7 @@ function analyzeProgression(chords) {
 
   return results
     .sort((a, b) => b.pct - a.pct || SCALES[a.scaleName].intervals.length - SCALES[b.scaleName].intervals.length)
-    .slice(0, 8);
+    .slice(0, SCALE_MATCH_MAX_RESULTS);
 }
 
 // === AUDIO (Web Audio API — plucked string) ===
@@ -289,8 +356,8 @@ function getAudioCtx() {
 function playNote(stringIdx, fret) {
   try {
     const ctx = getAudioCtx();
-    const midi = STRING_MIDI_BASE[stringIdx] + fret;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
+    const freq = FREQ_A4 * Math.pow(2, (midi - MIDI_A4) / 12);
     const now = ctx.currentTime;
 
     const osc = ctx.createOscillator();
@@ -299,28 +366,28 @@ function playNote(stringIdx, fret) {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 900), now + 0.5);
+    filter.frequency.setValueAtTime(Math.min(freq * FILTER_HIGH_MULT, FILTER_HIGH_MAX), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * FILTER_LOW_MULT, FILTER_LOW_MAX), now + 0.5);
     filter.Q.setValueAtTime(2, now);
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.26, now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+    gain.gain.linearRampToValueAtTime(0.26, now + NOTE_ATTACK_SEC);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + NOTE_DECAY_SEC);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 1.6);
+    osc.stop(now + NOTE_DECAY_SEC);
   } catch (_) { /* audio unavailable */ }
 }
 
-function playNoteAtTime(stringIdx, fret, startTime, duration) {
+function playNoteAtTime(stringIdx, fret, startTime, duration, vol = NOTE_DEFAULT_VOL) {
   try {
     const ctx = getAudioCtx();
-    const midi = STRING_MIDI_BASE[stringIdx] + fret;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const midi = STRING_MIDI_BASE[stringIdx] + CAPO + fret;
+    const freq = FREQ_A4 * Math.pow(2, (midi - MIDI_A4) / 12);
 
     const osc = ctx.createOscillator();
     osc.type = 'sawtooth';
@@ -328,13 +395,13 @@ function playNoteAtTime(stringIdx, fret, startTime, duration) {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(freq * 8, 5000), startTime);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * 2, 800), startTime + 0.4);
+    filter.frequency.setValueAtTime(Math.min(freq * FILTER_HIGH_MULT, FILTER_HIGH_MAX), startTime);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(freq * FILTER_LOW_MULT, 800), startTime + NOTE_TIME_DECAY);
     filter.Q.setValueAtTime(1.5, startTime);
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(0.18 / 6, startTime + 0.008); // softer for chords
+    gain.gain.linearRampToValueAtTime(vol, startTime + NOTE_TIME_ATTACK);
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
     osc.connect(filter);
@@ -349,8 +416,8 @@ function playNoteAtTime(stringIdx, fret, startTime, duration) {
 function strum(noteNames, startTime, duration) {
   const noteSet = new Set(noteNames);
   for (let si = 5; si >= 0; si--) {         // low E (si=5) first, strum upward
-    const delay = (5 - si) * 0.022;          // 22ms between strings
-    for (let f = 0; f <= 7; f++) {
+    const delay = (5 - si) * STRUM_DELAY_SEC; // 22ms between strings
+    for (let f = 0; f <= CHORD_SEARCH_FRETS; f++) {
       if (noteSet.has(noteAtFret(si, f))) {
         playNoteAtTime(si, f, startTime + delay, Math.max(0.2, duration - delay));
         break;
@@ -403,4 +470,20 @@ function computeChordVoicing(chordNoteNames, rootNote) {
     result.push(found);
   }
   return result; // index 0 = low E, index 5 = high e
+}
+
+// CommonJS compatibility shim — no-op in the browser
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    normalizeNote,
+    noteIndex,
+    getScaleNotes,
+    getIntervalAtFret,
+    getDiatonicChords,
+    analyzeProgression,
+    parseChord,
+    parseProgression,
+    NOTES,
+    SCALES,
+  };
 }

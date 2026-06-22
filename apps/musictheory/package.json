@@ -1,0 +1,10 @@
+{
+  "name": "musictheory-tests",
+  "private": true,
+  "scripts": {
+    "test": "jest --testPathPattern=theory.test.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
