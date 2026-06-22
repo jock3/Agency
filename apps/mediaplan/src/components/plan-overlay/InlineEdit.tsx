@@ -58,7 +58,8 @@ export default function InlineEdit({ value, onSave, type = "text", className, st
     <span
       onClick={() => setEditing(true)}
       className={clsx(
-        "cursor-text hover:bg-white/10 rounded px-0.5 -mx-0.5 truncate inline-block",
+        "cursor-text rounded px-0.5 -mx-0.5 truncate inline-block",
+        "border-b border-transparent hover:border-dashed hover:border-current hover:opacity-80 transition-opacity",
         !value && "text-gray-400 italic",
         className
       )}

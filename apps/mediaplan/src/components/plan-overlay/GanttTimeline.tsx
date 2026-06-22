@@ -56,17 +56,44 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   const stickyClass = "sticky left-0 z-10 bg-white";
   const headerBg = "bg-gray-900 text-white";
 
+  // ── Undo toast ──────────────────────────────────────────
+  const [undoToast, setUndoToast] = useState<{ revert: () => void } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showUndo = useCallback((revert: () => void) => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoToast({ revert });
+    undoTimerRef.current = setTimeout(() => setUndoToast(null), 5000);
+  }, []);
+
+  const handleUndo = () => {
+    if (!undoToast) return;
+    undoToast.revert();
+    setUndoToast(null);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+  };
+
   const getSpan = useCallback((startDate: string | null, endDate: string | null) => {
     if (!startDate || !endDate) return null;
     return dateRangeToGridSpan(startDate, endDate, weeks);
   }, [weeks]);
 
   const handleLineUpdate = async (lineId: string, updates: Partial<MediaLine>) => {
+    const line = plan.categories.flatMap((c) => c.lines).find((l) => l.id === lineId);
+    if (line) {
+      const prev = Object.fromEntries(Object.keys(updates).map((k) => [k, line[k as keyof MediaLine]])) as Partial<MediaLine>;
+      showUndo(() => updateLine(lineId, prev).then(onPlanChanged));
+    }
     await updateLine(lineId, updates);
     onPlanChanged();
   };
 
   const handleConceptUpdate = async (conceptId: string, updates: Partial<MediaConcept>) => {
+    const concept = plan.concepts.find((c) => c.id === conceptId);
+    if (concept) {
+      const prev = Object.fromEntries(Object.keys(updates).map((k) => [k, concept[k as keyof MediaConcept]])) as Partial<MediaConcept>;
+      showUndo(() => updateConcept(conceptId, prev).then(onPlanChanged));
+    }
     await updateConcept(conceptId, updates);
     onPlanChanged();
   };
@@ -119,7 +146,27 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   };
 
   return (
-    <div className="overflow-x-auto scrollbar-thin px-4 py-2">
+    <>
+    {/* Mobile fallback */}
+    {!readOnly && (
+      <div className="md:hidden flex flex-col items-center justify-center py-12 px-6 text-center gap-3">
+        <div className="text-3xl">🖥️</div>
+        <p className="text-gray-600 font-medium">Öppna på en dator</p>
+        <p className="text-gray-400 text-sm">Gantt-editorn kräver en större skärm för att fungera.</p>
+      </div>
+    )}
+
+    {/* Undo toast */}
+    {undoToast && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
+        <span>Ändring sparad</span>
+        <button onClick={handleUndo} className="font-semibold text-indigo-300 hover:text-indigo-200 transition-colors">
+          Ångra
+        </button>
+      </div>
+    )}
+
+    <div className="overflow-x-auto scrollbar-thin px-4 py-2 hidden md:block">
       <div
         style={{ display: "grid", gridTemplateColumns: gridCols }}
         className="min-w-max border-l border-t border-gray-100"
@@ -295,6 +342,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} compact={compact} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
       </div>
     </div>
+    </>
   );
 }
 
@@ -541,10 +589,11 @@ function GanttLineRow({
     }
   }, [line.deadline_date, deadlineDragging]);
 
-  const startDrag = useCallback((e: React.MouseEvent, type: DragState["type"]) => {
+  const startDrag = useCallback((e: React.PointerEvent, type: DragState["type"]) => {
     if (readOnly || !span) return;
     e.preventDefault();
     e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragStateRef.current = { type, startX: e.clientX, startColStart: span.colStart, startColEnd: span.colEnd };
     setIsDragging(true);
   }, [readOnly, span]);
@@ -552,7 +601,7 @@ function GanttLineRow({
   useEffect(() => {
     if (!isDragging) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const drag = dragStateRef.current;
       if (!drag || !containerRef.current) return;
 
@@ -577,7 +626,7 @@ function GanttLineRow({
       setDisplaySpan(newSpan);
     };
 
-    const onMouseUp = () => {
+    const onUp = () => {
       const finalSpan = displaySpanRef.current;
       if (finalSpan) {
         onUpdateRef.current({
@@ -589,17 +638,17 @@ function GanttLineRow({
       setIsDragging(false);
     };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
     return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
     };
   }, [isDragging, weekCount, weeks]);
 
   useEffect(() => {
     if (!deadlineDragging) return;
-    const onMouseMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const drag = deadlineDragRef.current;
       if (!drag || !containerRef.current) return;
       const colWidth = containerRef.current.offsetWidth / weekCount;
@@ -609,20 +658,21 @@ function GanttLineRow({
       displayDeadlineDateRef.current = newDate;
       setDisplayDeadlineDate(newDate);
     };
-    const onMouseUp = () => {
+    const onUp = () => {
       if (displayDeadlineDateRef.current) onUpdateRef.current({ deadline_date: displayDeadlineDateRef.current, deadline_label: null });
       setDeadlineDragging(false);
       deadlineDragRef.current = null;
     };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    return () => { document.removeEventListener("mousemove", onMouseMove); document.removeEventListener("mouseup", onMouseUp); };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    return () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerup", onUp); };
   }, [deadlineDragging, weekCount, weeks]);
 
-  const startDeadlineDrag = useCallback((e: React.MouseEvent) => {
+  const startDeadlineDrag = useCallback((e: React.PointerEvent) => {
     if (!displayDeadlineDateRef.current) return;
     e.preventDefault();
     e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const weekIdx = weeks.findIndex(
       (w) => displayDeadlineDateRef.current! >= format(w.startDate, "yyyy-MM-dd") && displayDeadlineDateRef.current! <= format(w.endDate, "yyyy-MM-dd")
     );
@@ -748,11 +798,11 @@ function GanttLineRow({
           return (
             <div
               style={{ position: "absolute", left: `${dlLeft}%`, top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 6, cursor: deadlineDragging ? "grabbing" : (readOnly ? "default" : "grab"), userSelect: "none" }}
-              onMouseDown={!readOnly ? startDeadlineDrag : undefined}
+              onPointerDown={!readOnly ? startDeadlineDrag : undefined}
             >
               <span
                 style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap", fontWeight: 700, backgroundColor: "rgba(255,255,255,0.92)", padding: "0 2px", borderRadius: "2px" }}
-                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 {readOnly ? (line.deadline_label || dlLabel) : (
                   <InlineEdit
@@ -764,7 +814,7 @@ function GanttLineRow({
               </span>
               {!readOnly && !deadlineDragging && (
                 <button
-                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => { e.stopPropagation(); onUpdate({ deadline_date: null, deadline_label: null }); }}
                   style={{ position: "absolute", top: "2px", left: "4px", fontSize: "11px", color: "#ef4444", lineHeight: 1 }}
                   title="Ta bort deadline"
@@ -796,7 +846,7 @@ function GanttLineRow({
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
               userSelect: "none",
             }}
-            onMouseDown={!readOnly ? (e) => startDrag(e, "move") : undefined}
+            onPointerDown={!readOnly ? (e) => startDrag(e, "move") : undefined}
             title={`${line.platform_name}: v.${displaySpan.colStart} – v.${displaySpan.colEnd - 1}`}
           >
             {!readOnly && (
@@ -811,7 +861,7 @@ function GanttLineRow({
                     borderRadius: "4px 0 0 4px",
                     backgroundColor: "rgba(0,0,0,0.18)",
                   }}
-                  onMouseDown={(e) => { e.stopPropagation(); startDrag(e, "left"); }}
+                  onPointerDown={(e) => { e.stopPropagation(); startDrag(e, "left"); }}
                 />
                 {/* Right resize handle */}
                 <div
@@ -823,7 +873,7 @@ function GanttLineRow({
                     borderRadius: "0 4px 4px 0",
                     backgroundColor: "rgba(0,0,0,0.18)",
                   }}
-                  onMouseDown={(e) => { e.stopPropagation(); startDrag(e, "right"); }}
+                  onPointerDown={(e) => { e.stopPropagation(); startDrag(e, "right"); }}
                 />
               </>
             )}
