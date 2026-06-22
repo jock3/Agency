@@ -503,6 +503,7 @@ function GanttLineRow({
 
   const [isDragging, setIsDragging] = useState(false);
   const [displaySpan, setDisplaySpan] = useState(span);
+  const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
   const displaySpanRef = useRef(span);
   const dragStateRef = useRef<DragState | null>(null);
 
@@ -648,6 +649,72 @@ function GanttLineRow({
         className="relative border-b border-gray-100 bg-white"
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
+
+        {/* Row-level deadline */}
+        {line.deadline_date && (() => {
+          const dlLeft = getDeadlineLeft(line.deadline_date, weeks, weekCount);
+          if (dlLeft === null) return null;
+          return (
+            <div style={{ position: "absolute", left: `${dlLeft}%`, top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 6 }}>
+              <div style={{ position: "absolute", top: "2px", left: "4px", display: "flex", alignItems: "center", gap: "2px" }}>
+                {readOnly ? (
+                  <span style={{ fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap" }}>{line.deadline_label || "Deadline"}</span>
+                ) : (
+                  <>
+                    <InlineEdit
+                      value={line.deadline_label || "Deadline"}
+                      onSave={(v) => onUpdate({ deadline_label: v })}
+                      style={{ fontSize: "9px", color: "#ef4444" }}
+                    />
+                    <input
+                      type="date"
+                      value={line.deadline_date}
+                      onChange={(e) => onUpdate({ deadline_date: e.target.value || null })}
+                      className="border-0 bg-transparent cursor-pointer"
+                      style={{ fontSize: "9px", color: "#ef4444", width: "90px" }}
+                    />
+                    <button
+                      onClick={() => onUpdate({ deadline_date: null, deadline_label: null })}
+                      style={{ color: "#ef4444", fontSize: "11px", lineHeight: 1 }}
+                      title="Ta bort deadline"
+                    >×</button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {!readOnly && !line.deadline_date && (
+          deadlinePickerOpen ? (
+            <div style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", zIndex: 7, backgroundColor: "white", borderRadius: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.15)", padding: "2px 6px", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: "10px", color: "#ef4444" }}>📌</span>
+              <input
+                type="date"
+                autoFocus
+                className="text-xs border-0 bg-transparent outline-none"
+                style={{ color: "#ef4444", width: "100px" }}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onUpdate({ deadline_date: e.target.value, deadline_label: "Materialdeadline" });
+                    setDeadlinePickerOpen(false);
+                  }
+                }}
+                onBlur={() => setDeadlinePickerOpen(false)}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setDeadlinePickerOpen(true)}
+              style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#d1d5db", zIndex: 6 }}
+              className="hover:!text-red-500"
+              title="Lägg till deadline"
+            >
+              + Deadline
+            </button>
+          )
+        )}
+
         {displaySpan ? (
           <div
             style={{

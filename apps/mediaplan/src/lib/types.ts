@@ -40,6 +40,8 @@ export interface MediaLine {
   start_date: string | null;
   end_date: string | null;
   sort_order: number;
+  deadline_date: string | null;
+  deadline_label: string | null;
 }
 
 export interface MediaDeadline {
