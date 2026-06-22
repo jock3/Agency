@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const PALETTE = [
   "#ef4444", "#f97316", "#f59e0b", "#eab308",
@@ -16,26 +17,45 @@ interface Props {
 
 export default function ColorDot({ color, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        panelRef.current && !panelRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  function handleOpen() {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+    setOpen((v) => !v);
+  }
+
   return (
-    <div ref={ref} className="relative shrink-0">
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={handleOpen}
         className="w-3 h-3 rounded-full shrink-0 border border-white/30 hover:scale-110 transition-transform"
         style={{ backgroundColor: color }}
         title="Byt färg"
       />
-      {open && (
-        <div className="absolute left-0 top-5 z-50 bg-white border border-gray-200 rounded-xl shadow-xl p-2 grid grid-cols-4 gap-1 w-24">
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={panelRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-xl p-2 grid grid-cols-4 gap-1 w-24"
+        >
           {PALETTE.map((c) => (
             <button
               key={c}
@@ -48,8 +68,9 @@ export default function ColorDot({ color, onChange }: Props) {
               }}
             />
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
