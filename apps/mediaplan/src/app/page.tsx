@@ -6,6 +6,7 @@ import type { MediaPlan } from "@/lib/types";
 import PlanCard from "@/components/dashboard/PlanCard";
 import NewPlanModal from "@/components/dashboard/NewPlanModal";
 import PlanOverlay from "@/components/plan-overlay/PlanOverlay";
+import MilouLogo from "@/components/MilouLogo";
 
 export default function Dashboard() {
   const [plans, setPlans] = useState<MediaPlan[]>([]);
@@ -52,8 +53,7 @@ export default function Dashboard() {
       {/* Top nav */}
       <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between shadow">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-milou-500 rounded-md flex items-center justify-center font-bold text-sm">M</div>
-          <h1 className="text-lg font-semibold tracking-tight">Mediaplaner</h1>
+          <MilouLogo className="h-7 w-auto text-white" />
         </div>
         <div className="flex items-center gap-3">
           <button

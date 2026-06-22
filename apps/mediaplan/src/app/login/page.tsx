@@ -2,6 +2,8 @@ interface Props {
   searchParams: { error?: string };
 }
 
+import MilouLogo from "@/components/MilouLogo";
+
 export default function LoginPage({ searchParams }: Props) {
   const hasError = searchParams.error === "1";
 
@@ -9,10 +11,7 @@ export default function LoginPage({ searchParams }: Props) {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
         <div className="bg-gray-900 px-6 py-5 flex items-center gap-3">
-          <div className="w-8 h-8 bg-milou-500 rounded-md flex items-center justify-center font-bold text-sm text-white">
-            M
-          </div>
-          <span className="text-white font-semibold tracking-tight">Mediaplaner</span>
+          <MilouLogo className="h-7 w-auto text-white" />
         </div>
 
         <form method="POST" action="/api/auth/login" className="p-6 flex flex-col gap-4">
