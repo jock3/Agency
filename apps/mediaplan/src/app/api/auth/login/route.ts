@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
   const cookieSecret = process.env.ADMIN_COOKIE_SECRET;
 
   if (!adminPassword || !cookieSecret) {
-    // Env vars not configured — redirect to dashboard (dev mode)
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/", request.url), { status: 303 });
   }
 
   const formData = await request.formData();
@@ -39,11 +38,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (!passwordMatch) {
-    return NextResponse.redirect(new URL("/login?error=1", request.url));
+    return NextResponse.redirect(new URL("/login?error=1", request.url), { status: 303 });
   }
 
   const token = await computeToken(cookieSecret);
-  const response = NextResponse.redirect(new URL("/", request.url));
+  const response = NextResponse.redirect(new URL("/", request.url), { status: 303 });
 
   response.cookies.set("admin_session", token, {
     httpOnly: true,
