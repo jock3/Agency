@@ -18,15 +18,22 @@ jobs:
         run: |
           mkdir -p _site/apps/musictheory
           cp -r apps/musictheory/* _site/apps/musictheory/
+          mkdir -p _site/apps/tracker
+          cp -r apps/tracker/* _site/apps/tracker/
           cat > _site/index.html <<'HTML'
           <!DOCTYPE html>
           <html lang="sv">
           <head>
             <meta charset="UTF-8">
-            <meta http-equiv="refresh" content="0; url=apps/musictheory/">
             <title>Agency</title>
           </head>
-          <body><a href="apps/musictheory/">MusicTheory Pro</a></body>
+          <body>
+            <h1>Agency Apps</h1>
+            <ul>
+              <li><a href="apps/musictheory/">MusicTheory Pro</a></li>
+              <li><a href="apps/tracker/">Track3r</a></li>
+            </ul>
+          </body>
           </html>
           HTML
 
