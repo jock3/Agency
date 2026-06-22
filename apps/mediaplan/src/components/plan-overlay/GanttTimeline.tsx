@@ -456,13 +456,14 @@ function GanttCategorySection({
 
   return (
     <>
-      {/* Category header — spans first 5 info cols */}
+      {/* Category header — spans first (infoColCount-1) cols */}
       <div
         className={`${cellClass} ${stickyClass} font-semibold text-xs`}
         style={{
           gridColumn: `1 / span ${infoColCount - 1}`,
           backgroundColor: category.color + "22",
           borderLeft: `3px solid ${category.color}`,
+          borderTop: `2px solid ${category.color}55`,
         }}
       >
         {readOnly ? (
@@ -485,11 +486,11 @@ function GanttCategorySection({
         )}
         {readOnly && <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>}
       </div>
-      {/* Category reach col (6th) */}
-      <div className={`${cellClass} justify-end text-xs font-semibold`} style={{ backgroundColor: category.color + "22" }}>
+      {/* Category reach col */}
+      <div className={`${cellClass} justify-end text-xs font-semibold`} style={{ backgroundColor: category.color + "22", borderTop: `2px solid ${category.color}55` }}>
         <span style={{ color: category.color, opacity: 0.7 }}>{formatReach(reach)}</span>
       </div>
-      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11" }} className="relative border-b border-gray-100">
+      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11", borderTop: `2px solid ${category.color}55` }} className="relative border-b border-gray-100">
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
       </div>
 
@@ -508,6 +509,7 @@ function GanttCategorySection({
           span={getSpan(line.start_date, line.end_date)}
           onUpdate={(updates) => onLineUpdate(line.id, updates)}
           onDelete={() => onDeleteLine(line.id)}
+          onAddLine={!readOnly ? onAddLine : undefined}
           cellClass={cellClass}
           stickyClass={stickyClass}
         />
@@ -543,7 +545,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -556,6 +558,7 @@ function GanttLineRow({
   span: { colStart: number; colEnd: number } | null;
   onUpdate: (updates: Partial<MediaLine>) => void;
   onDelete: () => void;
+  onAddLine?: () => void;
   cellClass: string;
   stickyClass: string;
 }) {
@@ -772,6 +775,7 @@ function GanttLineRow({
           <InlineEdit
             value={line.estimated_reach ? String(line.estimated_reach) : ""}
             onSave={(v) => onUpdate({ estimated_reach: v ? Number(v) : null })}
+            onTabOut={onAddLine}
             type="number"
             className="text-xs text-right w-full"
             placeholder="–"

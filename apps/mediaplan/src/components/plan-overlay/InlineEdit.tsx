@@ -6,6 +6,7 @@ import clsx from "clsx";
 interface Props {
   value: string;
   onSave: (value: string) => void;
+  onTabOut?: () => void;
   type?: "text" | "number";
   className?: string;
   style?: React.CSSProperties;
@@ -13,7 +14,7 @@ interface Props {
   placeholder?: string;
 }
 
-export default function InlineEdit({ value, onSave, type = "text", className, style, darkMode, placeholder }: Props) {
+export default function InlineEdit({ value, onSave, onTabOut, type = "text", className, style, darkMode, placeholder }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +43,7 @@ export default function InlineEdit({ value, onSave, type = "text", className, st
         onKeyDown={(e) => {
           if (e.key === "Enter") commit();
           if (e.key === "Escape") { setDraft(value); setEditing(false); }
+          if (e.key === "Tab" && !e.shiftKey && onTabOut) { e.preventDefault(); commit(); onTabOut(); }
         }}
         className={clsx(
           "border-0 outline-none bg-transparent px-0 focus:ring-1 focus:ring-indigo-400 rounded",
