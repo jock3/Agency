@@ -15,14 +15,20 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
     new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Ange ett kampanjnamn");
+      return;
+    }
     setSaving(true);
+    setError("");
     try {
       await onCreate(name.trim(), start, end);
-    } finally {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Något gick fel, försök igen");
       setSaving(false);
     }
   };
@@ -43,7 +49,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
               autoFocus
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setError(""); }}
               placeholder="t.ex. Sommarkampanj 2025"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -71,6 +77,10 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
             </div>
           </div>
 
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -81,7 +91,7 @@ export default function NewPlanModal({ onClose, onCreate }: Props) {
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || saving}
+              disabled={saving}
               className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
               {saving ? "Skapar…" : "Skapa plan"}

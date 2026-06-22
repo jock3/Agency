@@ -55,12 +55,20 @@ export default function Dashboard() {
           <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center font-bold text-sm">M</div>
           <h1 className="text-lg font-semibold tracking-tight">Mediaplaner</h1>
         </div>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          + Ny mediaplan
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            + Ny mediaplan
+          </button>
+          <a
+            href="/api/auth/logout"
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Logga ut
+          </a>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
