@@ -18,7 +18,7 @@ export async function getFullPlan(id: string): Promise<FullMediaPlan | null> {
     sb.from("media_plans").select("*").eq("id", id).single(),
     sb.from("media_concepts").select("*").eq("plan_id", id).order("sort_order"),
     sb.from("media_categories").select("*").eq("plan_id", id).order("sort_order"),
-    sb.from("media_lines").select("*").order("created_at", { ascending: true }),
+    sb.from("media_lines").select("*").order("created_at", { ascending: true }).order("id", { ascending: true }),
     sb.from("media_deadlines").select("*").eq("plan_id", id).order("created_at", { ascending: true }),
   ]);
 
