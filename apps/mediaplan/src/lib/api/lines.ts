@@ -4,7 +4,8 @@ import type { MediaLine } from "@/lib/types";
 export async function createLine(
   categoryId: string,
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  sortOrder = 0
 ): Promise<MediaLine> {
   const sb = getSupabaseClient();
   const { data, error } = await sb
@@ -18,6 +19,7 @@ export async function createLine(
       color: "#3b82f6",
       start_date: periodStart,
       end_date: periodEnd,
+      sort_order: sortOrder,
     })
     .select()
     .single();

@@ -98,8 +98,20 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     onPlanChanged();
   };
 
-  const handleAddLine = async (categoryId: string) => {
-    await createLine(categoryId, plan.period_start, plan.period_end);
+  const handleAddLine = async (categoryId: string, sortOrder: number) => {
+    await createLine(categoryId, plan.period_start, plan.period_end, sortOrder);
+    onPlanChanged();
+  };
+
+  const handleReorderLine = async (categoryId: string, lineId: string, direction: "up" | "down") => {
+    const category = plan.categories.find((c) => c.id === categoryId);
+    if (!category) return;
+    const idx = category.lines.findIndex((l) => l.id === lineId);
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= category.lines.length) return;
+    const newOrder = [...category.lines];
+    [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
+    await Promise.all(newOrder.map((line, i) => updateLine(line.id, { sort_order: i })));
     onPlanChanged();
   };
 
@@ -312,7 +324,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
             getSpan={getSpan}
             onLineUpdate={handleLineUpdate}
             onDeleteLine={handleDeleteLine}
-            onAddLine={() => handleAddLine(cat.id)}
+            onAddLine={() => handleAddLine(cat.id, cat.lines.length)}
+            onReorderLine={(lineId, dir) => handleReorderLine(cat.id, lineId, dir)}
             onCategoryUpdate={(updates) => updateCategory(cat.id, updates).then(onPlanChanged)}
             onDeleteCategory={() => handleDeleteCategory(cat.id)}
             cellClass={cellClass}
@@ -431,7 +444,7 @@ function GanttConceptRow({
 /* ─── Category Section ──────────────────────────────────── */
 function GanttCategorySection({
   category, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, getSpan,
-  onLineUpdate, onDeleteLine, onAddLine, onCategoryUpdate, onDeleteCategory,
+  onLineUpdate, onDeleteLine, onAddLine, onReorderLine, onCategoryUpdate, onDeleteCategory,
   cellClass, stickyClass,
 }: {
   category: MediaCategory & { lines: MediaLine[] };
@@ -446,6 +459,7 @@ function GanttCategorySection({
   onLineUpdate: (id: string, updates: Partial<MediaLine>) => void;
   onDeleteLine: (id: string) => void;
   onAddLine: () => void;
+  onReorderLine: (lineId: string, direction: "up" | "down") => void;
   onCategoryUpdate: (updates: Partial<MediaCategory>) => void;
   onDeleteCategory: () => void;
   cellClass: string;
@@ -495,7 +509,7 @@ function GanttCategorySection({
       </div>
 
       {/* Media lines */}
-      {category.lines.map((line) => (
+      {category.lines.map((line, idx) => (
         <GanttLineRow
           key={line.id}
           line={line}
@@ -510,6 +524,9 @@ function GanttCategorySection({
           onUpdate={(updates) => onLineUpdate(line.id, updates)}
           onDelete={() => onDeleteLine(line.id)}
           onAddLine={!readOnly ? onAddLine : undefined}
+          lineIndex={idx}
+          lineCount={category.lines.length}
+          onReorder={!readOnly ? (dir) => onReorderLine(line.id, dir) : undefined}
           cellClass={cellClass}
           stickyClass={stickyClass}
         />
@@ -545,7 +562,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -559,6 +576,9 @@ function GanttLineRow({
   onUpdate: (updates: Partial<MediaLine>) => void;
   onDelete: () => void;
   onAddLine?: () => void;
+  lineIndex?: number;
+  lineCount?: number;
+  onReorder?: (direction: "up" | "down") => void;
   cellClass: string;
   stickyClass: string;
 }) {
@@ -693,7 +713,25 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-1.5`}>
+      <div className={`${cellClass} ${stickyClass} gap-1.5 group`}>
+        {!readOnly && onReorder && (
+          <div className="flex flex-col gap-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onReorder("up")}
+              disabled={lineIndex === 0}
+              className="text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+              style={{ fontSize: "9px" }}
+              title="Flytta upp"
+            >▲</button>
+            <button
+              onClick={() => onReorder("down")}
+              disabled={lineIndex === undefined || lineCount === undefined || lineIndex >= lineCount - 1}
+              className="text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+              style={{ fontSize: "9px" }}
+              title="Flytta ner"
+            >▼</button>
+          </div>
+        )}
         {!readOnly && (
           <ColorDot color={line.color} onChange={(color) => onUpdate({ color })} />
         )}
