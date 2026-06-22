@@ -19,6 +19,10 @@ export function calcCategoryReach(lines: MediaLine[]): number {
   return lines.reduce((sum, l) => sum + (l.estimated_reach ?? 0), 0);
 }
 
+export function calcPlanReach(plan: FullMediaPlan): number {
+  return plan.categories.reduce((sum, cat) => sum + calcCategoryReach(cat.lines), 0);
+}
+
 export function formatReach(n: number): string {
   if (n === 0) return "–";
   return new Intl.NumberFormat("sv-SE").format(n);

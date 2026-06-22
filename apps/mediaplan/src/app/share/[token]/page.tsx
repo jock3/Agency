@@ -6,7 +6,7 @@ import { getFullPlanByToken } from "@/lib/api/plans";
 import type { FullMediaPlan } from "@/lib/types";
 import GanttTimeline from "@/components/plan-overlay/GanttTimeline";
 import { formatSwedishDateFull } from "@/lib/utils/dates";
-import { calcPlanTotal, formatSEK } from "@/lib/utils/budget";
+import { calcPlanTotal, calcPlanReach, formatSEK, formatReach } from "@/lib/utils/budget";
 
 export default function SharePage() {
   const params = useParams();
@@ -52,9 +52,14 @@ export default function SharePage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="text-sm text-gray-400">
-              Totalt: <span className="text-white font-semibold">{formatSEK(calcPlanTotal(plan))}</span>
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-right">
+              <div className="text-xs text-gray-400">Total budget</div>
+              <div className="text-sm font-bold text-white">{formatSEK(calcPlanTotal(plan))}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-400">Beräknad räckvidd</div>
+              <div className="text-sm font-bold text-white">{formatReach(calcPlanReach(plan))}</div>
             </div>
             <span className="text-xs bg-indigo-900 text-indigo-300 px-2 py-1 rounded-full shrink-0">
               Visningsläge
@@ -69,6 +74,7 @@ export default function SharePage() {
           <GanttTimeline
             plan={plan}
             readOnly
+            compact
             onPlanChanged={() => {}}
           />
         </div>

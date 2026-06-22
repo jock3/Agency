@@ -13,8 +13,10 @@ import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadli
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
 
-const INFO_COLS = "200px 80px 90px 60px 100px 90px";
-const INFO_COL_COUNT = 6;
+const INFO_COLS_FULL = "200px 80px 90px 60px 100px 90px";
+const INFO_COLS_COMPACT = "200px 100px 90px";
+const INFO_COL_COUNT_FULL = 6;
+const INFO_COL_COUNT_COMPACT = 3;
 
 function getDeadlineLeft(date: string, weeks: WeekColumn[], weekCount: number): number | null {
   const idx = weeks.findIndex(
@@ -37,14 +39,17 @@ function colToEndDate(colEnd: number, weeks: WeekColumn[]): string {
 interface Props {
   plan: FullMediaPlan;
   readOnly?: boolean;
+  compact?: boolean;
   onPlanChanged: () => void;
 }
 
-export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) {
+export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }: Props) {
   const weeks = useMemo(() => getPlanWeeks(plan.period_start, plan.period_end), [plan.period_start, plan.period_end]);
   const months = useMemo(() => getMonthGroups(weeks), [weeks]);
   const weekCount = weeks.length;
 
+  const INFO_COLS = compact ? INFO_COLS_COMPACT : INFO_COLS_FULL;
+  const INFO_COL_COUNT = compact ? INFO_COL_COUNT_COMPACT : INFO_COL_COUNT_FULL;
   const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
 
   const cellClass = "border-r border-b border-gray-100 px-1 py-2.5 text-xs flex items-center";
@@ -137,7 +142,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
         ))}
 
         {/* ── Column headers (info + week labels) ── */}
-        {["Kanal/Plattform", "Pris/enhet", "Enhet", "Antal", "Totalt", "Räckvidd"].map((h, i) => (
+        {(compact ? ["Kanal/Plattform", "Totalt", "Räckvidd"] : ["Kanal/Plattform", "Pris/enhet", "Enhet", "Antal", "Totalt", "Räckvidd"]).map((h, i) => (
           <div
             key={h}
             className={`${cellClass} ${stickyClass} bg-gray-800 text-gray-300 text-xs font-medium`}
@@ -255,6 +260,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
             weekCount={weekCount}
             infoColCount={INFO_COL_COUNT}
             readOnly={readOnly}
+            compact={compact}
             deadlines={plan.deadlines}
             getSpan={getSpan}
             onLineUpdate={handleLineUpdate}
@@ -286,7 +292,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
         )}
 
         {/* ── Budget summary row ── */}
-        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
+        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} compact={compact} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
       </div>
     </div>
   );
@@ -376,7 +382,7 @@ function GanttConceptRow({
 
 /* ─── Category Section ──────────────────────────────────── */
 function GanttCategorySection({
-  category, plan, weeks, weekCount, infoColCount, readOnly, deadlines, getSpan,
+  category, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, getSpan,
   onLineUpdate, onDeleteLine, onAddLine, onCategoryUpdate, onDeleteCategory,
   cellClass, stickyClass,
 }: {
@@ -386,6 +392,7 @@ function GanttCategorySection({
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
+  compact?: boolean;
   deadlines: MediaDeadline[];
   getSpan: (s: string | null, e: string | null) => { colStart: number; colEnd: number } | null;
   onLineUpdate: (id: string, updates: Partial<MediaLine>) => void;
@@ -448,6 +455,7 @@ function GanttCategorySection({
           weekCount={weekCount}
           infoColCount={infoColCount}
           readOnly={readOnly}
+          compact={compact}
           deadlines={deadlines}
           span={getSpan(line.start_date, line.end_date)}
           onUpdate={(updates) => onLineUpdate(line.id, updates)}
@@ -487,7 +495,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, deadlines, span, onUpdate, onDelete, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -495,6 +503,7 @@ function GanttLineRow({
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
+  compact?: boolean;
   deadlines: MediaDeadline[];
   span: { colStart: number; colEnd: number } | null;
   onUpdate: (updates: Partial<MediaLine>) => void;
@@ -649,50 +658,56 @@ function GanttLineRow({
         )}
       </div>
 
-      {/* Cost per unit */}
-      <div className={`${cellClass} justify-end`}>
-        {readOnly ? (
-          <span>{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
-        ) : (
-          <InlineEdit
-            value={String(line.cost_per_unit ?? 0)}
-            onSave={(v) => onUpdate({ cost_per_unit: Number(v) || 0 })}
-            type="number"
-            className="text-xs text-right w-full"
-          />
-        )}
-      </div>
+      {/* Cost per unit — hidden in compact mode */}
+      {!compact && (
+        <div className={`${cellClass} justify-end`}>
+          {readOnly ? (
+            <span>{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
+          ) : (
+            <InlineEdit
+              value={String(line.cost_per_unit ?? 0)}
+              onSave={(v) => onUpdate({ cost_per_unit: Number(v) || 0 })}
+              type="number"
+              className="text-xs text-right w-full"
+            />
+          )}
+        </div>
+      )}
 
-      {/* Unit type */}
-      <div className={`${cellClass}`}>
-        {readOnly ? (
-          <span className="truncate">{line.unit_type}</span>
-        ) : (
-          <select
-            value={line.unit_type}
-            onChange={(e) => onUpdate({ unit_type: e.target.value })}
-            className="text-xs w-full bg-transparent border-0 focus:outline-none cursor-pointer"
-          >
-            {["per månad", "per vecka", "per sida", "per dagar", "fast pris"].map((u) => (
-              <option key={u}>{u}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      {/* Unit type — hidden in compact mode */}
+      {!compact && (
+        <div className={`${cellClass}`}>
+          {readOnly ? (
+            <span className="truncate">{line.unit_type}</span>
+          ) : (
+            <select
+              value={line.unit_type}
+              onChange={(e) => onUpdate({ unit_type: e.target.value })}
+              className="text-xs w-full bg-transparent border-0 focus:outline-none cursor-pointer"
+            >
+              {["per månad", "per vecka", "per sida", "per dagar", "fast pris"].map((u) => (
+                <option key={u}>{u}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
-      {/* Quantity */}
-      <div className={`${cellClass} justify-center`}>
-        {readOnly ? (
-          <span>{line.quantity}</span>
-        ) : (
-          <InlineEdit
-            value={String(line.quantity ?? 0)}
-            onSave={(v) => onUpdate({ quantity: Number(v) || 0 })}
-            type="number"
-            className="text-xs text-center w-full"
-          />
-        )}
-      </div>
+      {/* Quantity — hidden in compact mode */}
+      {!compact && (
+        <div className={`${cellClass} justify-center`}>
+          {readOnly ? (
+            <span>{line.quantity}</span>
+          ) : (
+            <InlineEdit
+              value={String(line.quantity ?? 0)}
+              onSave={(v) => onUpdate({ quantity: Number(v) || 0 })}
+              type="number"
+              className="text-xs text-center w-full"
+            />
+          )}
+        </div>
+      )}
 
       {/* Total */}
       <div className={`${cellClass} justify-end text-xs text-gray-600 font-medium`}>
@@ -858,7 +873,7 @@ function DeadlineMarkers({ deadlines, weeks, weekCount }: { deadlines: MediaDead
 
 /* ─── Budget Summary ────────────────────────────────────── */
 function BudgetSummaryRow({
-  plan, infoColCount, weekCount, cellClass, stickyClass, readOnly, onPlanUpdate,
+  plan, infoColCount, weekCount, cellClass, stickyClass, readOnly, compact, onPlanUpdate,
 }: {
   plan: FullMediaPlan;
   infoColCount: number;
@@ -866,6 +881,7 @@ function BudgetSummaryRow({
   cellClass: string;
   stickyClass: string;
   readOnly?: boolean;
+  compact?: boolean;
   onPlanUpdate: (updates: Partial<MediaPlan>) => Promise<void>;
 }) {
   const calcTotal = plan.categories.reduce((sum, cat) => sum + calcCategoryTotal(cat.lines), 0);
