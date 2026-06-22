@@ -18,11 +18,11 @@ export default function PlanCard({ plan, onOpen, onArchive, onDelete, archived }
       onClick={onOpen}
     >
       {/* Color accent strip */}
-      <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500" />
+      <div className="h-1.5 bg-gradient-to-r from-milou-500 to-milou-700" />
 
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors">
+          <h2 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 group-hover:text-milou-500 transition-colors">
             {plan.campaign_name}
           </h2>
           {archived && (
@@ -47,7 +47,7 @@ export default function PlanCard({ plan, onOpen, onArchive, onDelete, archived }
       >
         <button
           onClick={onOpen}
-          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+          className="text-xs text-milou-500 hover:text-milou-700 font-medium"
         >
           Öppna plan →
         </button>

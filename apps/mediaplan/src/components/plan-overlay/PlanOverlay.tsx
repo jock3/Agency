@@ -114,7 +114,7 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
             )}
 
             {readOnly ? (
-              <span className="text-xs bg-indigo-900 text-indigo-300 px-2 py-1 rounded-full">
+              <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1 rounded-full">
                 Visningsläge
               </span>
             ) : (
@@ -137,7 +137,7 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
         </div>
 
         {shareLink && !copyDone && (
-          <div className="bg-indigo-900 text-indigo-200 text-xs px-6 py-2 flex items-center gap-2">
+          <div className="bg-milou-900 text-milou-200 text-xs px-6 py-2 flex items-center gap-2">
             <span className="font-medium">Delningslänk:</span>
             <code className="font-mono">{shareLink}</code>
             <button
@@ -203,7 +203,7 @@ function EditableName({ value, onSave }: { value: string; onSave: (v: string) =>
   return (
     <button
       onClick={() => setEditing(true)}
-      className="text-base font-semibold text-white hover:text-indigo-300 truncate max-w-xs transition-colors"
+      className="text-base font-semibold text-white hover:text-milou-300 truncate max-w-xs transition-colors"
       title="Klicka för att redigera namn"
     >
       {value}

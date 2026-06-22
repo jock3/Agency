@@ -2,7 +2,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import type { MediaCategory } from "@/lib/types";
 
 const CATEGORY_COLORS = [
-  "#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6",
+  "#E60330", "#f59e0b", "#10b981", "#931644", "#5B173C",
   "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#14b8a6",
 ];
 
