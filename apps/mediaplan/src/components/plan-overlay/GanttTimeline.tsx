@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { format } from "date-fns";
 import type { FullMediaPlan, MediaLine, MediaConcept, MediaCategory } from "@/lib/types";
-import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan } from "@/lib/utils/dates";
+import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
 import { calcLineTotal, calcCategoryTotal, formatSEK } from "@/lib/utils/budget";
 import { updateLine, createLine, deleteLine } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
@@ -12,6 +13,16 @@ import ColorDot from "./ColorDot";
 
 const INFO_COLS = "200px 80px 90px 60px 100px";
 const INFO_COL_COUNT = 5;
+
+function colToStartDate(col: number, weeks: WeekColumn[]): string {
+  const idx = Math.max(0, Math.min(col - 1, weeks.length - 1));
+  return format(weeks[idx].startDate, "yyyy-MM-dd");
+}
+
+function colToEndDate(colEnd: number, weeks: WeekColumn[]): string {
+  const idx = Math.max(0, Math.min(colEnd - 2, weeks.length - 1));
+  return format(weeks[idx].endDate, "yyyy-MM-dd");
+}
 
 interface Props {
   plan: FullMediaPlan;
@@ -24,7 +35,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
   const months = useMemo(() => getMonthGroups(weeks), [weeks]);
   const weekCount = weeks.length;
 
-  const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(28px, 1fr))`;
+  const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
 
   const cellClass = "border-r border-b border-gray-100 px-1 py-1 text-xs flex items-center";
   const stickyClass = "sticky left-0 z-10 bg-white";
@@ -77,7 +88,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
   };
 
   return (
-    <div className="overflow-x-auto scrollbar-thin">
+    <div className="overflow-x-auto scrollbar-thin px-4 py-2">
       <div
         style={{ display: "grid", gridTemplateColumns: gridCols }}
         className="min-w-max border-l border-t border-gray-100"
@@ -157,6 +168,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
             key={cat.id}
             category={cat}
             plan={plan}
+            weeks={weeks}
             weekCount={weekCount}
             infoColCount={INFO_COL_COUNT}
             readOnly={readOnly}
@@ -277,12 +289,13 @@ function GanttConceptRow({
 
 /* ─── Category Section ──────────────────────────────────── */
 function GanttCategorySection({
-  category, plan, weekCount, infoColCount, readOnly, getSpan,
+  category, plan, weeks, weekCount, infoColCount, readOnly, getSpan,
   onLineUpdate, onDeleteLine, onAddLine, onCategoryUpdate, onDeleteCategory,
   cellClass, stickyClass,
 }: {
   category: MediaCategory & { lines: MediaLine[] };
   plan: FullMediaPlan;
+  weeks: WeekColumn[];
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
@@ -336,6 +349,7 @@ function GanttCategorySection({
           key={line.id}
           line={line}
           plan={plan}
+          weeks={weeks}
           weekCount={weekCount}
           infoColCount={infoColCount}
           readOnly={readOnly}
@@ -369,11 +383,19 @@ function GanttCategorySection({
 }
 
 /* ─── Line Row ──────────────────────────────────────────── */
+type DragState = {
+  type: "move" | "left" | "right";
+  startX: number;
+  startColStart: number;
+  startColEnd: number;
+};
+
 function GanttLineRow({
-  line, plan, weekCount, infoColCount, readOnly, span, onUpdate, onDelete, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, span, onUpdate, onDelete, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
+  weeks: WeekColumn[];
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
@@ -384,6 +406,78 @@ function GanttLineRow({
   stickyClass: string;
 }) {
   const total = calcLineTotal(line);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [displaySpan, setDisplaySpan] = useState(span);
+  const displaySpanRef = useRef(span);
+  const dragStateRef = useRef<DragState | null>(null);
+
+  // Sync from prop when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setDisplaySpan(span);
+      displaySpanRef.current = span;
+    }
+  }, [span, isDragging]);
+
+  const startDrag = useCallback((e: React.MouseEvent, type: DragState["type"]) => {
+    if (readOnly || !span) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragStateRef.current = { type, startX: e.clientX, startColStart: span.colStart, startColEnd: span.colEnd };
+    setIsDragging(true);
+  }, [readOnly, span]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || !containerRef.current) return;
+
+      const colWidth = containerRef.current.offsetWidth / weekCount;
+      const delta = Math.round((e.clientX - drag.startX) / colWidth);
+      const spanWidth = drag.startColEnd - drag.startColStart;
+
+      let newColStart = drag.startColStart;
+      let newColEnd = drag.startColEnd;
+
+      if (drag.type === "move") {
+        newColStart = Math.max(1, Math.min(drag.startColStart + delta, weekCount - spanWidth + 1));
+        newColEnd = newColStart + spanWidth;
+      } else if (drag.type === "left") {
+        newColStart = Math.max(1, Math.min(drag.startColStart + delta, drag.startColEnd - 1));
+      } else {
+        newColEnd = Math.max(drag.startColStart + 1, Math.min(drag.startColEnd + delta, weekCount + 1));
+      }
+
+      const newSpan = { colStart: newColStart, colEnd: newColEnd };
+      displaySpanRef.current = newSpan;
+      setDisplaySpan(newSpan);
+    };
+
+    const onMouseUp = () => {
+      const finalSpan = displaySpanRef.current;
+      if (finalSpan) {
+        onUpdateRef.current({
+          start_date: colToStartDate(finalSpan.colStart, weeks),
+          end_date: colToEndDate(finalSpan.colEnd, weeks),
+        });
+      }
+      dragStateRef.current = null;
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [isDragging, weekCount, weeks]);
 
   return (
     <>
@@ -458,41 +552,74 @@ function GanttLineRow({
 
       {/* Gantt bar cell */}
       <div
+        ref={containerRef}
         style={{ gridColumn: `span ${weekCount}` }}
         className="relative border-b border-gray-100 bg-white"
       >
-        {span && (
+        {displaySpan ? (
           <div
             style={{
               position: "absolute",
-              left: `${((span.colStart - 1) / weekCount) * 100}%`,
-              width: `${Math.max(((span.colEnd - span.colStart) / weekCount) * 100, 1)}%`,
+              left: `${((displaySpan.colStart - 1) / weekCount) * 100}%`,
+              width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
               backgroundColor: line.color,
-              top: "25%",
-              height: "50%",
-              borderRadius: "3px",
+              top: "20%",
+              height: "60%",
+              borderRadius: "4px",
+              cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
+              userSelect: "none",
             }}
-            title={`${line.platform_name}: ${line.start_date} → ${line.end_date}`}
-          />
-        )}
-
-        {!readOnly && (
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center" style={{ position: "absolute", zIndex: 1 }}>
-            <div className="flex gap-1 px-1">
-              <input
-                type="date"
-                value={line.start_date ?? ""}
-                onChange={(e) => onUpdate({ start_date: e.target.value })}
-                className="border-0 bg-transparent text-xs w-26 text-gray-600 cursor-pointer"
-              />
-              <input
-                type="date"
-                value={line.end_date ?? ""}
-                onChange={(e) => onUpdate({ end_date: e.target.value })}
-                className="border-0 bg-transparent text-xs w-26 text-gray-600 cursor-pointer"
-              />
-            </div>
+            onMouseDown={!readOnly ? (e) => startDrag(e, "move") : undefined}
+            title={`${line.platform_name}: v.${displaySpan.colStart} – v.${displaySpan.colEnd - 1}`}
+          >
+            {!readOnly && (
+              <>
+                {/* Left resize handle */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0, top: 0, bottom: 0,
+                    width: "8px",
+                    cursor: "w-resize",
+                    borderRadius: "4px 0 0 4px",
+                    backgroundColor: "rgba(0,0,0,0.18)",
+                  }}
+                  onMouseDown={(e) => { e.stopPropagation(); startDrag(e, "left"); }}
+                />
+                {/* Right resize handle */}
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0, top: 0, bottom: 0,
+                    width: "8px",
+                    cursor: "e-resize",
+                    borderRadius: "0 4px 4px 0",
+                    backgroundColor: "rgba(0,0,0,0.18)",
+                  }}
+                  onMouseDown={(e) => { e.stopPropagation(); startDrag(e, "right"); }}
+                />
+              </>
+            )}
           </div>
+        ) : (
+          !readOnly && (
+            <div className="absolute inset-0 flex items-center px-2">
+              <div className="flex gap-1">
+                <input
+                  type="date"
+                  value={line.start_date ?? ""}
+                  onChange={(e) => onUpdate({ start_date: e.target.value })}
+                  className="border-0 bg-transparent text-xs text-gray-500 cursor-pointer"
+                />
+                <input
+                  type="date"
+                  value={line.end_date ?? ""}
+                  onChange={(e) => onUpdate({ end_date: e.target.value })}
+                  className="border-0 bg-transparent text-xs text-gray-500 cursor-pointer"
+                />
+              </div>
+            </div>
+          )
         )}
       </div>
     </>
