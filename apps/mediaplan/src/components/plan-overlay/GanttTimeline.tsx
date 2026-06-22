@@ -37,7 +37,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
 
   const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
 
-  const cellClass = "border-r border-b border-gray-100 px-1 py-1 text-xs flex items-center";
+  const cellClass = "border-r border-b border-gray-100 px-1 py-2.5 text-xs flex items-center";
   const stickyClass = "sticky left-0 z-10 bg-white";
   const headerBg = "bg-gray-900 text-white";
 
@@ -563,8 +563,8 @@ function GanttLineRow({
               left: `${((displaySpan.colStart - 1) / weekCount) * 100}%`,
               width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
               backgroundColor: line.color,
-              top: "20%",
-              height: "60%",
+              top: "15%",
+              height: "70%",
               borderRadius: "4px",
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
               userSelect: "none",
