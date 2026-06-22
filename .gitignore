@@ -168,3 +168,5 @@ hive-mind-prompt-*.txt
 .env.*
 !.env.example
 !.env.*.example
+apps/mediaplan/.next
+apps/mediaplan/node_modules
