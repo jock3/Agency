@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import type { FullMediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
+import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
-import { calcLineTotal, calcCategoryTotal, formatSEK } from "@/lib/utils/budget";
+import { calcLineTotal, calcCategoryTotal, calcCategoryReach, formatSEK, formatReach } from "@/lib/utils/budget";
+import { updatePlan } from "@/lib/api/plans";
 import { updateLine, createLine, deleteLine } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
 import { updateConcept, createConcept, deleteConcept } from "@/lib/api/concepts";
@@ -12,8 +13,8 @@ import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadli
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
 
-const INFO_COLS = "200px 80px 90px 60px 100px";
-const INFO_COL_COUNT = 5;
+const INFO_COLS = "200px 80px 90px 60px 100px 90px";
+const INFO_COL_COUNT = 6;
 
 function getDeadlineLeft(date: string, weeks: WeekColumn[], weekCount: number): number | null {
   const idx = weeks.findIndex(
@@ -136,7 +137,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
         ))}
 
         {/* ── Column headers (info + week labels) ── */}
-        {["Kanal/Plattform", "Pris/enhet", "Enhet", "Antal", "Totalt"].map((h, i) => (
+        {["Kanal/Plattform", "Pris/enhet", "Enhet", "Antal", "Totalt", "Räckvidd"].map((h, i) => (
           <div
             key={h}
             className={`${cellClass} ${stickyClass} bg-gray-800 text-gray-300 text-xs font-medium`}
@@ -285,7 +286,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
         )}
 
         {/* ── Budget summary row ── */}
-        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} />
+        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
       </div>
     </div>
   );
@@ -396,14 +397,15 @@ function GanttCategorySection({
   stickyClass: string;
 }) {
   const total = calcCategoryTotal(category.lines);
+  const reach = calcCategoryReach(category.lines);
 
   return (
     <>
-      {/* Category header */}
+      {/* Category header — spans first 5 info cols */}
       <div
         className={`${cellClass} ${stickyClass} font-semibold text-xs`}
         style={{
-          gridColumn: `1 / span ${infoColCount}`,
+          gridColumn: `1 / span ${infoColCount - 1}`,
           backgroundColor: category.color + "22",
           borderLeft: `3px solid ${category.color}`,
         }}
@@ -427,6 +429,10 @@ function GanttCategorySection({
           </div>
         )}
         {readOnly && <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>}
+      </div>
+      {/* Category reach col (6th) */}
+      <div className={`${cellClass} justify-end text-xs font-semibold`} style={{ backgroundColor: category.color + "22" }}>
+        <span style={{ color: category.color, opacity: 0.7 }}>{formatReach(reach)}</span>
       </div>
       <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11" }} className="relative border-b border-gray-100">
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
@@ -693,6 +699,21 @@ function GanttLineRow({
         {formatSEK(total)}
       </div>
 
+      {/* Estimated reach */}
+      <div className={`${cellClass} justify-end`}>
+        {readOnly ? (
+          <span className="text-xs text-gray-600">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
+        ) : (
+          <InlineEdit
+            value={line.estimated_reach ? String(line.estimated_reach) : ""}
+            onSave={(v) => onUpdate({ estimated_reach: v ? Number(v) : null })}
+            type="number"
+            className="text-xs text-right w-full"
+            placeholder="–"
+          />
+        )}
+      </div>
+
       {/* Gantt bar cell */}
       <div
         ref={containerRef}
@@ -714,8 +735,17 @@ function GanttLineRow({
               style={{ position: "absolute", left: `${dlLeft}%`, top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 6, cursor: deadlineDragging ? "grabbing" : (readOnly ? "default" : "grab"), userSelect: "none" }}
               onMouseDown={!readOnly ? startDeadlineDrag : undefined}
             >
-              <span style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap", fontWeight: 700, backgroundColor: "rgba(255,255,255,0.92)", padding: "0 2px", borderRadius: "2px", pointerEvents: "none" }}>
-                {dlLabel}
+              <span
+                style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", fontSize: "9px", color: "#ef4444", whiteSpace: "nowrap", fontWeight: 700, backgroundColor: "rgba(255,255,255,0.92)", padding: "0 2px", borderRadius: "2px" }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                {readOnly ? (line.deadline_label || dlLabel) : (
+                  <InlineEdit
+                    value={line.deadline_label || dlLabel}
+                    onSave={(v) => onUpdate({ deadline_label: v || null })}
+                    style={{ fontSize: "9px", color: "#ef4444", fontWeight: 700 }}
+                  />
+                )}
               </span>
               {!readOnly && !deadlineDragging && (
                 <button
@@ -828,45 +858,58 @@ function DeadlineMarkers({ deadlines, weeks, weekCount }: { deadlines: MediaDead
 
 /* ─── Budget Summary ────────────────────────────────────── */
 function BudgetSummaryRow({
-  plan, infoColCount, weekCount, cellClass, stickyClass,
+  plan, infoColCount, weekCount, cellClass, stickyClass, readOnly, onPlanUpdate,
 }: {
   plan: FullMediaPlan;
   infoColCount: number;
   weekCount: number;
   cellClass: string;
   stickyClass: string;
+  readOnly?: boolean;
+  onPlanUpdate: (updates: Partial<MediaPlan>) => Promise<void>;
 }) {
-  const total = plan.categories.reduce(
-    (sum, cat) => sum + calcCategoryTotal(cat.lines),
-    0
-  );
-  const perCategory = plan.categories.map((cat) => ({
-    name: cat.name,
-    total: calcCategoryTotal(cat.lines),
-  }));
+  const calcTotal = plan.categories.reduce((sum, cat) => sum + calcCategoryTotal(cat.lines), 0);
+  const totalReach = plan.categories.reduce((sum, cat) => sum + calcCategoryReach(cat.lines), 0);
 
   return (
     <>
+      {/* Spans cols 1–5 */}
       <div
         className={`${cellClass} ${stickyClass} bg-gray-900 text-white font-bold`}
-        style={{ gridColumn: `1 / span ${infoColCount}` }}
+        style={{ gridColumn: `1 / span ${infoColCount - 1}` }}
       >
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-gray-400">Totalt</span>
-          <span className="text-sm">{formatSEK(total)}</span>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-            {perCategory.map((c) => (
-              <span key={c.name} className="text-xs text-gray-400">
-                {c.name}: {formatSEK(c.total)}
-              </span>
-            ))}
+        <div className="flex flex-col gap-0.5 w-full">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xs text-gray-400">Budget</span>
+            {!readOnly ? (
+              <InlineEdit
+                value={plan.planned_budget ? String(plan.planned_budget) : ""}
+                onSave={(v) => onPlanUpdate({ planned_budget: v ? Number(v) : null })}
+                type="number"
+                placeholder="Ange budget"
+                className="text-sm font-bold text-white"
+                darkMode
+              />
+            ) : (
+              <span className="text-sm">{plan.planned_budget ? formatSEK(plan.planned_budget) : "–"}</span>
+            )}
+            {plan.planned_budget != null && (
+              <span className="text-xs text-gray-400 ml-1">/ {formatSEK(calcTotal)} använt</span>
+            )}
+            {plan.planned_budget == null && (
+              <span className="text-sm">{formatSEK(calcTotal)}</span>
+            )}
           </div>
         </div>
       </div>
-      <div
-        style={{ gridColumn: `span ${weekCount}` }}
-        className="bg-gray-900 border-b border-gray-700"
-      />
+      {/* Col 6: total reach */}
+      <div className={`${cellClass} bg-gray-900 text-white justify-end`}>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="text-xs text-gray-400">Räckvidd</span>
+          <span className="text-sm font-bold">{formatReach(totalReach)}</span>
+        </div>
+      </div>
+      <div style={{ gridColumn: `span ${weekCount}` }} className="bg-gray-900 border-b border-gray-700" />
     </>
   );
 }

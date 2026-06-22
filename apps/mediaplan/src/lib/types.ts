@@ -5,6 +5,7 @@ export interface MediaPlan {
   period_end: string;
   archived: boolean;
   share_token: string | null;
+  planned_budget: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ export interface MediaLine {
   sort_order: number;
   deadline_date: string | null;
   deadline_label: string | null;
+  estimated_reach: number | null;
 }
 
 export interface MediaDeadline {

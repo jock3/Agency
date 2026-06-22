@@ -15,6 +15,15 @@ export function calcPlanTotal(plan: FullMediaPlan): number {
   );
 }
 
+export function calcCategoryReach(lines: MediaLine[]): number {
+  return lines.reduce((sum, l) => sum + (l.estimated_reach ?? 0), 0);
+}
+
+export function formatReach(n: number): string {
+  if (n === 0) return "–";
+  return new Intl.NumberFormat("sv-SE").format(n);
+}
+
 export function formatSEK(amount: number): string {
   return new Intl.NumberFormat("sv-SE", {
     style: "currency",
