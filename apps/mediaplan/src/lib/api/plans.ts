@@ -14,11 +14,12 @@ export async function getPlans(): Promise<MediaPlan[]> {
 export async function getFullPlan(id: string): Promise<FullMediaPlan | null> {
   const sb = getSupabaseClient();
 
-  const [planRes, conceptsRes, categoriesRes, linesRes] = await Promise.all([
+  const [planRes, conceptsRes, categoriesRes, linesRes, deadlinesRes] = await Promise.all([
     sb.from("media_plans").select("*").eq("id", id).single(),
     sb.from("media_concepts").select("*").eq("plan_id", id).order("sort_order"),
     sb.from("media_categories").select("*").eq("plan_id", id).order("sort_order"),
     sb.from("media_lines").select("*").order("created_at", { ascending: true }),
+    sb.from("media_deadlines").select("*").eq("plan_id", id).order("created_at", { ascending: true }),
   ]);
 
   if (planRes.error || !planRes.data) return null;
@@ -32,6 +33,7 @@ export async function getFullPlan(id: string): Promise<FullMediaPlan | null> {
     ...planRes.data,
     concepts: conceptsRes.data ?? [],
     categories,
+    deadlines: deadlinesRes.data ?? [],
   };
 }
 

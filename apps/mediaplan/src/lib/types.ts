@@ -42,9 +42,18 @@ export interface MediaLine {
   sort_order: number;
 }
 
+export interface MediaDeadline {
+  id: string;
+  plan_id: string;
+  name: string;
+  date: string;
+  color: string;
+}
+
 export interface FullMediaPlan extends MediaPlan {
   concepts: MediaConcept[];
   categories: Array<MediaCategory & { lines: MediaLine[] }>;
+  deadlines: MediaDeadline[];
 }
 
 export interface PlanSummary extends MediaPlan {

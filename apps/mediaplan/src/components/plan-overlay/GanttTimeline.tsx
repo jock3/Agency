@@ -2,17 +2,26 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import type { FullMediaPlan, MediaLine, MediaConcept, MediaCategory } from "@/lib/types";
+import type { FullMediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
 import { calcLineTotal, calcCategoryTotal, formatSEK } from "@/lib/utils/budget";
 import { updateLine, createLine, deleteLine } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
 import { updateConcept, createConcept, deleteConcept } from "@/lib/api/concepts";
+import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadlines";
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
 
 const INFO_COLS = "200px 80px 90px 60px 100px";
 const INFO_COL_COUNT = 5;
+
+function getDeadlineLeft(date: string, weeks: WeekColumn[], weekCount: number): number | null {
+  const idx = weeks.findIndex(
+    (w) => date >= format(w.startDate, "yyyy-MM-dd") && date <= format(w.endDate, "yyyy-MM-dd")
+  );
+  if (idx === -1) return null;
+  return ((idx + 0.5) / weekCount) * 100;
+}
 
 function colToStartDate(col: number, weeks: WeekColumn[]): string {
   const idx = Math.max(0, Math.min(col - 1, weeks.length - 1));
@@ -87,6 +96,22 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
     onPlanChanged();
   };
 
+  const handleAddDeadline = async () => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    await createDeadline(plan.id, today);
+    onPlanChanged();
+  };
+
+  const handleUpdateDeadline = async (id: string, updates: Partial<MediaDeadline>) => {
+    await updateDeadline(id, updates);
+    onPlanChanged();
+  };
+
+  const handleDeleteDeadline = async (id: string) => {
+    await deleteDeadline(id);
+    onPlanChanged();
+  };
+
   return (
     <div className="overflow-x-auto scrollbar-thin px-4 py-2">
       <div
@@ -126,6 +151,61 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
           </div>
         ))}
 
+        {/* ── Deadline markers row ── */}
+        {(plan.deadlines.length > 0 || !readOnly) && (
+          <>
+            <div
+              className={`${cellClass} ${stickyClass} bg-white flex-wrap gap-x-3 gap-y-1`}
+              style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
+            >
+              {plan.deadlines.map((d) => (
+                <div key={d.id} className="flex items-center gap-1 shrink-0">
+                  <div style={{ width: 8, height: 8, backgroundColor: d.color, transform: "rotate(45deg)", borderRadius: 1, flexShrink: 0 }} />
+                  {readOnly ? (
+                    <span className="text-xs font-medium" style={{ color: d.color }}>{d.name} — {d.date}</span>
+                  ) : (
+                    <>
+                      <InlineEdit
+                        value={d.name}
+                        onSave={(name) => handleUpdateDeadline(d.id, { name })}
+                        className="text-xs font-medium"
+                        style={{ color: d.color }}
+                      />
+                      <input
+                        type="date"
+                        value={d.date}
+                        onChange={(e) => handleUpdateDeadline(d.id, { date: e.target.value })}
+                        className="text-xs border-0 bg-transparent cursor-pointer"
+                        style={{ color: d.color }}
+                      />
+                      <ColorDot color={d.color} onChange={(color) => handleUpdateDeadline(d.id, { color })} />
+                      <button onClick={() => handleDeleteDeadline(d.id)} className="text-red-300 hover:text-red-500 text-xs">×</button>
+                    </>
+                  )}
+                </div>
+              ))}
+              {!readOnly && (
+                <button onClick={handleAddDeadline} className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
+                  + Deadline
+                </button>
+              )}
+            </div>
+            <div style={{ gridColumn: `span ${weekCount}` }} className="relative border-b border-gray-100 bg-white">
+              {plan.deadlines.map((d) => {
+                const left = getDeadlineLeft(d.date, weeks, weekCount);
+                if (left === null) return null;
+                return (
+                  <div key={d.id} style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "2px", backgroundColor: d.color, zIndex: 4 }}>
+                    <span style={{ position: "absolute", top: "4px", left: "4px", fontSize: "10px", color: d.color, whiteSpace: "nowrap", fontWeight: 600 }}>
+                      {d.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* ── Concept bands ── */}
         {plan.concepts.map((concept) => {
           const span = getSpan(concept.start_date, concept.end_date);
@@ -134,9 +214,11 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
               key={concept.id}
               concept={concept}
               span={span}
+              weeks={weeks}
               weekCount={weekCount}
               infoColCount={INFO_COL_COUNT}
               readOnly={readOnly}
+              deadlines={plan.deadlines}
               onUpdate={(updates) => handleConceptUpdate(concept.id, updates)}
               onDelete={() => handleDeleteConcept(concept.id)}
               cellClass={cellClass}
@@ -172,6 +254,7 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
             weekCount={weekCount}
             infoColCount={INFO_COL_COUNT}
             readOnly={readOnly}
+            deadlines={plan.deadlines}
             getSpan={getSpan}
             onLineUpdate={handleLineUpdate}
             onDeleteLine={handleDeleteLine}
@@ -210,13 +293,15 @@ export default function GanttTimeline({ plan, readOnly, onPlanChanged }: Props) 
 
 /* ─── Concept Row ───────────────────────────────────────── */
 function GanttConceptRow({
-  concept, span, weekCount, infoColCount, readOnly, onUpdate, onDelete, cellClass, stickyClass,
+  concept, span, weeks, weekCount, infoColCount, readOnly, deadlines, onUpdate, onDelete, cellClass, stickyClass,
 }: {
   concept: MediaConcept;
   span: { colStart: number; colEnd: number } | null;
+  weeks: WeekColumn[];
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
+  deadlines: MediaDeadline[];
   onUpdate: (updates: Partial<MediaConcept>) => void;
   onDelete: () => void;
   cellClass: string;
@@ -282,6 +367,7 @@ function GanttConceptRow({
             </span>
           </div>
         )}
+        <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
       </div>
     </>
   );
@@ -289,7 +375,7 @@ function GanttConceptRow({
 
 /* ─── Category Section ──────────────────────────────────── */
 function GanttCategorySection({
-  category, plan, weeks, weekCount, infoColCount, readOnly, getSpan,
+  category, plan, weeks, weekCount, infoColCount, readOnly, deadlines, getSpan,
   onLineUpdate, onDeleteLine, onAddLine, onCategoryUpdate, onDeleteCategory,
   cellClass, stickyClass,
 }: {
@@ -299,6 +385,7 @@ function GanttCategorySection({
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
+  deadlines: MediaDeadline[];
   getSpan: (s: string | null, e: string | null) => { colStart: number; colEnd: number } | null;
   onLineUpdate: (id: string, updates: Partial<MediaLine>) => void;
   onDeleteLine: (id: string) => void;
@@ -341,7 +428,9 @@ function GanttCategorySection({
         )}
         {readOnly && <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>}
       </div>
-      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11" }} className="border-b border-gray-100" />
+      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11" }} className="relative border-b border-gray-100">
+        <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
+      </div>
 
       {/* Media lines */}
       {category.lines.map((line) => (
@@ -353,6 +442,7 @@ function GanttCategorySection({
           weekCount={weekCount}
           infoColCount={infoColCount}
           readOnly={readOnly}
+          deadlines={deadlines}
           span={getSpan(line.start_date, line.end_date)}
           onUpdate={(updates) => onLineUpdate(line.id, updates)}
           onDelete={() => onDeleteLine(line.id)}
@@ -391,7 +481,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, span, onUpdate, onDelete, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, deadlines, span, onUpdate, onDelete, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -399,6 +489,7 @@ function GanttLineRow({
   weekCount: number;
   infoColCount: number;
   readOnly?: boolean;
+  deadlines: MediaDeadline[];
   span: { colStart: number; colEnd: number } | null;
   onUpdate: (updates: Partial<MediaLine>) => void;
   onDelete: () => void;
@@ -556,6 +647,7 @@ function GanttLineRow({
         style={{ gridColumn: `span ${weekCount}` }}
         className="relative border-b border-gray-100 bg-white"
       >
+        <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
         {displaySpan ? (
           <div
             style={{
@@ -622,6 +714,24 @@ function GanttLineRow({
           )
         )}
       </div>
+    </>
+  );
+}
+
+/* ─── Deadline Markers ──────────────────────────────────── */
+function DeadlineMarkers({ deadlines, weeks, weekCount }: { deadlines: MediaDeadline[]; weeks: WeekColumn[]; weekCount: number }) {
+  return (
+    <>
+      {deadlines.map((d) => {
+        const left = getDeadlineLeft(d.date, weeks, weekCount);
+        if (left === null) return null;
+        return (
+          <div
+            key={d.id}
+            style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "2px", backgroundColor: d.color, opacity: 0.55, zIndex: 4, pointerEvents: "none" }}
+          />
+        );
+      })}
     </>
   );
 }
