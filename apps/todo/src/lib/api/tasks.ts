@@ -47,7 +47,7 @@ export async function completeTask(id: string, completed: boolean): Promise<void
   const sb = getSupabaseClient();
   const { error } = await sb
     .from("todo_tasks")
-    .update({ completed, status, ...statusMeta(status) })
+    .update({ status, ...statusMeta(status) })
     .eq("id", id);
   if (error) throw error;
 }
