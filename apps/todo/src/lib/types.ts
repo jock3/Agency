@@ -1,3 +1,5 @@
+export type TodoStatus = "ej_paborjad" | "pagar" | "klar" | "avbruten";
+
 export interface TodoList {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export interface TodoTask {
   title: string;
   notes: string | null;
   completed: boolean;
+  status: TodoStatus;
   priority: "none" | "low" | "medium" | "high";
   due_date: string | null;
   sort_order: number;
