@@ -1,11 +1,10 @@
-import clsx from "clsx";
 import type { TodoTask } from "@/lib/types";
 
-const PRIORITY_CONFIG: Record<TodoTask["priority"], { label: string; className: string }> = {
-  none: { label: "—", className: "text-gray-300 hover:text-gray-500" },
-  low: { label: "Låg", className: "bg-blue-50 text-blue-600" },
-  medium: { label: "Medel", className: "bg-amber-50 text-amber-600" },
-  high: { label: "Hög", className: "bg-milou-100 text-milou-600" },
+const PRIORITY_CONFIG: Record<TodoTask["priority"], { label: string; bg: string; color: string }> = {
+  none:   { label: "—",     bg: "transparent",  color: "#444" },
+  low:    { label: "Låg",   bg: "#1e3a5f",      color: "#60a5fa" },
+  medium: { label: "Medel", bg: "#3d2400",      color: "#f59e0b" },
+  high:   { label: "Hög",   bg: "#3d0012",      color: "#f87171" },
 };
 
 export const PRIORITY_CYCLE: TodoTask["priority"][] = ["none", "low", "medium", "high"];
@@ -20,19 +19,16 @@ interface Props {
 }
 
 export default function PriorityBadge({ priority, onClick }: Props) {
+  const cfg = PRIORITY_CONFIG[priority];
   if (priority === "none" && !onClick) return null;
-  const { label, className } = PRIORITY_CONFIG[priority];
   return (
     <button
       onClick={onClick}
       title={onClick ? "Byt prioritet" : undefined}
-      className={clsx(
-        "text-xs px-1.5 py-0.5 rounded font-medium transition-colors",
-        className,
-        onClick ? "cursor-pointer" : "cursor-default"
-      )}
+      style={{ backgroundColor: cfg.bg, color: cfg.color }}
+      className="text-xs px-2.5 py-1 rounded font-medium transition-opacity hover:opacity-80 cursor-pointer w-full text-center"
     >
-      {label}
+      {cfg.label}
     </button>
   );
 }

@@ -23,7 +23,8 @@
     box-sizing: border-box;
   }
   body {
-    @apply bg-white text-gray-900;
+    background-color: #141414;
+    color: #e5e5e5;
     font-family: 'Komet', system-ui, -apple-system, sans-serif;
   }
 }
@@ -31,7 +32,7 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent;
+    scrollbar-color: #333 transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     height: 6px;
@@ -41,7 +42,7 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
+    background-color: #333;
     border-radius: 3px;
   }
 }
