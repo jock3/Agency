@@ -77,7 +77,6 @@
 .roo/
 .roomodes
 .ruv-swarm/
-.swarm/
 .swarm/memory.db*
 .turbo/
 .vscode/
@@ -133,7 +132,6 @@ yarn-error.log*
 .mcp.json
 !plugins/*/.mcp.json
 claude-flow.config.json
-.swarm/
 .hive-mind/
 .claude-flow/
 /memory/
