@@ -1,62 +1,63 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { Check } from "lucide-react";
+import { useRef, useState } from "react";
+import Popover from "./Popover";
+import { STATUSES, STATUS_MAP } from "@/lib/todo/constants";
 import type { TodoStatus } from "@/lib/types";
-
-export const STATUS_CONFIG: Record<TodoStatus, { label: string; bg: string; text: string }> = {
-  ej_paborjad: { label: "Ej påbörjad", bg: "#F3F4F6", text: "#6B7280" },
-  pagar:       { label: "Pågår",        bg: "#DBEAFE", text: "#1D4ED8" },
-  klar:        { label: "Klar",         bg: "#D1FAE5", text: "#065F46" },
-  avbruten:    { label: "Avbruten",     bg: "#FEE2E2", text: "#991B1B" },
-};
 
 interface Props {
   status: TodoStatus;
   onChange: (status: TodoStatus) => void;
+  small?: boolean;
 }
 
-export default function StatusPill({ status, onChange }: Props) {
+/** Solid colour-filled status cell — the colour is the label, so a full board
+ *  reads as a heat map at a glance. */
+export default function StatusPill({ status, onChange, small = false }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const cfg = STATUS_CONFIG[status];
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const ref = useRef<HTMLButtonElement>(null);
+  const cfg = STATUS_MAP[status] ?? STATUS_MAP.todo;
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        style={{ backgroundColor: cfg.bg, color: cfg.text }}
-        className="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-opacity hover:opacity-80 w-full"
+        ref={ref}
+        type="button"
+        aria-label={"Status: " + cfg.label}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        style={{ background: cfg.color }}
+        className={`w-full truncate rounded-md text-center font-medium text-white transition-opacity hover:opacity-90 ${
+          small ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1.5 text-xs"
+        }`}
       >
         {cfg.label}
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-1 min-w-[150px]">
-          {(Object.entries(STATUS_CONFIG) as [TodoStatus, (typeof STATUS_CONFIG)[TodoStatus]][]).map(([key, c]) => (
-            <button
-              key={key}
-              onClick={() => { onChange(key); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 text-left"
-            >
-              <span
-                style={{ backgroundColor: c.bg, color: c.text }}
-                className="text-xs px-2 py-0.5 rounded-full font-medium"
+        <Popover anchorRef={ref} onClose={() => setOpen(false)} width={188}>
+          <div className="grid gap-1">
+            {STATUSES.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => {
+                  onChange(s.key);
+                  setOpen(false);
+                }}
+                style={{ background: s.color }}
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
               >
-                {c.label}
-              </span>
-            </button>
-          ))}
-        </div>
+                {s.label}
+                {s.key === status && <Check size={14} strokeWidth={3} />}
+              </button>
+            ))}
+          </div>
+        </Popover>
       )}
-    </div>
+    </>
   );
 }

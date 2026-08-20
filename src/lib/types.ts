@@ -104,16 +104,28 @@ export interface FullCampaignPlan extends CampaignPlan {
   campaigns: Array<Campaign & { platforms: CampaignPlatform[] }>;
 }
 
-export type TodoStatus = 'ej_paborjad' | 'pagar' | 'klar' | 'avbruten';
+export type TodoStatus = 'todo' | 'working' | 'stuck' | 'review' | 'done';
 export type TodoPriority = 'none' | 'low' | 'medium' | 'high';
+export type TodoRepeat = 'daily' | 'weekdays' | 'weekly' | 'monthly';
 
+/** A group on the board. Rows live in todo_lists. */
 export interface TodoList {
   id: string;
   name: string;
   color: string;
   sort_order: number;
+  collapsed: boolean;
+  archived: boolean;
+  archived_at: string | null;
   created_at: string;
   created_by: string | null;
+}
+
+export interface TodoComment {
+  id: string;
+  author: string;
+  text: string;
+  at: string;
 }
 
 export interface TodoTask {
@@ -125,6 +137,12 @@ export interface TodoTask {
   status: TodoStatus;
   priority: TodoPriority;
   due_date: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  repeat: TodoRepeat | null;
+  comments: TodoComment[];
+  /** The due date an overdue automation has already reacted to. */
+  overdue_key: string | null;
   sort_order: number;
   completed_at: string | null;
   created_at: string;
@@ -143,8 +161,33 @@ export interface TodoSubtask {
   task_id: string;
   title: string;
   completed: boolean;
+  status: TodoStatus;
+  due_date: string | null;
+  assigned_to: string | null;
   sort_order: number;
   created_at: string;
+}
+
+export type AutomationType =
+  | 'move_on_status'
+  | 'overdue_status'
+  | 'date_on_done'
+  | 'default_status'
+  | 'collapse_done';
+
+export interface Automation {
+  id: string;
+  type: AutomationType;
+  enabled: boolean;
+  config: { status?: TodoStatus; listId?: string };
+}
+
+export type TodoColumnKey = 'person' | 'status' | 'priority' | 'date' | 'timeline' | 'group';
+
+export interface BoardSettings {
+  board_title: string;
+  hidden_cols: TodoColumnKey[];
+  automations: Automation[];
 }
 
 export type CampaignPlanStatus = 'draft' | 'active' | 'approved';

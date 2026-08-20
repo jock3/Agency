@@ -1,106 +1,175 @@
-import { getSupabaseClient } from "@/lib/supabase/client";
-import type { TodoList, TodoTask, TodoSubtask } from "@/lib/types";
+import { DEFAULT_AUTOMATIONS, GROUP_COLORS } from "@/lib/todo/constants";
+import type {
+  Automation,
+  BoardSettings,
+  TodoColumnKey,
+  TodoList,
+  TodoSubtask,
+  TodoTask,
+} from "@/lib/types";
 
-const sb = () => getSupabaseClient();
+/* The browser never talks to PostgREST for board data. The anon key ships in
+ * the JS bundle, so anything it can reach is effectively public; these routes
+ * check the session cookie and use the service role on the far side. */
 
 export interface UserOption {
   id: string;
   name: string;
 }
 
-export async function getUsers(): Promise<UserOption[]> {
-  const { data, error } = await sb().rpc("app_list_users_public");
-  if (error) throw error;
-  return data as UserOption[];
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(`/api/todo/${path}`, {
+    method,
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${method} /api/todo/${path} failed: ${res.status}`);
+  return (await res.json()) as T;
 }
 
-export async function getLists(): Promise<TodoList[]> {
-  const { data, error } = await sb().from("todo_lists").select("*").order("sort_order");
-  if (error) throw error;
-  return data as TodoList[];
+/* ── Hela tavlan ──────────────────────────────────────────────────── */
+
+export interface Board {
+  lists: TodoList[];
+  tasks: TodoTask[];
+  subtasks: TodoSubtask[];
+  users: UserOption[];
+  settings: BoardSettings;
 }
 
-export async function createList(name: string, color: string, createdBy: string | null): Promise<TodoList> {
-  const { data: maxData } = await sb().from("todo_lists").select("sort_order").order("sort_order", { ascending: false }).limit(1);
-  const sort_order = (maxData?.[0]?.sort_order ?? 0) + 1;
-  const { data, error } = await sb().from("todo_lists").insert({ name, color, sort_order, created_by: createdBy }).select().single();
-  if (error) throw error;
-  return data as TodoList;
+interface BoardSettingsRow {
+  board_title: string | null;
+  hidden_cols: TodoColumnKey[] | null;
+  automations: Automation[] | null;
 }
 
-export async function updateList(id: string, updates: Partial<Pick<TodoList, "name" | "color">>): Promise<void> {
-  const { error } = await sb().from("todo_lists").update(updates).eq("id", id);
-  if (error) throw error;
+interface BoardResponse {
+  lists: TodoList[];
+  tasks: TodoTask[];
+  subtasks: TodoSubtask[];
+  users: UserOption[];
+  settings: BoardSettingsRow | null;
+}
+
+export async function getBoard(): Promise<Board> {
+  const data = await send<BoardResponse>("board", "GET");
+  return {
+    lists: data.lists,
+    tasks: data.tasks.map(normalizeTask),
+    subtasks: data.subtasks,
+    users: data.users,
+    settings: sanitizeSettings(
+      data.settings ?? { board_title: null, hidden_cols: null, automations: null },
+      data.lists,
+    ),
+  };
+}
+
+/** comments is jsonb, so guard against a row written before the column existed. */
+function normalizeTask(t: TodoTask): TodoTask {
+  return { ...t, comments: Array.isArray(t.comments) ? t.comments : [] };
+}
+
+/** Fills in any automation rule added after the row was written, and drops a
+ *  move-target pointing at a group that no longer exists. */
+export function sanitizeSettings(raw: BoardSettingsRow, lists: TodoList[]): BoardSettings {
+  const known = new Set(lists.map((l) => l.id));
+  const stored = Array.isArray(raw.automations) ? raw.automations : [];
+  const automations = DEFAULT_AUTOMATIONS.map((def) => {
+    const found = stored.find((a) => a.type === def.type);
+    if (!found) return def;
+    const listId = found.config?.listId;
+    return {
+      ...def,
+      ...found,
+      config: { ...found.config, listId: listId && known.has(listId) ? listId : "" },
+    };
+  });
+
+  return {
+    board_title: raw.board_title || "Projekttavlan",
+    hidden_cols: Array.isArray(raw.hidden_cols) ? raw.hidden_cols : [],
+    automations,
+  };
+}
+
+export async function saveBoardSettings(patch: Partial<BoardSettings>): Promise<void> {
+  await send("settings", "PATCH", patch);
+}
+
+/* ── Grupper ──────────────────────────────────────────────────────── */
+
+/** Picks the first unused colour so a new group never repeats a neighbour. */
+export function nextGroupColor(lists: TodoList[]): string {
+  const used = new Set(lists.map((l) => l.color));
+  return GROUP_COLORS.find((c) => !used.has(c)) ?? GROUP_COLORS[lists.length % GROUP_COLORS.length];
+}
+
+export function createList(name: string, color: string, sortOrder: number): Promise<TodoList> {
+  return send<TodoList>("lists", "POST", { name, color, sort_order: sortOrder });
+}
+
+export async function updateList(id: string, updates: Partial<TodoList>): Promise<void> {
+  await send("lists", "PATCH", { id, updates });
 }
 
 export async function deleteList(id: string): Promise<void> {
-  const { error } = await sb().from("todo_lists").delete().eq("id", id);
-  if (error) throw error;
+  await send("lists", "DELETE", { id });
 }
 
-export async function unassignTasksFromList(listId: string): Promise<void> {
-  const { error } = await sb().from("todo_tasks").update({ list_id: null }).eq("list_id", listId);
-  if (error) throw error;
+export async function reorderLists(orderedIds: string[]): Promise<void> {
+  await send("lists/reorder", "POST", { ids: orderedIds });
 }
 
-export async function getAllTasks(): Promise<TodoTask[]> {
-  const { data, error } = await sb().from("todo_tasks").select("*").order("sort_order");
-  if (error) throw error;
-  return data as TodoTask[];
-}
+/* ── Objekt ───────────────────────────────────────────────────────── */
 
-export async function createTask(listId: string | null, title: string, createdBy: string | null): Promise<TodoTask> {
-  const { data: maxData } = await sb().from("todo_tasks").select("sort_order").order("sort_order", { ascending: false }).limit(1);
-  const sort_order = (maxData?.[0]?.sort_order ?? 0) + 1;
-  const { data, error } = await sb()
-    .from("todo_tasks")
-    .insert({ list_id: listId, title, status: "ej_paborjad", priority: "none", completed: false, sort_order, created_by: createdBy })
-    .select()
-    .single();
-  if (error) throw error;
-  return data as TodoTask;
+export async function createTask(
+  listId: string,
+  title: string,
+  fields: Partial<TodoTask>,
+): Promise<TodoTask> {
+  const task = await send<TodoTask>("tasks", "POST", { ...fields, list_id: listId, title });
+  return normalizeTask(task);
 }
 
 export async function updateTask(id: string, updates: Partial<TodoTask>): Promise<void> {
-  const { error } = await sb().from("todo_tasks").update(updates).eq("id", id);
-  if (error) throw error;
+  await send("tasks", "PATCH", { id, updates });
+}
+
+export async function updateTasks(ids: string[], updates: Partial<TodoTask>): Promise<void> {
+  if (!ids.length) return;
+  await send("tasks", "PATCH", { ids, updates });
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const { error } = await sb().from("todo_tasks").delete().eq("id", id);
-  if (error) throw error;
+  await send("tasks", "DELETE", { id });
 }
 
-export async function getSubtasks(taskId: string): Promise<TodoSubtask[]> {
-  const { data, error } = await sb().from("todo_subtasks").select("*").eq("task_id", taskId).order("sort_order");
-  if (error) throw error;
-  return data as TodoSubtask[];
+export async function deleteTasks(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await send("tasks", "DELETE", { ids });
 }
 
-export async function getAllSubtasks(): Promise<TodoSubtask[]> {
-  const { data, error } = await sb().from("todo_subtasks").select("*").order("sort_order");
-  if (error) throw error;
-  return data as TodoSubtask[];
-}
+/* ── Underobjekt ──────────────────────────────────────────────────── */
 
-export async function createSubtask(taskId: string, title: string): Promise<TodoSubtask> {
-  const { data: maxData } = await sb().from("todo_subtasks").select("sort_order").eq("task_id", taskId).order("sort_order", { ascending: false }).limit(1);
-  const sort_order = (maxData?.[0]?.sort_order ?? 0) + 1;
-  const { data, error } = await sb()
-    .from("todo_subtasks")
-    .insert({ task_id: taskId, title, completed: false, sort_order })
-    .select()
-    .single();
-  if (error) throw error;
-  return data as TodoSubtask;
+export function createSubtask(
+  taskId: string,
+  title: string,
+  sortOrder: number,
+  fields: Partial<TodoSubtask> = {},
+): Promise<TodoSubtask> {
+  return send<TodoSubtask>("subtasks", "POST", {
+    ...fields,
+    task_id: taskId,
+    title,
+    sort_order: sortOrder,
+  });
 }
 
 export async function updateSubtask(id: string, updates: Partial<TodoSubtask>): Promise<void> {
-  const { error } = await sb().from("todo_subtasks").update(updates).eq("id", id);
-  if (error) throw error;
+  await send("subtasks", "PATCH", { id, updates });
 }
 
 export async function deleteSubtask(id: string): Promise<void> {
-  const { error } = await sb().from("todo_subtasks").delete().eq("id", id);
-  if (error) throw error;
+  await send("subtasks", "DELETE", { id });
 }

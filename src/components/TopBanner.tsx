@@ -7,6 +7,7 @@ import MilouLogo from "./MilouLogo";
 const SECTIONS = [
   { href: "/mediaplan", label: "Mediaplaner" },
   { href: "/kampanj", label: "Kampanjer" },
+  { href: "/todo", label: "Uppgifter" },
 ];
 
 export default function TopBanner() {

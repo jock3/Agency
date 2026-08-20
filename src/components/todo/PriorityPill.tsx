@@ -1,14 +1,10 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { Check, Flag, X } from "lucide-react";
+import { useRef, useState } from "react";
+import Popover, { PopItem } from "./Popover";
+import { PRIORITIES, PRIORITY_MAP } from "@/lib/todo/constants";
 import type { TodoPriority } from "@/lib/types";
-
-export const PRIORITY_CONFIG: Record<TodoPriority, { label: string; bg: string; text: string }> = {
-  none:   { label: "—",     bg: "#F9FAFB", text: "#9CA3AF" },
-  low:    { label: "Låg",   bg: "#DBEAFE", text: "#1D4ED8" },
-  medium: { label: "Medel", bg: "#FEF3C7", text: "#92400E" },
-  high:   { label: "Hög",   bg: "#FEE2E2", text: "#991B1B" },
-};
 
 interface Props {
   priority: TodoPriority;
@@ -17,46 +13,63 @@ interface Props {
 
 export default function PriorityPill({ priority, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const cfg = PRIORITY_CONFIG[priority];
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const ref = useRef<HTMLButtonElement>(null);
+  const cfg = priority !== "none" ? PRIORITY_MAP[priority] : null;
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        style={{ backgroundColor: cfg.bg, color: cfg.text }}
-        className="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-opacity hover:opacity-80 w-full"
+        ref={ref}
+        type="button"
+        aria-label={"Prioritet: " + (cfg ? cfg.label : "ingen")}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        style={cfg ? { background: cfg.color } : undefined}
+        className={`flex w-full items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-opacity hover:opacity-90 ${
+          cfg ? "text-white" : "text-gray-300 hover:bg-gray-100"
+        }`}
       >
-        {cfg.label}
+        {cfg ? (
+          <>
+            <Flag size={11} strokeWidth={2.5} /> {cfg.label}
+          </>
+        ) : (
+          "–"
+        )}
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-1 min-w-[120px]">
-          {(Object.entries(PRIORITY_CONFIG) as [TodoPriority, (typeof PRIORITY_CONFIG)[TodoPriority]][]).map(([key, c]) => (
-            <button
-              key={key}
-              onClick={() => { onChange(key); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 text-left"
-            >
-              <span
-                style={{ backgroundColor: c.bg, color: c.text }}
-                className="text-xs px-2 py-0.5 rounded-full font-medium border border-gray-100"
+        <Popover anchorRef={ref} onClose={() => setOpen(false)} width={172}>
+          <div className="grid gap-1">
+            {PRIORITIES.map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => {
+                  onChange(p.key);
+                  setOpen(false);
+                }}
+                style={{ background: p.color }}
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
               >
-                {c.label}
-              </span>
-            </button>
-          ))}
-        </div>
+                <Flag size={12} strokeWidth={2.5} />
+                <span className="flex-1 text-left">{p.label}</span>
+                {p.key === priority && <Check size={14} strokeWidth={3} />}
+              </button>
+            ))}
+            <PopItem
+              onClick={() => {
+                onChange("none");
+                setOpen(false);
+              }}
+            >
+              <X size={13} /> Rensa
+            </PopItem>
+          </div>
+        </Popover>
       )}
-    </div>
+    </>
   );
 }
