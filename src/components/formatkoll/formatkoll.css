@@ -1,0 +1,799 @@
+/* Portad rakt av från preview-prototyp.html. Alla klassnamn är prefixade
+   med fk- så de inte krockar med Tailwind eller resten av appen.
+   Prototypens Barlow är utbytt mot repons Komet. */
+
+.fk-root {
+  --fk-stage: #6b6c70;
+  --fk-panel: #2b2c30;
+  --fk-panel-2: #34353a;
+  --fk-line: #45464c;
+  --fk-text: #ecedee;
+  --fk-muted: #a2a4a9;
+  --fk-marker: #ffd23f;
+  --fk-block: rgba(255, 74, 74, 0.26);
+  --fk-radius: 6px;
+  --fk-ui: "Komet", system-ui, sans-serif;
+  --fk-body: "Komet", system-ui, sans-serif;
+
+  background: var(--fk-panel);
+  color: var(--fk-text);
+  font-family: var(--fk-body);
+  font-size: 14px;
+  line-height: 1.5;
+  display: grid;
+  grid-template-columns: 236px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "top top" "rail stage";
+  /* height: 100% räcker inte — föräldern i layout.tsx har beräknad höjd auto,
+     så procenten faller tillbaka till innehållshöjd och scenen blir för kort.
+     flex: 1 mot en kolumn ger en definit höjd att räkna vidare från. */
+  /* Basis 0, inte auto: med auto blir innehållet utgångsstorlek och ett högt
+     flödeskort trycker ut hela verktyget genom fönstret. */
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fk-root :focus-visible {
+  outline: 2px solid var(--fk-marker);
+  outline-offset: 2px;
+}
+
+/* ---------- topp: filhållare ---------- */
+.fk-top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--fk-line);
+  background: var(--fk-panel);
+}
+.fk-wordmark {
+  font-family: var(--fk-ui);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  margin-right: 6px;
+}
+.fk-wordmark span { color: var(--fk-marker); }
+.fk-slots { display: flex; gap: 8px; }
+.fk-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--fk-line);
+  border-radius: var(--fk-radius);
+  background: var(--fk-panel-2);
+  padding: 6px 10px 6px 6px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.fk-slot:hover { border-color: #5d5f66; }
+.fk-slot.fk-dragover { border-color: var(--fk-marker); background: #3c3d42; }
+.fk-slot.fk-filled { border-color: #5d5f66; }
+.fk-slot input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.fk-chip {
+  width: 26px;
+  background: #4d4e54;
+  border-radius: 3px;
+  flex: none;
+  border: 1px solid #5d5f66;
+}
+.fk-chip.fk-r916 { height: 34px; width: 20px; }
+.fk-chip.fk-r11 { height: 26px; width: 26px; }
+.fk-chip.fk-r169 { height: 18px; width: 32px; }
+.fk-slot.fk-filled .fk-chip { background: var(--fk-marker); border-color: var(--fk-marker); }
+.fk-slot-txt { font-family: var(--fk-ui); font-weight: 500; line-height: 1.15; }
+.fk-slot-txt b { display: block; font-weight: 600; font-size: 14px; }
+.fk-slot-txt small {
+  display: block;
+  color: var(--fk-muted);
+  font-size: 12px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fk-slot-txt small.fk-warn { color: var(--fk-marker); }
+
+/* ---------- vänsterrail ---------- */
+.fk-rail {
+  grid-area: rail;
+  border-right: 1px solid var(--fk-line);
+  background: var(--fk-panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.fk-rail-list { flex: 1; overflow-y: auto; padding: 12px 0 16px; min-height: 0; }
+.fk-composer { flex: none; border-top: 1px solid var(--fk-line); padding: 13px 14px 15px; }
+.fk-composer h2 {
+  font-family: var(--fk-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fk-muted);
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+.fk-composer label {
+  display: block;
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  color: var(--fk-muted);
+  margin-bottom: 4px;
+}
+.fk-composer input,
+.fk-composer textarea {
+  width: 100%;
+  background: var(--fk-panel-2);
+  border: 1px solid var(--fk-line);
+  color: var(--fk-text);
+  border-radius: var(--fk-radius);
+  padding: 7px 9px;
+  font-family: var(--fk-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.fk-composer textarea { resize: vertical; min-height: 82px; }
+.fk-composer input:focus,
+.fk-composer textarea:focus {
+  outline: 2px solid var(--fk-marker);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.fk-composer .fk-row { margin-bottom: 11px; }
+.fk-count {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  color: var(--fk-muted);
+}
+.fk-count b { font-weight: 600; color: #d3d4d7; flex: none; }
+.fk-count.fk-over b { color: var(--fk-marker); }
+.fk-group {
+  font-family: var(--fk-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fk-muted);
+  padding: 14px 16px 5px;
+  letter-spacing: 0.02em;
+}
+.fk-group:first-child { padding-top: 2px; }
+.fk-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--fk-text);
+  font-family: var(--fk-body);
+  font-size: 14px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.fk-item:hover { background: var(--fk-panel-2); }
+.fk-item[aria-current="true"] { background: var(--fk-panel-2); border-left-color: var(--fk-marker); }
+.fk-item em {
+  font-style: normal;
+  color: var(--fk-muted);
+  font-size: 12px;
+  margin-left: auto;
+  font-family: var(--fk-ui);
+}
+.fk-item.fk-missing { color: #7e8085; }
+.fk-item.fk-missing em { color: #6a6c71; }
+
+/* ---------- scen ---------- */
+.fk-stage {
+  grid-area: stage;
+  background: var(--fk-stage);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 22px 74px;
+  overflow: hidden;
+}
+.fk-frame-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  /* Storleksbehållare för telefonramens cqh/cqw. Gränssnittslagret mäter mot
+     .fk-phone-screen, som ligger innanför och är närmast — de krockar inte. */
+  container-type: size;
+}
+.fk-caption-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: rgba(20, 20, 22, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.fk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--fk-ui);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.fk-toggle input { accent-color: var(--fk-marker); width: 15px; height: 15px; cursor: pointer; }
+.fk-btn {
+  font-family: var(--fk-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--fk-text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--fk-radius);
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.fk-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.fk-btn:disabled { opacity: 0.45; cursor: default; }
+.fk-meta { margin-left: auto; font-family: var(--fk-ui); color: #d6d7d9; font-size: 13px; }
+.fk-ratio-pick {
+  display: flex;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--fk-radius);
+  overflow: hidden;
+}
+.fk-ratio-pick button {
+  background: none;
+  border: 0;
+  color: #d6d7d9;
+  font-family: var(--fk-ui);
+  font-size: 13px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.fk-ratio-pick button[aria-pressed="true"] { background: var(--fk-marker); color: #1d1d1f; font-weight: 600; }
+
+/* ---------- telefon ---------- */
+/* Ramen har telefonfasning men visar assetet, inte en skärm — en riktig iPhone
+   är ~9:19.5. Etiketten under ramen säger vad man faktiskt tittar på. */
+.fk-phone-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+}
+.fk-frame-label {
+  flex: none;
+  height: 20px;
+  line-height: 20px;
+  margin-top: 8px;
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.fk-phone {
+  position: relative;
+  flex: none;
+  /* Ingen aspect-ratio här. Safari härleder inte bredd ur den när höjden kommer
+     genom calc och procent — höjden blev rätt och bredden kollapsade till
+     etikettens. Höjden räknas i stället mot scenen som storleksbehållare, och
+     bredden multipliceras fram ur samma värde.
+     Fyra tak: scenens höjd minus etikettens 28px, fönstrets höjd minus topprad,
+     filhållare och kontrollrad, en generös övre gräns, och så mycket höjd som
+     ryms på bredden när fönstret är smalt.
+     100svh finns med för att ramen inte ska bli större än fönstret även om en
+     förälder råkar mäta fel — det höll den för liten på stora skärmar och skulle
+     annars göra den för stor. */
+  --fk-h: min(
+    calc(100cqh - 28px),
+    calc(100svh - 190px),
+    900px,
+    calc(100cqw / var(--fk-ar, 0.5625))
+  );
+  height: var(--fk-h);
+  width: calc(var(--fk-h) * var(--fk-ar, 0.5625));
+  background: #000;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42), 0 0 0 8px #1c1d20, 0 0 0 9px #3a3b40;
+}
+/* max-height: 100% på kortet resolverade inte — stacken hade höjd auto, och
+   procent mot auto ignoreras. Stacken får definit höjd, kortet ett tak räknat
+   från den. Behövs när filens proportion är högre än placeringen räknar med:
+   en 9:16-film i ett 470px brett flödeskort blir 835px hög och växer annars
+   rakt ut ur scenen. */
+.fk-card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  /* Bestämd bredd krävs. Utan den blir stacken krymp-till-innehåll, och
+     kortets width: min(470px, 100%) resolverar mot en bredd som beror på
+     kortets eget innehåll — Instagram Feed hamnade på 450px och LinkedIn på
+     348px när båda skulle vara 470. */
+  width: 100%;
+  max-width: 470px;
+}
+.fk-card-host {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  color: #111;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.34);
+  flex: none;
+  width: 100%;
+  max-height: calc(100% - 28px);
+  overflow-y: auto;
+  font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+}
+/* Containment måste ligga på ett eget lager. container-type: size stänger av
+   innehållsbaserad storlek i båda riktningarna, så låg den på .fk-phone fick
+   aspect-ratio inget att räkna bredden ur och ramen blev nollbred. Här ärvs
+   båda måtten av inset: 0, och cqh/cqw fungerar. */
+.fk-phone-screen {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+}
+.fk-vidbox { position: relative; background: #000; overflow: hidden; }
+.fk-vidbox video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fk-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+  background: #1a1b1d;
+  color: #9b9da2;
+  font-size: 13px;
+  font-family: var(--fk-body);
+}
+.fk-empty b { font-family: var(--fk-ui); font-size: 15px; color: #d3d4d7; font-weight: 600; }
+
+/* ---------- overlays ----------
+   Allt i chrome-lagret mäts i container-enheter mot telefonramen, aldrig i px.
+   Skyddszonerna är procent av samma ram, så px här skulle betyda att gränssnitt
+   och skyddszon glider isär så fort ramen byter storlek. 1cqh = 1 % av ramens
+   höjd, 1cqw = 1 % av bredden. Siffrorna nedan är prototypens px omräknade mot
+   dess referensram 360 × 640, så utseendet är identiskt där och korrekt överallt
+   annars. Dela px med 6.4 för cqh, med 3.6 för cqw. */
+.fk-layer { position: absolute; inset: 0; pointer-events: none; }
+.fk-chrome { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); font-family: system-ui, sans-serif; }
+.fk-statusbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4.688cqh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4.444cqw;
+  font-size: 1.719cqh;
+  font-weight: 600;
+}
+.fk-actionrail {
+  position: absolute;
+  right: 2.222cqw;
+  bottom: 16%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.344cqh;
+}
+.fk-actionrail .fk-act {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.313cqh;
+  font-size: 1.563cqh;
+  font-weight: 600;
+}
+.fk-actionrail .fk-act i { font-style: normal; }
+.fk-actionrail .fk-act svg { width: 3.75cqh; height: 3.75cqh; }
+.fk-avatar {
+  width: 4.688cqh;
+  height: 4.688cqh;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9aa0a6, #5f6368);
+  border: 1.5px solid #fff;
+  flex: none;
+}
+.fk-avatar.fk-sm { width: 4.063cqh; height: 4.063cqh; }
+.fk-avatar.fk-xs { width: 3.75cqh; height: 3.75cqh; }
+.fk-bottomtext {
+  position: absolute;
+  left: 3.333cqw;
+  right: 17.778cqw;
+  bottom: 9%;
+  font-size: 1.875cqh;
+  line-height: 1.35;
+}
+.fk-bottomtext .fk-handle { font-weight: 700; font-size: 2.031cqh; margin-bottom: 0.469cqh; }
+.fk-bottomtext .fk-cap {
+  opacity: 0.94;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fk-progress { position: absolute; top: 5.313cqh; left: 2.222cqw; right: 2.222cqw; display: flex; gap: 0.833cqw; }
+.fk-progress i { flex: 1; height: 0.313cqh; background: rgba(255, 255, 255, 0.4); border-radius: 2px; }
+.fk-progress i.fk-on { background: #fff; }
+.fk-storyhead {
+  position: absolute;
+  top: 6.563cqh;
+  left: 2.778cqw;
+  right: 2.778cqw;
+  display: flex;
+  align-items: center;
+  gap: 2.222cqw;
+  font-size: 1.875cqh;
+  font-weight: 600;
+}
+.fk-replybar {
+  position: absolute;
+  left: 3.333cqw;
+  right: 3.333cqw;
+  bottom: 2.188cqh;
+  height: 5.313cqh;
+  border-radius: 3.125cqh;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  padding: 0 3.889cqw;
+  font-size: 1.875cqh;
+  opacity: 0.95;
+}
+.fk-navbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6.875cqh;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  font-size: 1.563cqh;
+  font-weight: 600;
+}
+.fk-tabs {
+  position: absolute;
+  top: 5.313cqh;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 5cqw;
+  font-size: 2.031cqh;
+  font-weight: 600;
+}
+.fk-tabs span { opacity: 0.6; }
+.fk-tabs span.fk-on { opacity: 1; border-bottom: 2px solid #fff; padding-bottom: 0.313cqh; }
+.fk-snaphead {
+  position: absolute;
+  top: 5.938cqh;
+  left: 2.778cqw;
+  display: flex;
+  align-items: center;
+  gap: 1.944cqw;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 2.5cqh;
+  padding: 0.469cqh 2.778cqw 0.469cqh 0.833cqw;
+  font-size: 1.875cqh;
+  font-weight: 600;
+}
+.fk-shortstitle {
+  position: absolute;
+  left: 3.333cqw;
+  right: 17.778cqw;
+  bottom: 8%;
+  font-size: 2.031cqh;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* ---------- skyddszoner ---------- */
+.fk-zone { position: absolute; background: var(--fk-block); }
+.fk-zone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(255, 74, 74, 0.35) 6px 12px);
+}
+.fk-saferect { position: absolute; border: 1px dashed var(--fk-marker); }
+.fk-safetag {
+  position: absolute;
+  background: var(--fk-marker);
+  color: #1d1d1f;
+  font-family: var(--fk-ui);
+  font-weight: 600;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  top: -1px;
+  left: -1px;
+}
+
+/* ---------- feed-kort ---------- */
+.fk-card-head { display: flex; align-items: center; gap: 9px; padding: 11px 12px; }
+.fk-card-head .fk-ava {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c3c7cc, #7a7f86);
+  flex: none;
+}
+.fk-card-head .fk-who { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.fk-card-head .fk-who small { display: block; font-weight: 400; color: #65676b; font-size: 11px; }
+.fk-card-body { padding: 0 12px 10px; font-size: 13px; line-height: 1.4; color: #1c1e21; white-space: pre-wrap; }
+.fk-card-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 7px 0;
+  border-top: 1px solid #e4e6eb;
+  color: #65676b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.fk-card-actions.fk-ig { justify-content: flex-start; gap: 16px; padding-left: 12px; }
+.fk-card-counts { display: flex; gap: 12px; padding: 7px 12px; color: #65676b; font-size: 11px; }
+
+.fk-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--fk-ui);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+@media (max-width: 880px) {
+  .fk-root { grid-template-columns: 1fr; grid-template-areas: "top" "stage"; }
+  .fk-rail { display: none; }
+}
+
+/* ---------- kalibreringsläge (?kalibrera=1) ----------
+   Egen kolumn till höger. Utan flaggan renderas ingenting av det här och
+   griden ser ut precis som förut. */
+.fk-root.fk-calibrating {
+  grid-template-columns: 236px 1fr 272px;
+  grid-template-areas: "top top top" "rail stage cal";
+}
+.fk-cal {
+  grid-area: cal;
+  border-left: 1px solid var(--fk-line);
+  background: var(--fk-panel);
+  overflow-y: auto;
+  padding: 13px 14px 20px;
+  font-family: var(--fk-ui);
+  font-size: 13px;
+}
+.fk-cal h2 {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fk-marker);
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+.fk-cal h3 {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--fk-muted);
+  margin: 0 0 8px;
+}
+.fk-cal-hint {
+  color: var(--fk-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+.fk-cal-block {
+  border-top: 1px solid var(--fk-line);
+  padding: 12px 0;
+}
+.fk-cal-row {
+  display: grid;
+  grid-template-columns: 74px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.fk-cal-row span { color: var(--fk-muted); font-size: 12px; }
+.fk-cal-row b { font-weight: 600; font-size: 12px; text-align: right; }
+.fk-cal-row input[type="range"] { width: 100%; accent-color: var(--fk-marker); }
+.fk-cal-num {
+  background: var(--fk-panel-2);
+  border: 1px solid var(--fk-line);
+  color: var(--fk-text);
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  width: 100%;
+}
+.fk-cal-num.fk-wide { grid-column: 2 / span 2; }
+.fk-cal-file {
+  position: relative;
+  display: block;
+  border: 1px dashed var(--fk-line);
+  border-radius: var(--fk-radius);
+  padding: 9px 10px;
+  color: var(--fk-muted);
+  cursor: pointer;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fk-cal-file:hover { border-color: var(--fk-marker); color: var(--fk-text); }
+.fk-cal-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.fk-cal-link {
+  background: none;
+  border: 0;
+  color: var(--fk-muted);
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  padding: 4px 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.fk-cal-link:hover { color: var(--fk-text); }
+.fk-cal-copy { width: 100%; margin-top: 14px; }
+
+/* Referensbilden ligger överst så plattformens riktiga knappar går att jämföra
+   med både vårt ritade gränssnitt och skyddszonen under. */
+.fk-reference {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fk-reference img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform-origin: center;
+}
+
+/* ---------- text per kanal ---------- */
+.fk-shared-tag {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--fk-panel-2);
+  border: 1px solid var(--fk-line);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--fk-muted);
+}
+.fk-own-add {
+  display: block;
+  width: 100%;
+  margin-bottom: 11px;
+  padding: 6px 8px;
+  border: 1px dashed var(--fk-line);
+  border-radius: var(--fk-radius);
+  background: none;
+  color: var(--fk-muted);
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.fk-own-add:hover { border-color: var(--fk-marker); color: var(--fk-text); }
+.fk-own-drop {
+  background: none;
+  border: 0;
+  padding: 5px 0 0;
+  color: var(--fk-muted);
+  font-family: var(--fk-ui);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fk-own-drop:hover { color: var(--fk-text); }
+/* Prick i listan på kanaler som fått en egen text. */
+.fk-own-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fk-marker);
+  flex: none;
+  align-self: center;
+}
+
+/* ---------- samlingsvy ---------- */
+.fk-overview {
+  align-self: stretch;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  display: grid;
+  /* auto-fit, inte auto-fill: tomma spalter kollapsar så rutorna breddas i
+     stället för att lämna en rad smala rutor med tomrum bredvid. */
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 26px 22px;
+  padding: 2px 2px 14px;
+  align-content: start;
+  /* Utan tak sträcker sig rutnätet över hela en ultrabred skärm. */
+  max-width: 1700px;
+  margin-inline: auto;
+}
+.fk-tile { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.fk-tile-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--fk-ui);
+  font-size: 13px;
+  color: #e8e9ea;
+  text-align: left;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.fk-tile-head b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fk-tile-head em { font-style: normal; color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-left: auto; }
+.fk-tile-head:hover b { text-decoration: underline; }
+/* Ramen inuti mäter sig mot den här höjden med cqh, precis som i helvyn.
+   Skalar med fönstret — en fast höjd gjorde rutorna små på stora skärmar. */
+.fk-tile-frame { height: clamp(380px, 58vh, 680px); min-height: 0; }
+.fk-overview-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--fk-ui);
+  font-size: 13px;
+  padding: 40px 0;
+}
+/* Samlingsvyn i listan, ovanför kanalgrupperna. */
+.fk-item-all {
+  font-family: var(--fk-ui);
+  font-weight: 600;
+  margin-bottom: 2px;
+}

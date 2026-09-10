@@ -1,6 +1,7 @@
 # Milou Verktyg
 
-Next.js-app med tre verktyg: **Mediaplaner**, **Kampanjer** och **Uppgifter**.
+Next.js-app med fyra verktyg: **Mediaplaner**, **Kampanjer**, **Uppgifter** och
+**Formatkoll**.
 
 ## Stack
 
@@ -65,6 +66,50 @@ Supabase SQL-editorn eller CLI:t.
 
 `0003_todo_lock_down_rls.sql` får bara köras **efter** att service-role-nyckeln
 är satt och appen är deployad — se kommentaren överst i filen.
+
+## Formatkoll
+
+`/formatkoll` är förhandsvisning av rörligt material i sociala placeringar. Ladda
+upp samma film i 9:16, 1:1 och 16:9, se hur den ser ut i åtta placeringar över
+sex kanaler, och skicka en läslänk till kund.
+
+Verktyget croppar inte och transkodar inte. Redaktören exporterar tre färdiga
+filer själv.
+
+| Tabell | Roll |
+| --- | --- |
+| `formatkoll_projects` | projekt, slug, kund, delad inläggstext, utgång |
+| `formatkoll_assets` | en rad per format och projekt |
+
+Båda nekar anon-rollen helt. All åtkomst går via `/api/formatkoll/*`, som
+validerar sessionskakan och sedan använder service-role-nyckeln.
+
+**Uppladdning** går aldrig genom en route handler — Vercel tar emot högst 4,5 MB
+kropp och filmerna är större. Servern signerar en engångs-URL, webbläsaren
+laddar upp direkt mot storage-bucketen `previews`, och assetraden skrivs först
+när uppladdningen gått igenom. Sökvägen är alltid `{slug}/{format}.mp4`, aldrig
+originalfilnamnet.
+
+**Delningslänken** ligger på `/share/kund/[slug]`. Sluggen är hela
+åtkomstkontrollen: 12 tecken ur ett alfabet utan förväxlingsbara glyfer. Sidan
+läser med service-role och filtrerar på `archived_at` och `expires_at`, eftersom
+RLS inte kan uttrycka "du måste känna till sluggen". Utgången sätts till 1, 3
+eller 7 dagar och kan förlängas.
+
+Bucketen `previews` är publik. Den som redan har en films URL kommer åt den
+även efter att länken gått ut — sidan slutar servera den, filen finns kvar tills
+projektet raderas.
+
+**Text per kanal.** `caption` är den delade texten. `captions` är en jsonb-karta
+från placerings-id till egen text och innehåller bara kanaler som avviker.
+Saknad nyckel betyder att kanalen ärver den delade texten; tom sträng är en
+giltig egen text.
+
+**Skyddszonerna** i `src/lib/formatkoll/placements.ts` kommer från plattformarnas
+publicerade specar, inte från mätning på riktig telefon. Pixelunderlaget står i
+kommentar per placering. Öppna ett projekt med `?kalibrera=1` för att lägga en
+skärmdump över ramen och justera siffrorna — läget är avstängt i kundvyn och
+påverkar aldrig den vanliga renderingen.
 
 ## Edge-funktioner
 
