@@ -3,15 +3,25 @@
    Prototypens Barlow är utbytt mot repons Komet. */
 
 .fk-root {
-  --fk-stage: #6b6c70;
-  --fk-panel: #2b2c30;
-  --fk-panel-2: #34353a;
-  --fk-line: #45464c;
-  --fk-text: #ecedee;
-  --fk-muted: #a2a4a9;
+  /* Samma palett som resten av verktygen: mörk topprad (#1C1C1C som
+     overlay-editorerna), vita paneler, grå-50/100-bakgrund och Milou-röd
+     accent. --fk-marker är kvar gul — den ritas ovanpå videon i
+     skyddszonerna och måste synas mot bild, inte matcha varumärket. */
+  --fk-top: #1c1c1c;
+  --fk-top-2: #2b2b2b;
+  --fk-top-line: #3a3a3a;
+  --fk-top-muted: #9ca3af;
+  --fk-stage: #f3f4f6;
+  --fk-panel: #ffffff;
+  --fk-panel-2: #f9fafb;
+  --fk-line: #e5e7eb;
+  --fk-text: #111827;
+  --fk-muted: #6b7280;
+  --fk-accent: #e60330;
+  --fk-accent-soft: #fff5f7;
   --fk-marker: #ffd23f;
   --fk-block: rgba(255, 74, 74, 0.26);
-  --fk-radius: 6px;
+  --fk-radius: 8px;
   --fk-ui: "Komet", system-ui, sans-serif;
   --fk-body: "Komet", system-ui, sans-serif;
 
@@ -36,7 +46,7 @@
 }
 
 .fk-root :focus-visible {
-  outline: 2px solid var(--fk-marker);
+  outline: 2px solid var(--fk-accent);
   outline-offset: 2px;
 }
 
@@ -47,8 +57,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--fk-line);
-  background: var(--fk-panel);
+  background: var(--fk-top);
+  color: #fff;
 }
 .fk-wordmark {
   font-family: var(--fk-ui);
@@ -57,23 +67,23 @@
   letter-spacing: 0.01em;
   margin-right: 6px;
 }
-.fk-wordmark span { color: var(--fk-marker); }
+.fk-wordmark span { color: var(--fk-accent); }
 .fk-slots { display: flex; gap: 8px; }
 .fk-slot {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--fk-line);
+  border: 1px solid var(--fk-top-line);
   border-radius: var(--fk-radius);
-  background: var(--fk-panel-2);
+  background: var(--fk-top-2);
   padding: 6px 10px 6px 6px;
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
-.fk-slot:hover { border-color: #5d5f66; }
-.fk-slot.fk-dragover { border-color: var(--fk-marker); background: #3c3d42; }
-.fk-slot.fk-filled { border-color: #5d5f66; }
+.fk-slot:hover { border-color: #4b5563; }
+.fk-slot.fk-dragover { border-color: var(--fk-accent); background: #35132b; }
+.fk-slot.fk-filled { border-color: #4b5563; }
 .fk-slot input {
   position: absolute;
   inset: 0;
@@ -82,27 +92,27 @@
 }
 .fk-chip {
   width: 26px;
-  background: #4d4e54;
+  background: #3a3a3a;
   border-radius: 3px;
   flex: none;
-  border: 1px solid #5d5f66;
+  border: 1px solid #4b5563;
 }
 .fk-chip.fk-r916 { height: 34px; width: 20px; }
 .fk-chip.fk-r11 { height: 26px; width: 26px; }
 .fk-chip.fk-r169 { height: 18px; width: 32px; }
-.fk-slot.fk-filled .fk-chip { background: var(--fk-marker); border-color: var(--fk-marker); }
+.fk-slot.fk-filled .fk-chip { background: var(--fk-accent); border-color: var(--fk-accent); }
 .fk-slot-txt { font-family: var(--fk-ui); font-weight: 500; line-height: 1.15; }
 .fk-slot-txt b { display: block; font-weight: 600; font-size: 14px; }
 .fk-slot-txt small {
   display: block;
-  color: var(--fk-muted);
+  color: var(--fk-top-muted);
   font-size: 12px;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.fk-slot-txt small.fk-warn { color: var(--fk-marker); }
+.fk-slot-txt small.fk-warn { color: #fb7a94; }
 
 /* ---------- vänsterrail ---------- */
 .fk-rail {
@@ -145,9 +155,8 @@
 .fk-composer textarea { resize: vertical; min-height: 82px; }
 .fk-composer input:focus,
 .fk-composer textarea:focus {
-  outline: 2px solid var(--fk-marker);
-  outline-offset: 1px;
-  border-color: transparent;
+  outline: none;
+  border-color: var(--fk-accent);
 }
 .fk-composer .fk-row { margin-bottom: 11px; }
 .fk-count {
@@ -159,15 +168,16 @@
   font-size: 12px;
   color: var(--fk-muted);
 }
-.fk-count b { font-weight: 600; color: #d3d4d7; flex: none; }
-.fk-count.fk-over b { color: var(--fk-marker); }
+.fk-count b { font-weight: 600; color: #374151; flex: none; }
+.fk-count.fk-over b { color: var(--fk-accent); }
 .fk-group {
   font-family: var(--fk-ui);
   font-weight: 600;
-  font-size: 13px;
-  color: var(--fk-muted);
+  font-size: 11px;
+  color: #9ca3af;
   padding: 14px 16px 5px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .fk-group:first-child { padding-top: 2px; }
 .fk-item {
@@ -186,7 +196,7 @@
   cursor: pointer;
 }
 .fk-item:hover { background: var(--fk-panel-2); }
-.fk-item[aria-current="true"] { background: var(--fk-panel-2); border-left-color: var(--fk-marker); }
+.fk-item[aria-current="true"] { background: var(--fk-accent-soft); border-left-color: var(--fk-accent); font-weight: 500; }
 .fk-item em {
   font-style: normal;
   color: var(--fk-muted);
@@ -194,8 +204,8 @@
   margin-left: auto;
   font-family: var(--fk-ui);
 }
-.fk-item.fk-missing { color: #7e8085; }
-.fk-item.fk-missing em { color: #6a6c71; }
+.fk-item.fk-missing { color: #9ca3af; }
+.fk-item.fk-missing em { color: #d1d5db; }
 
 /* ---------- scen ---------- */
 .fk-stage {
@@ -230,10 +240,10 @@
   align-items: center;
   gap: 16px;
   padding: 10px 18px;
-  background: rgba(20, 20, 22, 0.55);
+  background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: 1px solid var(--fk-line);
 }
 .fk-toggle {
   display: flex;
@@ -244,38 +254,40 @@
   cursor: pointer;
   user-select: none;
 }
-.fk-toggle input { accent-color: var(--fk-marker); width: 15px; height: 15px; cursor: pointer; }
+.fk-toggle input { accent-color: var(--fk-accent); width: 15px; height: 15px; cursor: pointer; }
 .fk-btn {
   font-family: var(--fk-ui);
   font-weight: 500;
   font-size: 14px;
-  color: var(--fk-text);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #374151;
+  background: #fff;
+  border: 1px solid var(--fk-line);
   border-radius: var(--fk-radius);
   padding: 5px 12px;
   cursor: pointer;
+  transition: background 0.12s ease;
 }
-.fk-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.fk-btn:hover { background: var(--fk-panel-2); }
 .fk-btn:disabled { opacity: 0.45; cursor: default; }
-.fk-meta { margin-left: auto; font-family: var(--fk-ui); color: #d6d7d9; font-size: 13px; }
+.fk-meta { margin-left: auto; font-family: var(--fk-ui); color: var(--fk-muted); font-size: 13px; }
 .fk-ratio-pick {
   display: flex;
   gap: 0;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--fk-line);
   border-radius: var(--fk-radius);
+  background: #fff;
   overflow: hidden;
 }
 .fk-ratio-pick button {
   background: none;
   border: 0;
-  color: #d6d7d9;
+  color: #4b5563;
   font-family: var(--fk-ui);
   font-size: 13px;
   padding: 4px 10px;
   cursor: pointer;
 }
-.fk-ratio-pick button[aria-pressed="true"] { background: var(--fk-marker); color: #1d1d1f; font-weight: 600; }
+.fk-ratio-pick button[aria-pressed="true"] { background: var(--fk-accent); color: #fff; font-weight: 600; }
 
 /* ---------- telefon ---------- */
 /* Ramen har telefonfasning men visar assetet, inte en skärm — en riktig iPhone
@@ -295,8 +307,7 @@
   font-family: var(--fk-ui);
   font-size: 12px;
   letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.72);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color: var(--fk-muted);
 }
 
 .fk-phone {
@@ -323,7 +334,7 @@
   background: #000;
   border-radius: 26px;
   overflow: hidden;
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42), 0 0 0 8px #1c1d20, 0 0 0 9px #3a3b40;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.18), 0 0 0 8px #1c1c1c, 0 0 0 9px #3a3a3a;
 }
 /* max-height: 100% på kortet resolverade inte — stacken hade höjd auto, och
    procent mot auto ignoreras. Stacken får definit höjd, kortet ett tak räknat
@@ -349,7 +360,8 @@
   border-radius: 8px;
   overflow: hidden;
   color: #111;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.34);
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.08);
   flex: none;
   width: 100%;
   max-height: calc(100% - 28px);
@@ -581,10 +593,11 @@
   transform: translateX(-50%);
   font-family: var(--fk-ui);
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(0, 0, 0, 0.3);
-  padding: 3px 10px;
-  border-radius: 12px;
+  color: var(--fk-muted);
+  background: #fff;
+  border: 1px solid var(--fk-line);
+  padding: 3px 12px;
+  border-radius: 9999px;
 }
 
 @media (max-width: 880px) {
@@ -611,7 +624,7 @@
 .fk-cal h2 {
   font-weight: 600;
   font-size: 13px;
-  color: var(--fk-marker);
+  color: var(--fk-accent);
   margin: 0 0 8px;
   letter-spacing: 0.02em;
 }
@@ -640,7 +653,7 @@
 }
 .fk-cal-row span { color: var(--fk-muted); font-size: 12px; }
 .fk-cal-row b { font-weight: 600; font-size: 12px; text-align: right; }
-.fk-cal-row input[type="range"] { width: 100%; accent-color: var(--fk-marker); }
+.fk-cal-row input[type="range"] { width: 100%; accent-color: var(--fk-accent); }
 .fk-cal-num {
   background: var(--fk-panel-2);
   border: 1px solid var(--fk-line);
@@ -665,7 +678,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.fk-cal-file:hover { border-color: var(--fk-marker); color: var(--fk-text); }
+.fk-cal-file:hover { border-color: var(--fk-accent); color: var(--fk-text); }
 .fk-cal-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .fk-cal-link {
   background: none;
@@ -721,7 +734,7 @@
   text-align: left;
   cursor: pointer;
 }
-.fk-own-add:hover { border-color: var(--fk-marker); color: var(--fk-text); }
+.fk-own-add:hover { border-color: var(--fk-accent); color: var(--fk-text); }
 .fk-own-drop {
   background: none;
   border: 0;
@@ -738,7 +751,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--fk-marker);
+  background: var(--fk-accent);
   flex: none;
   align-self: center;
 }
@@ -773,12 +786,11 @@
   cursor: pointer;
   font-family: var(--fk-ui);
   font-size: 13px;
-  color: #e8e9ea;
+  color: var(--fk-text);
   text-align: left;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 .fk-tile-head b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fk-tile-head em { font-style: normal; color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-left: auto; }
+.fk-tile-head em { font-style: normal; color: var(--fk-muted); font-size: 12px; margin-left: auto; }
 .fk-tile-head:hover b { text-decoration: underline; }
 /* Ramen inuti mäter sig mot den här höjden med cqh, precis som i helvyn.
    Skalar med fönstret — en fast höjd gjorde rutorna små på stora skärmar. */
@@ -786,7 +798,7 @@
 .fk-overview-empty {
   grid-column: 1 / -1;
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--fk-muted);
   font-family: var(--fk-ui);
   font-size: 13px;
   padding: 40px 0;

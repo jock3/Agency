@@ -125,22 +125,22 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
 
   const header = (
     <div className="flex items-center gap-3 text-[13px]">
-      <Link href="/formatkoll" className="text-[#a2a4a9] hover:text-white transition-colors">
+      <Link href="/formatkoll" className="text-gray-400 hover:text-white transition-colors">
         ← Projekt
       </Link>
       <span className="font-semibold">{project.title}</span>
-      <span className="text-[#a2a4a9]">{uploaded}/3 filer</span>
-      {busyRatio && <span className="text-[#ffd23f]">Laddar upp {busyRatio}…</span>}
-      {saving && !busyRatio && <span className="text-[#a2a4a9]">Sparar…</span>}
-      {error && <span className="text-[#ff6b6b]">{error}</span>}
-      <span className={expiry.expired ? "text-[#ff6b6b]" : "text-[#a2a4a9]"}>{expiry.text}</span>
+      <span className="text-gray-400">{uploaded}/3 filer</span>
+      {busyRatio && <span className="text-milou-300">Laddar upp {busyRatio}…</span>}
+      {saving && !busyRatio && <span className="text-gray-400">Sparar…</span>}
+      {error && <span className="text-milou-300">{error}</span>}
+      <span className={expiry.expired ? "text-milou-300" : "text-gray-400"}>{expiry.text}</span>
       <span className="flex items-center gap-1">
         {[1, 3, 7].map((d) => (
           <button
             key={d}
             type="button"
             onClick={() => extend(d)}
-            className="px-2 py-0.5 rounded border border-white/15 text-[#d6d7d9] hover:bg-white/10 transition-colors"
+            className="px-2 py-0.5 rounded bg-[#2B2B2B] border border-[#3a3a3a] text-gray-300 hover:bg-gray-700 transition-colors"
             title={`Sätt utgång till ${d} dagar från nu`}
           >
             {d}d
@@ -150,7 +150,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
       <button
         type="button"
         onClick={copyLink}
-        className="px-3 py-1 rounded bg-milou-500 text-white font-medium hover:bg-milou-600 transition-colors"
+        className="px-3 py-1.5 rounded-lg bg-milou-500 text-white font-medium hover:bg-milou-400 transition-colors"
       >
         {copied ? "Kopierad" : "Kopiera delningslänk"}
       </button>
