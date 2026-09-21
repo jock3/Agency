@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import ArrowSquare from "@/components/shared/ArrowSquare";
 import { createProject, deleteProject, listProjects } from "@/lib/api/formatkoll";
 import type { FormatkollListRow } from "@/lib/formatkoll/types";
 
@@ -75,11 +76,11 @@ export default function FormatkollDashboard() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between shadow">
-        <h1 className="text-base font-semibold">Formatkoll</h1>
+      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
+        <h1 className="text-2xl font-extrabold">Formatkoll</h1>
         <button
           onClick={() => setShowNew(true)}
-          className="bg-milou-500 hover:bg-milou-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           + Nytt projekt
         </button>
@@ -93,7 +94,7 @@ export default function FormatkollDashboard() {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
             {[0, 1, 2].map((i) => (
               <div key={i} className="bg-white rounded-xl h-36 animate-pulse border border-gray-100" />
             ))}
@@ -105,18 +106,17 @@ export default function FormatkollDashboard() {
             <p className="text-sm mt-1">Skapa ett projekt, ladda upp tre format och skicka länken till kund.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
             {rows.map((row) => {
               const e = expiry(row);
               return (
                 <div
                   key={row.id}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+                  className="milou-plate bg-white flex flex-col group"
                 >
-                  <div className="h-1 bg-milou-500" />
                   <div className="p-4 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h2 className="font-semibold text-gray-900 leading-tight">{row.title}</h2>
+                      <h2 className="font-extrabold text-plum-dark text-xl leading-tight">{row.title}</h2>
                       <span className="text-xs text-gray-400 shrink-0">{row.asset_count}/3</span>
                     </div>
                     {row.client_name && (
@@ -124,11 +124,11 @@ export default function FormatkollDashboard() {
                     )}
                     <p className={`text-xs mt-2 ${e.tone}`}>{e.label}</p>
                   </div>
-                  <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-sm">
-                    <Link href={`/formatkoll/${row.id}`} className="text-milou-500 font-medium">
-                      Öppna →
+                  <div className="px-4 pb-4 flex items-center justify-between text-sm">
+                    <Link href={`/formatkoll/${row.id}`} aria-label="Öppna" title="Öppna">
+                      <ArrowSquare />
                     </Link>
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-3 text-xs">
                       <button onClick={() => copy(row)} className="text-gray-500 hover:text-gray-700">
                         {copied === row.id ? "Kopierad" : "Kopiera länk"}
                       </button>

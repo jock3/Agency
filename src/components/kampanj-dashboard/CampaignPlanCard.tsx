@@ -3,6 +3,7 @@
 import type { CampaignPlan } from "@/lib/types";
 import { formatSwedishDate } from "@/lib/utils/dates";
 import TagChips from "@/components/shared/TagChips";
+import ArrowSquare from "@/components/shared/ArrowSquare";
 
 interface Props {
   plan: CampaignPlan;
@@ -16,20 +17,18 @@ interface Props {
 export default function CampaignPlanCard({ plan, onOpen, onArchive, onDelete, onDuplicate, archived }: Props) {
   return (
     <div
-      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group overflow-hidden"
+      className="milou-plate bg-white cursor-pointer group flex flex-col"
       onClick={onOpen}
     >
-      <div className="h-1.5 bg-gradient-to-r from-milou-500 to-milou-700" />
-
-      <div className="p-5">
+      <div className="p-5 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 group-hover:text-milou-500 transition-colors">
+          <h2 className="font-extrabold text-plum-dark text-xl leading-tight line-clamp-2 group-hover:underline">
             {plan.name}
           </h2>
           <div className="flex shrink-0 items-center gap-1.5">
             {!archived && (
               <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                className={`text-xs font-medium px-2 py-0.5 ${
                   plan.status === 'approved'
                     ? 'bg-blue-100 text-blue-700'
                     : plan.status === 'active'
@@ -41,7 +40,7 @@ export default function CampaignPlanCard({ plan, onOpen, onArchive, onDelete, on
               </span>
             )}
             {archived && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5">
                 Arkiverad
               </span>
             )}
@@ -60,14 +59,11 @@ export default function CampaignPlanCard({ plan, onOpen, onArchive, onDelete, on
       </div>
 
       <div
-        className="border-t border-gray-100 px-5 py-2.5 flex items-center justify-between bg-gray-50 gap-2"
+        className="px-5 pb-5 flex items-center justify-between gap-2"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onOpen}
-          className="text-xs text-milou-500 hover:text-milou-700 font-medium"
-        >
-          Öppna kampanj →
+        <button onClick={onOpen} aria-label="Öppna kampanj" title="Öppna kampanj" className="group">
+          <ArrowSquare />
         </button>
 
         <div className="flex items-center gap-3">

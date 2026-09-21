@@ -29,7 +29,7 @@ export default function TagEditor({ tags, onChange }: Props) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="flex items-center gap-1 text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] rounded-full pl-2 pr-1 py-0.5"
+          className="flex items-center gap-1 text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] pl-2 pr-1 py-0.5"
         >
           {tag}
           <button
@@ -53,7 +53,7 @@ export default function TagEditor({ tags, onChange }: Props) {
         }}
         onBlur={addTag}
         placeholder="+ Tagg"
-        className="text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] rounded-full px-2 py-0.5 w-20 focus:outline-none focus:border-milou-500 placeholder:text-gray-500"
+        className="text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] px-2 py-0.5 w-20 focus:outline-none focus:border-milou-500 placeholder:text-gray-500"
       />
     </div>
   );

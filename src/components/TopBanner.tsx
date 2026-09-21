@@ -27,8 +27,8 @@ export default function TopBanner() {
               <Link
                 key={s.href}
                 href={s.href}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  active ? "bg-milou-500 text-white" : "text-gray-400 hover:text-white"
+                className={`px-3 py-1 text-xs font-bold transition-colors ${
+                  active ? "bg-peach text-gray-800" : "text-white hover:text-peach"
                 }`}
               >
                 {s.label}

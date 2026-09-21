@@ -71,11 +71,11 @@ export default function KampanjDashboard() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between shadow">
-        <h1 className="text-base font-semibold">Kampanjer</h1>
+      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
+        <h1 className="text-2xl font-extrabold">Kampanjer</h1>
         <button
           onClick={() => setShowNewModal(true)}
-          className="bg-milou-500 hover:bg-milou-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           + Ny kampanj
         </button>
@@ -83,7 +83,7 @@ export default function KampanjDashboard() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="bg-white rounded-xl h-40 animate-pulse border border-gray-100" />
             ))}
@@ -104,7 +104,7 @@ export default function KampanjDashboard() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
               {active.map((plan) => (
                 <CampaignPlanCard
                   key={plan.id}
@@ -128,7 +128,7 @@ export default function KampanjDashboard() {
                 </button>
 
                 {showArchived && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12 opacity-60">
                     {archived.map((plan) => (
                       <CampaignPlanCard
                         key={plan.id}

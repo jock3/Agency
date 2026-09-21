@@ -25,7 +25,7 @@ export default function CampaignShareView({ plan }: { plan: FullCampaignPlan }) 
               <div className="text-xs text-gray-400">Total budget</div>
               <div className="text-sm font-bold text-white">{formatSEK(calcCampaignPlanTotal(plan))}</div>
             </div>
-            <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1 rounded-full shrink-0">
+            <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1 shrink-0">
               Visningsläge
             </span>
           </div>

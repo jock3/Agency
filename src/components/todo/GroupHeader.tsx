@@ -95,7 +95,7 @@ export default function GroupHeader({
 
       {allDone && (
         <span
-          className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-600"
+          className="bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-600"
           aria-label="Alla objekt klara"
         >
           Klart!

@@ -35,12 +35,12 @@ export default function KampanjCard({ plan, onOpen, onArchive, onDelete, archive
           <div className="flex items-center gap-1.5 shrink-0">
             <span
               style={{ backgroundColor: statusCfg.bg, color: statusCfg.color }}
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              className="text-xs px-2 py-0.5 font-medium"
             >
               {statusCfg.label}
             </span>
             {archived && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5">
                 Arkiverad
               </span>
             )}

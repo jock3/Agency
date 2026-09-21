@@ -295,7 +295,7 @@ export default function TaskDetail({
                 onClick={submitComment}
                 disabled={!comment.trim()}
                 aria-label="Skicka"
-                className="rounded-xl bg-milou-500 p-2 text-white transition-colors hover:bg-milou-400 disabled:opacity-40"
+                className="rounded-xl bg-milou-500 p-2 text-white transition-colors hover:bg-milou-600 disabled:opacity-40"
               >
                 <Send size={14} />
               </button>
@@ -353,7 +353,7 @@ function Section({
         {icon}
         {title}
         {count && (
-          <span className="rounded-full bg-gray-100 px-1.5 text-[11px] font-medium text-gray-500">
+          <span className="bg-gray-100 px-1.5 text-[11px] font-medium text-gray-500">
             {count}
           </span>
         )}

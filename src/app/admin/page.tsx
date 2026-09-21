@@ -64,7 +64,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between shadow">
+      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <MilouLogo className="h-7 w-auto text-white" />
           <span className="px-3 py-1.5 text-sm text-white bg-white/10 rounded-lg font-medium">Admin</span>
@@ -92,10 +92,10 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-800 truncate">{u.name}</span>
                     {u.is_admin && (
-                      <span className="text-xs text-milou-600 bg-milou-50 px-1.5 py-0.5 rounded-full font-medium">Admin</span>
+                      <span className="text-xs text-milou-600 bg-milou-50 px-1.5 py-0.5 font-medium">Admin</span>
                     )}
                     {isLocked(u) && (
-                      <span className="text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full font-medium">Låst</span>
+                      <span className="text-xs text-red-600 bg-red-50 px-1.5 py-0.5 font-medium">Låst</span>
                     )}
                   </div>
                   <span className="text-xs text-gray-400">

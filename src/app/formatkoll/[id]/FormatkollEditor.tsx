@@ -150,7 +150,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
       <button
         type="button"
         onClick={copyLink}
-        className="px-3 py-1.5 rounded-lg bg-milou-500 text-white font-medium hover:bg-milou-400 transition-colors"
+        className="px-3 py-1.5 rounded-lg bg-milou-500 text-white font-medium hover:bg-milou-600 transition-colors"
       >
         {copied ? "Kopierad" : "Kopiera delningslänk"}
       </button>

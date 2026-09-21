@@ -325,7 +325,7 @@ function SummaryRow({
           {col.key === "status" && <DistBar tasks={tasks} />}
           {col.key === "timeline" && (tl.min || tl.max) && (
             <span
-              className="relative w-full overflow-hidden rounded-full px-3 py-1 text-center text-[11px] font-medium text-white"
+              className="relative w-full overflow-hidden px-3 py-1 text-center text-[11px] font-medium text-white"
               style={{ background: list.color }}
             >
               <span

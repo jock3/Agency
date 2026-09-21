@@ -76,7 +76,7 @@ export default function TodoSidebar({
                   <span className="flex-1 text-left">{label}</span>
                   {counts[id] > 0 && (
                     <span
-                      className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
+                      className={`px-1.5 py-0.5 text-xs font-medium ${
                         active ? "bg-milou-100 text-milou-600" : "bg-gray-100 text-gray-500"
                       }`}
                     >

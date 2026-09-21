@@ -17,7 +17,7 @@ export default function TagFilterBar({ tags, activeTags, onToggle, onClear }: Pr
           <button
             key={tag}
             onClick={() => onToggle(tag)}
-            className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
+            className={`text-xs font-medium px-2.5 py-1 transition-colors ${
               active
                 ? "bg-milou-500 text-white"
                 : "bg-white border border-gray-200 text-gray-500 hover:border-milou-300"

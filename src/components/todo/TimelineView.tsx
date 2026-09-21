@@ -133,7 +133,7 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
                           title={`${t.title} · ${t.start_date}${
                             t.end_date && t.end_date !== t.start_date ? " – " + t.end_date : ""
                           }`}
-                          className={`absolute top-1 flex h-5 items-center overflow-hidden rounded-full px-2 text-[11px] font-medium text-white transition-opacity hover:opacity-90 ${
+                          className={`absolute top-1 flex h-5 items-center overflow-hidden px-2 text-[11px] font-medium text-white transition-opacity hover:opacity-90 ${
                             t.status === "done" ? "opacity-60" : ""
                           }`}
                           style={{

@@ -10,18 +10,18 @@
   --fk-top: #1c1c1c;
   --fk-top-2: #2b2b2b;
   --fk-top-line: #3a3a3a;
-  --fk-top-muted: #9ca3af;
-  --fk-stage: #f3f4f6;
+  --fk-top-muted: #aaaaaa;
+  --fk-stage: #f2f2f2;
   --fk-panel: #ffffff;
-  --fk-panel-2: #f9fafb;
-  --fk-line: #e5e7eb;
-  --fk-text: #111827;
-  --fk-muted: #6b7280;
+  --fk-panel-2: #f2f2f2;
+  --fk-line: #dddddd;
+  --fk-text: #2b2b2b;
+  --fk-muted: #6c6c6c;
   --fk-accent: #e60330;
-  --fk-accent-soft: #fff5f7;
+  --fk-accent-soft: #ffded0;
   --fk-marker: #ffd23f;
   --fk-block: rgba(255, 74, 74, 0.26);
-  --fk-radius: 8px;
+  --fk-radius: 0;
   --fk-ui: "Komet", system-ui, sans-serif;
   --fk-body: "Komet", system-ui, sans-serif;
 
@@ -81,9 +81,9 @@
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
-.fk-slot:hover { border-color: #4b5563; }
+.fk-slot:hover { border-color: #6c6c6c; }
 .fk-slot.fk-dragover { border-color: var(--fk-accent); background: #35132b; }
-.fk-slot.fk-filled { border-color: #4b5563; }
+.fk-slot.fk-filled { border-color: #6c6c6c; }
 .fk-slot input {
   position: absolute;
   inset: 0;
@@ -95,7 +95,7 @@
   background: #3a3a3a;
   border-radius: 3px;
   flex: none;
-  border: 1px solid #4b5563;
+  border: 1px solid #6c6c6c;
 }
 .fk-chip.fk-r916 { height: 34px; width: 20px; }
 .fk-chip.fk-r11 { height: 26px; width: 26px; }
@@ -168,13 +168,13 @@
   font-size: 12px;
   color: var(--fk-muted);
 }
-.fk-count b { font-weight: 600; color: #374151; flex: none; }
+.fk-count b { font-weight: 600; color: #2b2b2b; flex: none; }
 .fk-count.fk-over b { color: var(--fk-accent); }
 .fk-group {
   font-family: var(--fk-ui);
   font-weight: 600;
   font-size: 11px;
-  color: #9ca3af;
+  color: #8f8f8f;
   padding: 14px 16px 5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -196,7 +196,7 @@
   cursor: pointer;
 }
 .fk-item:hover { background: var(--fk-panel-2); }
-.fk-item[aria-current="true"] { background: var(--fk-accent-soft); border-left-color: var(--fk-accent); font-weight: 500; }
+.fk-item[aria-current="true"] { background: #ffbfb6; border-left-color: var(--fk-accent); font-weight: 700; }
 .fk-item em {
   font-style: normal;
   color: var(--fk-muted);
@@ -204,8 +204,8 @@
   margin-left: auto;
   font-family: var(--fk-ui);
 }
-.fk-item.fk-missing { color: #9ca3af; }
-.fk-item.fk-missing em { color: #d1d5db; }
+.fk-item.fk-missing { color: #aaaaaa; }
+.fk-item.fk-missing em { color: #c4c4c4; }
 
 /* ---------- scen ---------- */
 .fk-stage {
@@ -259,7 +259,7 @@
   font-family: var(--fk-ui);
   font-weight: 500;
   font-size: 14px;
-  color: #374151;
+  color: #2b2b2b;
   background: #fff;
   border: 1px solid var(--fk-line);
   border-radius: var(--fk-radius);
@@ -281,13 +281,13 @@
 .fk-ratio-pick button {
   background: none;
   border: 0;
-  color: #4b5563;
+  color: #4a4a4a;
   font-family: var(--fk-ui);
   font-size: 13px;
   padding: 4px 10px;
   cursor: pointer;
 }
-.fk-ratio-pick button[aria-pressed="true"] { background: var(--fk-accent); color: #fff; font-weight: 600; }
+.fk-ratio-pick button[aria-pressed="true"] { background: #ffbfb6; color: #2b2b2b; font-weight: 700; }
 
 /* ---------- telefon ---------- */
 /* Ramen har telefonfasning men visar assetet, inte en skärm — en riktig iPhone
@@ -360,8 +360,7 @@
   border-radius: 8px;
   overflow: hidden;
   color: #111;
-  border: 1px solid #f3f4f6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: -12px 12px 0 0 #ffbfb6;
   flex: none;
   width: 100%;
   max-height: calc(100% - 28px);
@@ -597,7 +596,7 @@
   background: #fff;
   border: 1px solid var(--fk-line);
   padding: 3px 12px;
-  border-radius: 9999px;
+  border-radius: 0;
 }
 
 @media (max-width: 880px) {
@@ -658,7 +657,7 @@
   background: var(--fk-panel-2);
   border: 1px solid var(--fk-line);
   color: var(--fk-text);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 3px 5px;
   font-family: var(--fk-ui);
   font-size: 12px;
@@ -713,7 +712,7 @@
 .fk-shared-tag {
   margin-left: 6px;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--fk-panel-2);
   border: 1px solid var(--fk-line);
   font-size: 10px;

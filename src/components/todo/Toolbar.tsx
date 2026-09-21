@@ -123,7 +123,7 @@ export default function Toolbar({
       <button
         type="button"
         onClick={onNewTask}
-        className={`${BTN} bg-milou-500 font-medium text-white hover:bg-milou-400`}
+        className={`${BTN} bg-milou-500 font-medium text-white hover:bg-milou-600`}
       >
         <Plus size={15} strokeWidth={2.5} /> Nytt objekt
       </button>
@@ -356,7 +356,7 @@ export default function Toolbar({
 function Chip({ children, amber = false }: { children: React.ReactNode; amber?: boolean }) {
   return (
     <span
-      className={`ml-0.5 rounded-full px-1.5 text-[11px] font-semibold ${
+      className={`ml-0.5 px-1.5 text-[11px] font-semibold ${
         amber ? "bg-amber-200 text-amber-800" : "bg-milou-100 text-milou-600"
       }`}
     >
@@ -381,7 +381,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       style={on ? { background: color, borderColor: color } : { borderColor: color, color }}
-      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+      className={`border px-2 py-0.5 text-[11px] font-medium transition-colors ${
         on ? "text-white" : "bg-white"
       }`}
     >

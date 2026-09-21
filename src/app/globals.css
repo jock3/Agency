@@ -45,3 +45,35 @@
     border-radius: 3px;
   }
 }
+
+/* Milou-plattan: solid, oskarp färgyta förskjuten bakom kort, som bakom
+   bilderna på milou.se. Färg och riktning roterar per position i rutnätet så
+   intilliggande kort inte får samma platta. */
+@layer components {
+  .milou-plate {
+    box-shadow: -12px 12px 0 0 #ffbfb6;
+    transition: box-shadow 0.3s ease-in-out;
+  }
+  .milou-plate:nth-child(3n + 2) {
+    box-shadow: 12px -12px 0 0 #ffded0;
+  }
+  .milou-plate:nth-child(3n) {
+    box-shadow: -12px -12px 0 0 #ff999c;
+  }
+  .milou-plate:hover {
+    box-shadow: -16px 16px 0 0 #ffbfb6;
+  }
+  .milou-plate:nth-child(3n + 2):hover {
+    box-shadow: 16px -16px 0 0 #ffded0;
+  }
+  .milou-plate:nth-child(3n):hover {
+    box-shadow: -16px -16px 0 0 #ff999c;
+  }
+
+  /* Rubrikband: tätt färgblock bakom varje textrad, som hero-rubrikerna. */
+  .milou-band {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding: 0 0.2em;
+  }
+}

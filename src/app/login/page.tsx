@@ -67,8 +67,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-        <div className="bg-gray-900 px-6 py-5 flex items-center gap-3">
+      <div className="bg-white w-full max-w-sm shadow-plate-peach">
+        <div className="bg-red-fade px-6 py-6 flex items-center gap-3">
           <MilouLogo className="h-7 w-auto text-white" />
         </div>
 

@@ -122,7 +122,7 @@ export default function CampaignOverlay({ planId, onClose, readOnly }: Props) {
             )}
 
             {readOnly ? (
-              <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1 rounded-full">
+              <span className="text-xs bg-milou-900 text-milou-300 px-2 py-1">
                 Visningsläge
               </span>
             ) : (
