@@ -37,8 +37,9 @@ async function getFullPlanByToken(token: string): Promise<FullMediaPlan | null> 
   };
 }
 
-export default async function SharePage({ params }: { params: { token: string } }) {
-  const plan = await getFullPlanByToken(params.token);
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const plan = await getFullPlanByToken(token);
 
   if (!plan) {
     return (

@@ -31,8 +31,9 @@ async function getFullCampaignPlanByToken(token: string): Promise<FullCampaignPl
   };
 }
 
-export default async function CampaignSharePage({ params }: { params: { token: string } }) {
-  const plan = await getFullCampaignPlanByToken(params.token);
+export default async function CampaignSharePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const plan = await getFullCampaignPlanByToken(token);
 
   if (!plan) {
     return (
