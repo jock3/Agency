@@ -13,7 +13,8 @@ interface Props {
   muted: boolean;
   onToggleSound: () => void;
   onReplay: () => void;
-  hasAsset: boolean;
+  /** Bara film har ljud och kan spelas om — falskt för tom slot och stillbild. */
+  playable: boolean;
   /** Samlingsvyn har ingen enskild video att styra och inget format att välja. */
   overview?: boolean;
   meta: string;
@@ -30,7 +31,7 @@ export default function StageControls({
   muted,
   onToggleSound,
   onReplay,
-  hasAsset,
+  playable,
   overview,
   meta,
 }: Props) {
@@ -48,10 +49,10 @@ export default function StageControls({
           görs den asynkron blockerar Safari den. */}
       {!overview && (
         <>
-          <button type="button" className="fk-btn" onClick={onToggleSound} disabled={!hasAsset}>
+          <button type="button" className="fk-btn" onClick={onToggleSound} disabled={!playable}>
             {muted ? "Ljud på" : "Ljud av"}
           </button>
-          <button type="button" className="fk-btn" onClick={onReplay} disabled={!hasAsset}>
+          <button type="button" className="fk-btn" onClick={onReplay} disabled={!playable}>
             Spela om
           </button>
         </>

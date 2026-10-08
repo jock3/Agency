@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ACCEPT, extForFile } from "@/lib/formatkoll/media";
 import { SOURCES, type Ratio } from "@/lib/formatkoll/placements";
 import type { AssetMap } from "./PreviewWorkspace";
 
@@ -40,7 +41,7 @@ export default function SourceSlots({ assets, onPick }: Props) {
               e.preventDefault();
               setDragging(null);
               const file = e.dataTransfer.files[0];
-              if (file && file.type.startsWith("video/")) onPick(s.ratio, file);
+              if (file && extForFile(file)) onPick(s.ratio, file);
             }}
           >
             <span className={`fk-chip fk-r${s.ratio.replace(":", "")}`} />
@@ -59,7 +60,7 @@ export default function SourceSlots({ assets, onPick }: Props) {
             </span>
             <input
               type="file"
-              accept="video/*"
+              accept={ACCEPT}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) onPick(s.ratio, file);

@@ -8,6 +8,7 @@ import {
   storagePathFor,
   unauthorized,
 } from "@/lib/formatkoll/guard";
+import { isAssetExt } from "@/lib/formatkoll/media";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
   const projectId = typeof body?.project_id === "string" ? body.project_id : null;
   const ratio = body?.ratio;
   const filename = typeof body?.filename === "string" ? body.filename : null;
-  if (!projectId || !isRatio(ratio) || !filename) return badRequest();
+  const ext = body?.ext ?? "mp4";
+  if (!projectId || !isRatio(ratio) || !filename || !isAssetExt(ext)) return badRequest();
 
   try {
     const sb = getSupabaseAdminClient();
@@ -35,6 +37,14 @@ export async function POST(request: NextRequest) {
     if (error) return serverError();
     if (!project) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
+    const storagePath = storagePathFor(project.slug, ratio, ext);
+    const { data: previous } = await sb
+      .from("formatkoll_assets")
+      .select("storage_path")
+      .eq("project_id", projectId)
+      .eq("ratio", ratio)
+      .maybeSingle();
+
     const now = new Date().toISOString();
     const { data: asset, error: upsertError } = await sb
       .from("formatkoll_assets")
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
         {
           project_id: projectId,
           ratio,
-          storage_path: storagePathFor(project.slug, ratio),
+          storage_path: storagePath,
           filename,
           size_bytes: num(body?.size_bytes),
           width: num(body?.width),
@@ -54,6 +64,13 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
     if (upsertError) return serverError();
+
+    // Bytte filtyp: det gamla objektet ligger kvar under sin gamla ändelse.
+    // Städas efter att raden pekats om, så kundvyn aldrig pekar på något som
+    // saknas. Misslyckas borttagningen blir det bara en föräldralös fil.
+    if (previous && previous.storage_path !== storagePath) {
+      await sb.storage.from(PREVIEW_BUCKET).remove([previous.storage_path]);
+    }
 
     await sb.from("formatkoll_projects").update({ updated_at: now }).eq("id", projectId);
     return NextResponse.json(asset);

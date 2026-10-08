@@ -8,6 +8,7 @@ import {
   storagePathFor,
   unauthorized,
 } from "@/lib/formatkoll/guard";
+import { isAssetExt } from "@/lib/formatkoll/media";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 /**
@@ -24,7 +25,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const projectId = typeof body?.project_id === "string" ? body.project_id : null;
   const ratio = body?.ratio;
-  if (!projectId || !isRatio(ratio)) return badRequest();
+  // Utan ext är det en film — så såg anropet ut innan bilder fanns.
+  const ext = body?.ext ?? "mp4";
+  if (!projectId || !isRatio(ratio) || !isAssetExt(ext)) return badRequest();
 
   try {
     const sb = getSupabaseAdminClient();
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (error) return serverError();
     if (!project) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-    const path = storagePathFor(project.slug, ratio);
+    const path = storagePathFor(project.slug, ratio, ext);
     // upsert: samma sökväg skrivs över när en fil ersätts, annars vägrar storage.
     const { data, error: signError } = await sb.storage
       .from(PREVIEW_BUCKET)

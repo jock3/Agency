@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { PREVIEW_BUCKET } from "@/lib/formatkoll/guard";
+import { extForFile, type AssetExt } from "@/lib/formatkoll/media";
 import type { Ratio } from "@/lib/formatkoll/placements";
 import type {
   FormatkollAsset,
@@ -51,24 +52,36 @@ export const deleteAsset = (projectId: string, ratio: Ratio) =>
 
 /** Supabase gissar ibland fel på .mov. Sätts typen inte explicit vägrar Safari
  *  ladda filen efteråt. */
-function contentTypeFor(file: File): string {
+function contentTypeFor(file: File, kind: AssetExt): string {
   if (file.type) return file.type;
+  if (kind === "png") return "image/png";
+  if (kind === "jpg") return "image/jpeg";
   const ext = file.name.split(".").pop()?.toLowerCase();
   if (ext === "mov") return "video/quicktime";
   if (ext === "webm") return "video/webm";
   return "video/mp4";
 }
 
-/** Läser filmens verkliga mått innan uppladdning, så kundvyn kan rita rätt
+/** Läser filens verkliga mått innan uppladdning, så kundvyn kan rita rätt
  *  proportion direkt i stället för att vänta in videons metadata. */
-function readDimensions(file: File): Promise<{ width: number | null; height: number | null }> {
+function readDimensions(
+  file: File,
+  ext: AssetExt,
+): Promise<{ width: number | null; height: number | null }> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
-    const v = document.createElement("video");
     const done = (width: number | null, height: number | null) => {
       URL.revokeObjectURL(url);
       resolve({ width, height });
     };
+    if (ext !== "mp4") {
+      const img = new Image();
+      img.onload = () => done(img.naturalWidth || null, img.naturalHeight || null);
+      img.onerror = () => done(null, null);
+      img.src = url;
+      return;
+    }
+    const v = document.createElement("video");
     v.preload = "metadata";
     v.onloadedmetadata = () => done(v.videoWidth || null, v.videoHeight || null);
     v.onerror = () => done(null, null);
@@ -86,16 +99,19 @@ export async function uploadAsset(
   ratio: Ratio,
   file: File,
 ): Promise<FormatkollAsset> {
+  const ext = extForFile(file);
+  if (!ext) throw new Error("Bara video, jpg och png går att ladda upp");
+
   const { path, token } = await call<{ path: string; token: string }>(
     "/api/formatkoll/upload",
-    { method: "POST", body: JSON.stringify({ project_id: projectId, ratio }) },
+    { method: "POST", body: JSON.stringify({ project_id: projectId, ratio, ext }) },
   );
 
-  const dims = await readDimensions(file);
+  const dims = await readDimensions(file, ext);
 
   const { error } = await getSupabaseClient()
     .storage.from(PREVIEW_BUCKET)
-    .uploadToSignedUrl(path, token, file, { contentType: contentTypeFor(file) });
+    .uploadToSignedUrl(path, token, file, { contentType: contentTypeFor(file, ext) });
   if (error) throw new Error(error.message);
 
   return call<FormatkollAsset>("/api/formatkoll/assets", {
@@ -103,6 +119,7 @@ export async function uploadAsset(
     body: JSON.stringify({
       project_id: projectId,
       ratio,
+      ext,
       filename: file.name,
       size_bytes: file.size,
       width: dims.width,

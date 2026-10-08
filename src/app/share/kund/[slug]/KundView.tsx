@@ -2,6 +2,7 @@
 
 import MilouLogo from "@/components/MilouLogo";
 import PreviewWorkspace, { emptyAssets, type AssetMap } from "@/components/formatkoll/PreviewWorkspace";
+import { kindOfPath } from "@/lib/formatkoll/media";
 import type { NaturalSize, Ratio } from "@/lib/formatkoll/placements";
 
 interface Preview {
@@ -18,7 +19,7 @@ export default function KundView({ preview }: { preview: Preview }) {
   const assets: AssetMap = emptyAssets();
   const naturals: Partial<Record<Ratio, NaturalSize>> = {};
   for (const a of preview.assets) {
-    assets[a.ratio] = { url: a.url, name: a.name };
+    assets[a.ratio] = { url: a.url, name: a.name, kind: kindOfPath(a.url) };
     if (a.width && a.height) naturals[a.ratio] = { w: a.width, h: a.height };
   }
 

@@ -377,7 +377,8 @@
   container-type: size;
 }
 .fk-vidbox { position: relative; background: #000; overflow: hidden; }
-.fk-vidbox video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fk-vidbox video,
+.fk-vidbox img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fk-empty {
   position: absolute;
   inset: 0;

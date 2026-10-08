@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PreviewWorkspace, { emptyAssets, type AssetMap } from "@/components/formatkoll/PreviewWorkspace";
 import { RATIOS, type NaturalSize, type Ratio } from "@/lib/formatkoll/placements";
+import { kindOfPath } from "@/lib/formatkoll/media";
 import { publicAssetUrl } from "@/lib/formatkoll/urls";
 import { getProject, updateProject, uploadAsset } from "@/lib/api/formatkoll";
 import type { FormatkollProjectFull } from "@/lib/formatkoll/types";
@@ -61,6 +62,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
     assets[a.ratio] = {
       url: publicAssetUrl(a.storage_path, a.updated_at),
       name: a.filename,
+      kind: kindOfPath(a.storage_path),
       sizeBytes: a.size_bytes ?? undefined,
     };
     if (a.width && a.height) naturals[a.ratio] = { w: a.width, h: a.height };

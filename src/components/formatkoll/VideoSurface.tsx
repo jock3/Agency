@@ -1,11 +1,13 @@
 "use client";
 
 import { forwardRef, memo, type MutableRefObject } from "react";
+import type { MediaKind } from "@/lib/formatkoll/media";
 import { sourceFor, type NaturalSize, type Ratio } from "@/lib/formatkoll/placements";
 
 export interface AssetRef {
   url: string;
   name: string;
+  kind: MediaKind;
   sizeBytes?: number;
 }
 
@@ -42,6 +44,23 @@ const VideoSurface = forwardRef<HTMLVideoElement, Props>(function VideoSurface(
         <b>Ingen {src.label.toLowerCase()} fil</b>
         <span>{requirement}</span>
       </div>
+    );
+  }
+
+  // Stillbild: ingen videoref att lämna ut, så ljud och omstart blir no-ops.
+  if (asset.kind === "image") {
+    return (
+      <img
+        key={asset.url}
+        src={asset.url}
+        alt={asset.name}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth && img.naturalHeight) {
+            onNaturalSize?.(asset.url, { w: img.naturalWidth, h: img.naturalHeight });
+          }
+        }}
+      />
     );
   }
 

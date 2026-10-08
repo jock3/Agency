@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { AssetExt } from "./media";
 import { getSessionToken, validateSession, type ValidatedUser } from "@/lib/auth/session";
 
 /** Middleware vänder redan bort kaklösa navigeringar. Kontrollen görs om här så
@@ -46,9 +47,10 @@ export const isRatio = (v: unknown): v is "9:16" | "1:1" | "16:9" =>
 
 export const PREVIEW_BUCKET = "previews";
 
-/** Sökvägen är alltid samma för en given slug och ett givet format, så en ny
- *  uppladdning skriver över den gamla i stället för att lämna skräp efter sig. */
-export const storagePathFor = (slug: string, ratio: string) =>
-  `${slug}/${RATIO_SEGMENT[ratio]}.mp4`;
+/** Sökvägen är alltid samma för en given slug, ett givet format och en given
+ *  filtyp, så en ny uppladdning skriver över den gamla. Byts film mot bild (eller
+ *  jpg mot png) får objektet ny ändelse — assets-routen städar då bort det gamla. */
+export const storagePathFor = (slug: string, ratio: string, ext: AssetExt = "mp4") =>
+  `${slug}/${RATIO_SEGMENT[ratio]}.${ext}`;
 
 export type { ValidatedUser };

@@ -331,7 +331,7 @@ export default function PreviewWorkspace({
           muted={muted}
           onToggleSound={toggleSound}
           onReplay={replay}
-          hasAsset={!!asset}
+          playable={asset?.kind === "video"}
           overview={viewAll}
           meta={
             viewAll

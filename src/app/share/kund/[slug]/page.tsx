@@ -61,8 +61,8 @@ export async function generateMetadata({
   const title = preview.clientName ? `${preview.title} — ${preview.clientName}` : preview.title;
   return {
     title,
-    description: "Förhandsvisning av rörligt material i sociala placeringar.",
-    openGraph: { title, description: "Förhandsvisning av rörligt material i sociala placeringar." },
+    description: "Förhandsvisning av material i sociala placeringar.",
+    openGraph: { title, description: "Förhandsvisning av material i sociala placeringar." },
     robots: { index: false, follow: false },
   };
 }
