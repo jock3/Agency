@@ -5,8 +5,9 @@ import { Check, Loader2, Lock, TriangleAlert, X } from "lucide-react";
 import MilouLogo from "@/components/MilouLogo";
 import type { AuditAction, AuditedPage, PublicAuditResult, UnlockedAudit } from "@/lib/audit/types";
 
-/** Dit "Boka ett samtal" leder. Byt mot kontaktsidan när verktyget går live. */
-const CONTACT_URL = "https://milou.se";
+/** Dit "Boka ett samtal" leder. milou.se saknar en egen kontaktsida
+ *  (/kontakt ger 404), så knappen går till kontorssidan med kontaktuppgifter. */
+const CONTACT_URL = "https://milou.se/vara-kontor/";
 
 const ERRORS: Record<string, string> = {
   INVALID_URL: "Det ser inte ut som en giltig webbadress. Prova till exempel milou.se.",
