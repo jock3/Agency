@@ -23,6 +23,6 @@ export const config = {
   // The manifest and icons must load without a session: browsers fetch the
   // manifest without cookies, and a login redirect makes the app uninstallable.
   matcher: [
-    "/((?!login|share|_next|favicon.ico|api/auth|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png).*)",
+    "/((?!login|share|_next|favicon.ico|api/auth|api/public|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png).*)",
   ],
 };

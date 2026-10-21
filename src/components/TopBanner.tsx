@@ -9,6 +9,7 @@ const SECTIONS = [
   { href: "/kampanj", label: "Kampanjer" },
   { href: "/todo", label: "Uppgifter" },
   { href: "/formatkoll", label: "Formatkoll" },
+  { href: "/audit", label: "SEO/GEO-audit" },
 ];
 
 export default function TopBanner() {

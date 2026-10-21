@@ -1,7 +1,7 @@
 # Milou Verktyg
 
-Next.js-app med fyra verktyg: **Mediaplaner**, **Kampanjer**, **Uppgifter** och
-**Formatkoll**.
+Next.js-app med fem verktyg: **Mediaplaner**, **Kampanjer**, **Uppgifter**,
+**Formatkoll** och **SEO/GEO-audit**.
 
 ## Stack
 
@@ -24,6 +24,7 @@ Kräver `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+ANTHROPIC_API_KEY=...        # valfri, se SEO/GEO-audit
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` är obligatorisk och måste vara satt även i Vercel.
@@ -110,6 +111,58 @@ publicerade specar, inte från mätning på riktig telefon. Pixelunderlaget stå
 kommentar per placering. Öppna ett projekt med `?kalibrera=1` för att lägga en
 skärmdump över ramen och justera siffrorna — läget är avstängt i kundvyn och
 påverkar aldrig den vanliga renderingen.
+
+## SEO/GEO-audit
+
+Publikt säljverktyg på `/share/audit`, tänkt att bäddas in på milou.se med
+iframe. Besökaren anger en webbadress och får ett betyg 1–10 (plus delbetyg för
+SEO och GEO) direkt. För att se 3–5 åtgärdspunkter lämnar besökaren e-post.
+Leads och alla körningar syns internt på `/audit`.
+
+| Tabell | Roll |
+| --- | --- |
+| `audit_runs` | en rad per granskning: betyg, kontroller, sidutdrag, åtgärder |
+| `audit_leads` | e-post och samtycke, kopplat till en körning |
+
+Båda nekar anon-rollen. Den publika sidan pratar bara med
+`/api/public/audit/run` och `/api/public/audit/unlock`, som är undantagna från
+inloggningen i `src/proxy.ts` och skriver med service-role-nyckeln.
+
+**Betyget** räknas av fasta kontroller i `src/lib/audit/checks.ts`, inte av en
+språkmodell, så samma sida får samma betyg varje gång. Varje kontroll har en
+vikt inom sin grupp (SEO eller GEO); grupperna vägs lika.
+
+**Åtgärderna** skrivs av Claude (`src/lib/audit/advice.ts`, modell via
+`AUDIT_MODEL`, standard `claude-opus-5-5` på låg effort) först när någon låser
+upp, och sparas på körningen. Claude anropas alltså högst en gång per körning
+och bara för besökare som lämnat e-post. Utan `ANTHROPIC_API_KEY`, eller om
+anropet misslyckas, byggs punkterna av kontrollernas egna fix-texter.
+
+**Hämtningen** (`src/lib/audit/fetch.ts`) är en SSRF-yta: besökaren väljer vilken
+adress servern ska anropa. Varje anslutning, också efter omdirigering, går via
+en DNS-uppslagning som vägrar privata och reserverade adresser. Bara port 80
+och 443, högst 3 MB, 10 s.
+
+**Demoläge.** `AUDIT_DEMO=1` kör verktyget utan databas: körningar hålls i
+minnet och leads sparas inte. Bara för lokala visningar — sätt det aldrig i
+Vercel, där minnet inte delas mellan instanser.
+
+**Begränsningar.** Samma URL återanvänds i 24 timmar. Varje IP (lagras bara som
+hash) får göra 10 nya körningar per timme.
+
+**Inbäddning.** `next.config.mjs` tillåter att `/share/audit` ramas in från
+milou.se och dess subdomäner. Sidan skickar sin höjd till förälderfönstret:
+
+```html
+<iframe id="milou-audit" src="https://<appens-domän>/share/audit"
+        style="width:100%;border:0" title="SEO- och GEO-koll"></iframe>
+<script>
+  addEventListener("message", (e) => {
+    if (e.data?.type === "milou-audit-height")
+      document.getElementById("milou-audit").style.height = e.data.height + "px";
+  });
+</script>
+```
 
 ## Edge-funktioner
 
