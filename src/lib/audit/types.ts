@@ -11,9 +11,6 @@ export interface Check {
   detail: string;
   /** Förslag på åtgärd. Visas inte för besökaren men sparas på körningen. */
   fix: string;
-  /** Andel godkända sidor (0–1) för sammanvägda sidkontroller. Saknas den
-   *  räknas poängen från status. */
-  ratio?: number;
 }
 
 /** En granskad sida, som den listas för besökaren. */
@@ -33,6 +30,6 @@ export interface PublicAuditResult {
   score: number;
   seoScore: number;
   geoScore: number;
-  checks: Omit<Check, "fix" | "weight" | "ratio">[];
+  checks: Omit<Check, "fix" | "weight">[];
   pages: AuditedPage[];
 }

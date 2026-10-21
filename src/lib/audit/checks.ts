@@ -9,9 +9,14 @@ import type { Check, CheckGroup, CheckStatus } from "./types";
  * körs på varje granskad sida och vägs sedan ihop i `aggregate`. Sajtkontroller
  * (HTTPS, robots.txt, sitemap …) gäller hela domänen och körs en gång.
  *
+ * Gränserna är medvetet stränga: grön bock betyder att kontrollen är helt
+ * uppfylld, inte "tillräckligt bra". Allt däremellan blir gult.
+ *
  * Vikterna säger hur mycket en kontroll betyder inom sin grupp. SEO och GEO
  * vägs sedan lika i totalbetyget.
  */
+
+const ORG_TYPES = /Organization|LocalBusiness|Corporation|Store|Restaurant|ProfessionalService/i;
 
 const AI_BOTS = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "PerplexityBot", "Google-Extended"];
 
@@ -112,6 +117,7 @@ export interface PageResult {
   title: string;
   h1: string;
   checks: Check[];
+  schemaTypes: string[];
   /** Interna och externa länkar, menylänkar först. Används för att välja
    *  vilka undersidor som ska granskas. */
   links: string[];
@@ -159,16 +165,16 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
 
   if (!title) {
     checks.push(check("title", "seo", "Sidtitel", 3, "fail", "Sidan saknar <title>.", "Ge varje sida en unik titel på 30–60 tecken som börjar med det viktigaste sökordet."));
-  } else if (title.length < 20 || title.length > 65) {
-    checks.push(check("title", "seo", "Sidtitel", 3, "warn", `Titeln är ${title.length} tecken: "${title}".`, "Skriv om titlarna till 30–60 tecken så de inte kapas i sökresultatet och ändå säger vad sidan handlar om."));
+  } else if (title.length < 30 || title.length > 60) {
+    checks.push(check("title", "seo", "Sidtitel", 3, "warn", `Titeln är ${title.length} tecken, inte 30–60: "${title}".`, "Skriv om titlarna till 30–60 tecken så de inte kapas i sökresultatet och ändå säger vad sidan handlar om."));
   } else {
     checks.push(check("title", "seo", "Sidtitel", 3, "pass", `"${title}" (${title.length} tecken).`, ""));
   }
 
   if (!description) {
     checks.push(check("description", "seo", "Metabeskrivning", 2, "fail", "Ingen metabeskrivning.", "Skriv en metabeskrivning på 120–160 tecken för varje viktig sida, som säljer in klicket från sökresultatet."));
-  } else if (description.length < 70 || description.length > 170) {
-    checks.push(check("description", "seo", "Metabeskrivning", 2, "warn", `Beskrivningen är ${description.length} tecken.`, "Justera metabeskrivningarna till 120–160 tecken."));
+  } else if (description.length < 120 || description.length > 160) {
+    checks.push(check("description", "seo", "Metabeskrivning", 2, "warn", `Beskrivningen är ${description.length} tecken, inte 120–160.`, "Justera metabeskrivningarna till 120–160 tecken."));
   } else {
     checks.push(check("description", "seo", "Metabeskrivning", 2, "pass", `${description.length} tecken.`, ""));
   }
@@ -217,8 +223,8 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   }
 
   checks.push(
-    $('meta[property="og:title"]').length > 0 && $('meta[property="og:image"]').length > 0
-      ? check("og", "seo", "Delningsbild (Open Graph)", 1, "pass", "og:title och og:image finns.", "")
+    ["og:title", "og:description", "og:image"].every((p) => $(`meta[property="${p}"]`).attr("content")?.trim())
+      ? check("og", "seo", "Delningsbild (Open Graph)", 1, "pass", "og:title, og:description och og:image finns.", "")
       : check("og", "seo", "Delningsbild (Open Graph)", 1, "warn", "Open Graph-taggar saknas eller är ofullständiga.", "Lägg till og:title, og:description och og:image så länkar ser bra ut när de delas."),
   );
 
@@ -228,7 +234,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
       : check("indexable", "seo", "Indexerbar", 4, "pass", "Sidan får indexeras.", ""),
   );
 
-  const speed: CheckStatus = input.ms < 1200 ? "pass" : input.ms < 3000 ? "warn" : "fail";
+  const speed: CheckStatus = input.ms < 800 ? "pass" : input.ms < 2000 ? "warn" : "fail";
   checks.push(
     check("speed", "seo", "Svarstid", 2, speed, `HTML-svaret tog ${(input.ms / 1000).toFixed(1)} s.`, speed === "pass" ? "" : "Snabba upp serverns svarstid med cache och CDN — långsamma sidor rankar och konverterar sämre."),
   );
@@ -236,19 +242,18 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   // GEO
 
   checks.push(
-    words >= 300
+    words >= 400
       ? check("content", "geo", "Läsbart innehåll", 3, "pass", `Cirka ${words} ord i HTML:en.`, "")
-      : check("content", "geo", "Läsbart innehåll", 3, words >= 80 ? "warn" : "fail", `Bara cirka ${words} ord syns utan JavaScript.`, "AI-sökmotorer läser sällan JavaScript. Rendera huvudinnehållet på servern och skriv ut mer konkret text om vad ni erbjuder."),
+      : check("content", "geo", "Läsbart innehåll", 3, words >= 150 ? "warn" : "fail", `Bara cirka ${words} ord syns utan JavaScript.`, "AI-sökmotorer läser sällan JavaScript. Rendera huvudinnehållet på servern och skriv ut mer konkret text om vad ni erbjuder."),
   );
 
-  const hasOrg = schemaTypes.some((t) => /Organization|LocalBusiness|Corporation|Store|Restaurant|ProfessionalService/i.test(t));
-  if (schemaTypes.length === 0) {
-    checks.push(check("schema", "geo", "Strukturerad data", 3, "fail", "Ingen JSON-LD.", "Lägg till strukturerad data (schema.org) för organisationen och huvudinnehållet så AI-tjänster förstår vem ni är."));
-  } else if (!hasOrg) {
-    checks.push(check("schema", "geo", "Strukturerad data", 3, "warn", `Typer: ${schemaTypes.slice(0, 5).join(", ")}. Organisation saknas.`, "Komplettera med Organization- eller LocalBusiness-schema med namn, logotyp, kontaktuppgifter och sameAs-länkar."));
-  } else {
-    checks.push(check("schema", "geo", "Strukturerad data", 3, "pass", `Typer: ${schemaTypes.slice(0, 5).join(", ")}.`, ""));
-  }
+  // Organisationen behöver bara beskrivas på en sida och kontrolleras därför
+  // för hela sajten i siteChecks. Här räcker det att sidan har någon JSON-LD.
+  checks.push(
+    schemaTypes.length > 0
+      ? check("schema", "geo", "Strukturerad data", 2, "pass", `Typer: ${schemaTypes.slice(0, 5).join(", ")}.`, "")
+      : check("schema", "geo", "Strukturerad data", 2, "fail", "Ingen JSON-LD.", "Lägg till strukturerad data (schema.org) på varje sida — till exempel WebPage, Article, Service eller Product — så AI-tjänster förstår vad sidan handlar om."),
+  );
 
   const questions = $("h2, h3").filter((_, el) => $(el).text().trim().endsWith("?")).length;
   const hasFaqSchema = schemaTypes.some((t) => /FAQPage|QAPage/i.test(t));
@@ -289,6 +294,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     title,
     h1: h1s[0] ?? "",
     checks,
+    schemaTypes,
     links,
   };
 }
@@ -307,8 +313,8 @@ const pathOf = (url: string) => {
 };
 
 /**
- * Väger ihop sidkontrollerna. Andelen godkända sidor blir kontrollens
- * poäng, så en brist på en av tio sidor drar mindre än en brist på alla.
+ * Väger ihop sidkontrollerna. Grönt kräver att alla sidor klarar kontrollen;
+ * klarar minst hälften blir det gult, annars rött.
  * Startsidan står först i `pages`, så dess fynd används som exempel i första hand.
  */
 export function aggregate(pages: PageResult[]): Check[] {
@@ -326,14 +332,15 @@ export function aggregate(pages: PageResult[]): Check[] {
     }
 
     const ratio = all.reduce((s, x) => s + POINTS[x.c.status], 0) / n;
-    const status: CheckStatus = ratio >= 0.85 ? "pass" : ratio >= 0.45 ? "warn" : "fail";
+    // Grönt kräver att varje granskad sida klarar kontrollen.
+    const status: CheckStatus = bad.length === 0 ? "pass" : ratio >= 0.5 ? "warn" : "fail";
     const detail =
       bad.length === 0
         ? `OK på alla ${n} sidor.`
         : bad.length === n
           ? `Gäller alla ${n} sidor. ${bad[0].c.detail}`
           : `${bad.length} av ${n} sidor. Till exempel ${pathOf(bad[0].page.url)}: ${bad[0].c.detail}`;
-    return { ...first, status, ratio, detail, fix: bad[0]?.c.fix ?? "" };
+    return { ...first, status, detail, fix: bad[0]?.c.fix ?? "" };
   });
 }
 
@@ -420,6 +427,13 @@ export function siteChecks(input: {
     checks.push(check("aibots", "geo", "AI-robotar släpps in", 3, "pass", "Ingen robots.txt, inga spärrar.", ""));
   }
 
+  const org = input.pages.find((p) => p.schemaTypes.some((t) => ORG_TYPES.test(t)));
+  checks.push(
+    org
+      ? check("org", "geo", "Organisation beskriven", 2, "pass", `Organisationsschema finns (${pathOf(org.url)}).`, "")
+      : check("org", "geo", "Organisation beskriven", 2, "fail", "Inget Organization- eller LocalBusiness-schema på de granskade sidorna.", "Beskriv företaget med Organization- eller LocalBusiness-schema: namn, logotyp, adress, kontaktuppgifter och sameAs-länkar till sociala profiler."),
+  );
+
   checks.push(
     input.hasLlmsTxt
       ? check("llms", "geo", "llms.txt", 1, "pass", "/llms.txt finns.", "")
@@ -429,17 +443,28 @@ export function siteChecks(input: {
   return checks;
 }
 
-function toTen(ratio: number) {
-  return Math.min(10, Math.max(1, Math.round(ratio * 10)));
+/** Poängen följer färgen besökaren ser: gult är nästan lika illa som rött.
+ *  Andelen godkända sidor styr bara färgen, inte poängen. */
+const SCORE_POINTS: Record<CheckStatus, number> = { pass: 1, warn: 0.25, fail: 0 };
+
+/** Kurvan gör att betyget faller snabbare när saker saknas. 10 ges bara när
+ *  varje kontroll i gruppen är grön. */
+function toTen(ratio: number, perfect: boolean) {
+  if (perfect) return 10;
+  return Math.min(9, Math.max(1, Math.round(ratio ** 1.5 * 10)));
 }
 
 export function score(checks: Check[]) {
-  const ratio = (group: CheckGroup) => {
-    const list = checks.filter((c) => c.group === group);
+  const ratio = (list: Check[]) => {
     const total = list.reduce((s, c) => s + c.weight, 0);
-    return total ? list.reduce((s, c) => s + c.weight * (c.ratio ?? POINTS[c.status]), 0) / total : 0;
+    return total ? list.reduce((s, c) => s + c.weight * SCORE_POINTS[c.status], 0) / total : 0;
   };
-  const seo = ratio("seo");
-  const geo = ratio("geo");
-  return { score: toTen((seo + geo) / 2), seoScore: toTen(seo), geoScore: toTen(geo) };
+  const allPass = (list: Check[]) => list.every((c) => c.status === "pass");
+  const seo = checks.filter((c) => c.group === "seo");
+  const geo = checks.filter((c) => c.group === "geo");
+  return {
+    score: toTen((ratio(seo) + ratio(geo)) / 2, allPass(checks)),
+    seoScore: toTen(ratio(seo), allPass(seo)),
+    geoScore: toTen(ratio(geo), allPass(geo)),
+  };
 }
