@@ -116,12 +116,19 @@ påverkar aldrig den vanliga renderingen.
 
 Publikt säljverktyg på `/share/audit`, tänkt att bäddas in på milou.se med
 iframe. Besökaren anger en webbadress och får ett betyg 1–10 (plus delbetyg för
-SEO och GEO) direkt. För att se 3–5 åtgärdspunkter lämnar besökaren e-post.
+SEO och GEO) direkt.
+
+**Flera sidor.** `src/lib/audit/crawl.ts` granskar startsidan plus upp till nio
+undersidor: menylänkar först, sedan sitemap, högst två per sektion, aldrig
+sidor som robots.txt spärrar. Hämtningen har en budget på 25 s. Sidkontroller
+(titel, H1, schema …) körs per sida och vägs ihop efter andelen godkända sidor;
+sajtkontroller (HTTPS, robots.txt, sitemap, trasiga länkar, dubblerade titlar)
+körs en gång. För att se 3–5 åtgärdspunkter lämnar besökaren e-post.
 Leads och alla körningar syns internt på `/audit`.
 
 | Tabell | Roll |
 | --- | --- |
-| `audit_runs` | en rad per granskning: betyg, kontroller, sidutdrag, åtgärder |
+| `audit_runs` | en rad per granskning: betyg, kontroller, granskade sidor, utdrag, åtgärder |
 | `audit_leads` | e-post och samtycke, kopplat till en körning |
 
 Båda nekar anon-rollen. Den publika sidan pratar bara med

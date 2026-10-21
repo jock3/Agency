@@ -11,6 +11,7 @@ interface Row {
   seo_score: number;
   geo_score: number;
   created_at: string;
+  pages: unknown[] | null;
   audit_leads: { email: string; created_at: string }[];
 }
 
@@ -25,7 +26,7 @@ export default async function AuditAdminPage() {
   const sb = getSupabaseAdminClient();
   const { data, error } = await sb
     .from("audit_runs")
-    .select("id, final_url, host, score, seo_score, geo_score, created_at, audit_leads(email, created_at)")
+    .select("id, final_url, host, score, seo_score, geo_score, created_at, pages, audit_leads(email, created_at)")
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as Row[];
@@ -88,6 +89,7 @@ export default async function AuditAdminPage() {
               <th className="py-2 px-3 font-normal text-right">Totalt</th>
               <th className="py-2 px-3 font-normal text-right">SEO</th>
               <th className="py-2 px-3 font-normal text-right">GEO</th>
+              <th className="py-2 px-3 font-normal text-right">Sidor</th>
               <th className="py-2 px-3 font-normal text-right">Leads</th>
             </tr>
           </thead>
@@ -103,6 +105,7 @@ export default async function AuditAdminPage() {
                 <td className="py-2 px-3 text-right tabular-nums font-bold">{r.score}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{r.seo_score}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{r.geo_score}</td>
+                <td className="py-2 px-3 text-right tabular-nums">{r.pages?.length ?? 1}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{r.audit_leads.length || ""}</td>
               </tr>
             ))}

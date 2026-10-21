@@ -13,11 +13,13 @@ const MODEL = process.env.AUDIT_MODEL ?? "claude-opus-5-5";
 const SYSTEM = `Du är en senior SEO- och GEO-strateg på den svenska byrån Milou.
 GEO betyder synlighet i AI-drivna söktjänster som ChatGPT, Claude, Perplexity och Googles AI-översikter.
 
-Du får resultatet av en automatisk granskning av en webbsida och ett utdrag av sidans innehåll.
+Du får resultatet av en automatisk granskning av en webbplats — startsidan och ett urval undersidor — och utdrag av sidornas innehåll.
+Fynden är sammanvägda över alla granskade sidor; "3 av 8 sidor" betyder att bristen finns på just så många.
 Skriv på svenska, i du-form, konkret och utan fackjargong som en marknadschef inte förstår.
 
 Ge 3–5 åtgärder, sorterade med störst effekt först. Varje åtgärd ska:
-- utgå från det som faktiskt hittades på just den här sidan (citera gärna titel, rubriker eller saknade delar)
+- utgå från det som faktiskt hittades på just den här sajten (nämn gärna konkreta sidor, titlar eller rubriker)
+- prioritera brister som finns på många sidor framför enstaka
 - säga vad som ska göras och varför det spelar roll för synlighet i sök eller AI-svar
 - vara genomförbar, inte en allmän princip
 
@@ -69,7 +71,7 @@ function fallback(checks: Check[]): UnlockedAudit {
   const failed = checks.filter((c) => c.status === "fail").length;
   return {
     summary: failed
-      ? `Sidan har ${failed === 1 ? "en tydlig brist" : `${failed} tydliga brister`} som påverkar synligheten. Börja med punkterna nedan.`
+      ? `Sajten har ${failed === 1 ? "en tydlig brist" : `${failed} tydliga brister`} som påverkar synligheten. Börja med punkterna nedan.`
       : "Grunderna sitter. Nästa steg är att göra innehållet lättare för AI-tjänster att hitta och citera.",
     actions,
   };
@@ -96,6 +98,17 @@ export async function writeAdvice(url: string, checks: Check[], extract: PageExt
     `Brödtext (utdrag):\n${extract.text}`,
   ].join("\n\n");
 
+  const subpages = (extract.pages ?? [])
+    .map((p) =>
+      [
+        `## ${p.url}`,
+        `Titel: ${p.title || "(saknas)"} · H1: ${p.h1 || "(saknas)"}`,
+        p.issues.length ? `Brister:\n${p.issues.map((i) => `- ${i}`).join("\n")}` : "Inga brister.",
+        `Utdrag: ${p.text}`,
+      ].join("\n"),
+    )
+    .join("\n\n");
+
   try {
     const client = new Anthropic({ timeout: 45_000, maxRetries: 1 });
     const response = await client.beta.messages.create({
@@ -108,7 +121,9 @@ export async function writeAdvice(url: string, checks: Check[], extract: PageExt
       messages: [
         {
           role: "user",
-          content: `URL: ${url}\n\nGranskningens utfall:\n${findings}\n\n<sidutdrag>\n${page}\n</sidutdrag>`,
+          content:
+            `URL: ${url}\nGranskade sidor: ${1 + (extract.pages?.length ?? 0)}\n\nGranskningens utfall:\n${findings}\n\n` +
+            `<sidutdrag>\n# Startsidan\n${page}${subpages ? `\n\n# Undersidor\n${subpages}` : ""}\n</sidutdrag>`,
         },
       ],
     });

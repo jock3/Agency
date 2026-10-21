@@ -180,9 +180,9 @@ function decode(body: Buffer, headers: http.IncomingHttpHeaders): string {
 }
 
 /** Följer omdirigeringar manuellt så varje hopp går genom samma kontroller. */
-export async function safeFetch(start: URL): Promise<FetchResult> {
+export async function safeFetch(start: URL, timeoutMs = TIMEOUT_MS): Promise<FetchResult> {
   const began = Date.now();
-  const signal = AbortSignal.timeout(TIMEOUT_MS);
+  const signal = AbortSignal.timeout(timeoutMs);
   let url = start;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const res = await requestOnce(url, signal);
@@ -197,9 +197,9 @@ export async function safeFetch(start: URL): Promise<FetchResult> {
 }
 
 /** För robots.txt, sitemap och llms.txt: ett fel betyder bara "finns inte". */
-export async function tryFetch(url: URL): Promise<FetchResult | null> {
+export async function tryFetch(url: URL, timeoutMs = TIMEOUT_MS): Promise<FetchResult | null> {
   try {
-    const res = await safeFetch(url);
+    const res = await safeFetch(url, timeoutMs);
     return res.status >= 200 && res.status < 300 ? res : null;
   } catch {
     return null;

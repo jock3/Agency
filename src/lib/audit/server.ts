@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import type { Check, PublicAuditResult } from "./types";
+import type { AuditedPage, Check, PublicAuditResult } from "./types";
 
 export const auditError = (code: string, status = 400) => NextResponse.json({ error: code }, { status });
 
@@ -23,6 +23,8 @@ interface RunRow {
   seo_score: number;
   geo_score: number;
   checks: Check[];
+  /** Null på körningar från före flersidesgranskningen. */
+  pages: AuditedPage[] | null;
 }
 
 /** Fix-texterna och vikterna stannar på servern tills besökaren låst upp. */
@@ -35,5 +37,6 @@ export function toPublic(row: RunRow): PublicAuditResult {
     seoScore: row.seo_score,
     geoScore: row.geo_score,
     checks: row.checks.map(({ id, group, label, status, detail }) => ({ id, group, label, status, detail })),
+    pages: row.pages ?? [],
   };
 }

@@ -11,6 +11,27 @@ export interface Check {
   detail: string;
   /** Reservåtgärd om Claude inte svarar. Visas aldrig innan upplåsning. */
   fix: string;
+  /** Andel godkända sidor (0–1) för sammanvägda sidkontroller. Saknas den
+   *  räknas poängen från status. */
+  ratio?: number;
+}
+
+/** En granskad sida, som den listas för besökaren. */
+export interface AuditedPage {
+  url: string;
+  title: string;
+  status: number;
+  /** Antal sidkontroller som inte är godkända. */
+  issues: number;
+}
+
+/** Kortversion av en undersida för Claude. */
+export interface SubpageExtract {
+  url: string;
+  title: string;
+  h1: string;
+  issues: string[];
+  text: string;
 }
 
 /** Det Claude får se av sidan. Sparas på körningen. */
@@ -20,6 +41,8 @@ export interface PageExtract {
   headings: string[];
   text: string;
   schemaTypes: string[];
+  /** Övriga granskade sidor. Saknas på körningar från före flersidesgranskningen. */
+  pages?: SubpageExtract[];
 }
 
 export interface AuditAction {
@@ -36,7 +59,8 @@ export interface PublicAuditResult {
   score: number;
   seoScore: number;
   geoScore: number;
-  checks: Omit<Check, "fix" | "weight">[];
+  checks: Omit<Check, "fix" | "weight" | "ratio">[];
+  pages: AuditedPage[];
 }
 
 export interface UnlockedAudit {

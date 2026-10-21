@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Lock, TriangleAlert, X } from "lucide-react";
 import MilouLogo from "@/components/MilouLogo";
-import type { AuditAction, PublicAuditResult, UnlockedAudit } from "@/lib/audit/types";
+import type { AuditAction, AuditedPage, PublicAuditResult, UnlockedAudit } from "@/lib/audit/types";
 
 /** Dit "Boka ett samtal" leder. Byt mot kontaktsidan när verktyget går live. */
 const CONTACT_URL = "https://milou.se";
@@ -23,7 +23,14 @@ const ERRORS: Record<string, string> = {
 };
 const fallbackError = "Något gick fel. Försök igen.";
 
-const STEPS = ["Hämtar sidan", "Läser robots.txt och sitemap", "Kontrollerar SEO-grunderna", "Bedömer synlighet i AI-sök"];
+const STEPS = [
+  "Hämtar startsidan",
+  "Läser robots.txt och sitemap",
+  "Väljer undersidor",
+  "Granskar upp till 10 sidor",
+  "Kontrollerar SEO-grunderna",
+  "Bedömer synlighet i AI-sök",
+];
 
 /** Talar om sin höjd för förälderfönstret, så en iframe på milou.se kan växa
  *  med innehållet i stället för att få en egen rullist. */
@@ -60,7 +67,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
     setError("");
     setResult(null);
     setStep(0);
-    timer.current = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 1600);
+    timer.current = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 3500);
     try {
       const res = await fetch("/api/public/audit/run", {
         method: "POST",
@@ -156,7 +163,10 @@ function Result({ result }: { result: PublicAuditResult }) {
     <section className="mt-12" aria-label="Resultat">
       <div className="milou-plate bg-gray-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-end gap-6 sm:gap-10">
         <div>
-          <p className="text-sm text-gray-400">{result.host}</p>
+          <p className="text-sm text-gray-400">
+            {result.host}
+            {result.pages.length > 1 && ` · ${result.pages.length} sidor granskade`}
+          </p>
           <p className="mt-1 text-7xl font-bold tabular-nums leading-none">
             {result.score}
             <span className="text-3xl text-gray-500">/10</span>
@@ -206,7 +216,37 @@ function Result({ result }: { result: PublicAuditResult }) {
           </div>
         ))}
       </div>
+
+      {result.pages.length > 1 && <PageList pages={result.pages} />}
     </section>
+  );
+}
+
+function PageList({ pages }: { pages: AuditedPage[] }) {
+  return (
+    <details className="mt-10 border-y border-gray-100 group">
+      <summary className="py-3 cursor-pointer font-bold text-sm list-none flex items-center justify-between">
+        Granskade sidor ({pages.length})
+        <span className="text-gray-400 font-normal group-open:hidden">Visa</span>
+        <span className="text-gray-400 font-normal hidden group-open:inline">Dölj</span>
+      </summary>
+      <ul className="pb-3 divide-y divide-gray-100 text-sm">
+        {pages.map((p) => {
+          const u = new URL(p.url);
+          return (
+            <li key={p.url} className="py-2 flex items-baseline justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate">{p.title || "(ingen titel)"}</p>
+                <p className="text-gray-400 truncate">{u.pathname === "/" ? "Startsida" : u.pathname}</p>
+              </div>
+              <span className={`shrink-0 tabular-nums text-xs ${p.issues ? "text-amber-600" : "text-emerald-700"}`}>
+                {p.issues ? `${p.issues} brister` : "Inga brister"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 
