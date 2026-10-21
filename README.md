@@ -25,6 +25,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ANTHROPIC_API_KEY=...        # valfri, se SEO/GEO-audit
+RESEND_API_KEY=...           # valfri, leadnotiser från SEO/GEO-audit
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` är obligatorisk och måste vara satt även i Vercel.
@@ -153,6 +154,12 @@ och 443, högst 3 MB, 10 s.
 **Demoläge.** `AUDIT_DEMO=1` kör verktyget utan databas: körningar hålls i
 minnet och leads sparas inte. Bara för lokala visningar — sätt det aldrig i
 Vercel, där minnet inte delas mellan instanser.
+
+**Leadnotiser.** Varje ny lead (ny e-post på en körning) mejlas via Resend
+till `AUDIT_NOTIFY_TO` (standard gustav.mattsson@milou.se) med betyg och
+åtgärder; svar går direkt till leaden. Mejlet skickas med `after()` efter att
+besökaren fått sitt svar. Utan `RESEND_API_KEY` skickas inget. Avsändaren
+sätts med `AUDIT_NOTIFY_FROM` och måste vara en domän verifierad i Resend.
 
 **Begränsningar.** Samma URL återanvänds i 24 timmar. Varje IP (lagras bara som
 hash) får göra 10 nya körningar per timme.
