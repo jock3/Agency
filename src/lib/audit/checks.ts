@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import type { Check, CheckGroup, CheckStatus, PageExtract } from "./types";
+import type { Check, CheckGroup, CheckStatus } from "./types";
 
 /**
  * Fasta kontroller. Betyget kommer härifrån och inte från Claude, så samma sajt
@@ -112,7 +112,6 @@ export interface PageResult {
   title: string;
   h1: string;
   checks: Check[];
-  extract: PageExtract;
   /** Interna och externa länkar, menylänkar först. Används för att välja
    *  vilka undersidor som ska granskas. */
   links: string[];
@@ -127,11 +126,6 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   const h1Count = $("h1").length;
   const h1s = $("h1").map((_, el) => $(el).text().trim()).get().filter(Boolean);
   const h2Count = $("h2").length;
-  const headings = $("h1, h2, h3")
-    .map((_, el) => `${el.tagName.toUpperCase()}: ${$(el).text().replace(/\s+/g, " ").trim()}`)
-    .get()
-    .filter((h) => h.length > 4)
-    .slice(0, 40);
 
   const links: string[] = [];
   const seen = new Set<string>();
@@ -295,7 +289,6 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     title,
     h1: h1s[0] ?? "",
     checks,
-    extract: { title, description, headings, text: text.slice(0, 12_000), schemaTypes },
     links,
   };
 }

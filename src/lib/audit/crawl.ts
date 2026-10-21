@@ -1,6 +1,6 @@
 import { aggregate, analyzePage, disallowedPrefixes, siteChecks, sitemapUrls, type PageResult } from "./checks";
 import { FetchError, normalizeUrl, safeFetch, tryFetch, type FetchResult } from "./fetch";
-import type { AuditedPage, Check, PageExtract } from "./types";
+import type { AuditedPage, Check } from "./types";
 
 /**
  * Granskar en sajt, inte bara en sida. Startsidan hämtas först; därefter ett
@@ -90,7 +90,6 @@ function pickSubpages(home: URL, links: string[], sitemap: string[], disallowed:
 export interface SiteAudit {
   finalUrl: string;
   checks: Check[];
-  extract: PageExtract;
   pages: AuditedPage[];
 }
 
@@ -156,17 +155,6 @@ export async function auditSite(start: URL): Promise<SiteAudit> {
   return {
     finalUrl: home.url,
     checks,
-    extract: {
-      ...homePage.extract,
-      text: homePage.extract.text.slice(0, 8_000),
-      pages: pages.slice(1).map((p) => ({
-        url: p.url,
-        title: p.title,
-        h1: p.h1,
-        issues: issuesOf(p).map((c) => `${c.label}: ${c.detail}`),
-        text: p.extract.text.slice(0, 1_500),
-      })),
-    },
     pages: pages.map((p) => ({ url: p.url, title: p.title, status: p.status, issues: issuesOf(p).length })),
   };
 }

@@ -27,7 +27,7 @@ interface RunRow {
   pages: AuditedPage[] | null;
 }
 
-/** Fix-texterna och vikterna stannar på servern tills besökaren låst upp. */
+/** Fix-texterna och vikterna stannar på servern. */
 export function toPublic(row: RunRow): PublicAuditResult {
   return {
     id: row.id,

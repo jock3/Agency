@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Lock, TriangleAlert, X } from "lucide-react";
+import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import MilouLogo from "@/components/MilouLogo";
-import type { AuditAction, AuditedPage, PublicAuditResult, UnlockedAudit } from "@/lib/audit/types";
+import type { AuditedPage, PublicAuditResult } from "@/lib/audit/types";
 
-/** Dit "Boka ett samtal" leder. milou.se saknar en egen kontaktsida
+/** Dit "Kontakta oss" leder. milou.se saknar en egen kontaktsida
  *  (/kontakt ger 404), så knappen går till kontorssidan med kontaktuppgifter. */
 const CONTACT_URL = "https://milou.se/vara-kontor/";
 
@@ -19,8 +19,6 @@ const ERRORS: Record<string, string> = {
   SITE_ERROR: "Sajten svarade med ett fel.",
   NOT_HTML: "Adressen pekar inte på en webbsida.",
   RATE_LIMITED: "Du har gjort många granskningar på kort tid. Vänta en stund och försök igen.",
-  INVALID_EMAIL: "Kontrollera e-postadressen.",
-  CONSENT_REQUIRED: "Du behöver godkänna att vi kontaktar dig.",
 };
 const fallbackError = "Något gick fel. Försök igen.";
 
@@ -187,7 +185,7 @@ function Result({ result }: { result: PublicAuditResult }) {
         </div>
       </div>
 
-      <Unlock id={result.id} />
+      <ContactCta />
 
       <div className="mt-14 grid sm:grid-cols-2 gap-10">
         {groups.map((g) => (
@@ -251,119 +249,13 @@ function PageList({ pages }: { pages: AuditedPage[] }) {
   );
 }
 
-function Unlock({ id }: { id: string }) {
-  const [email, setEmail] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [advice, setAdvice] = useState<UnlockedAudit | null>(null);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/public/audit/unlock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, email, consent }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) setError(ERRORS[data.error] ?? fallbackError);
-      else setAdvice(data);
-    } catch {
-      setError(fallbackError);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (advice) return <Actions advice={advice} />;
-
+function ContactCta() {
   return (
-    <div className="mt-12 relative min-h-[360px]">
-      {/* Suddiga platshållare antyder vad som finns bakom formuläret. */}
-      <div aria-hidden className="space-y-3 blur-sm select-none pointer-events-none">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="border-l-4 border-milou-500 bg-gray-50 p-4">
-            <div className="h-4 w-2/3 bg-gray-300" />
-            <div className="h-3 w-full bg-gray-200 mt-3" />
-            <div className="h-3 w-5/6 bg-gray-200 mt-2" />
-          </div>
-        ))}
-      </div>
-      <form onSubmit={submit} className="absolute inset-0 flex items-center justify-center p-2">
-        <div className="bg-white border-2 border-gray-900 p-5 sm:p-6 w-full max-w-md shadow-plate-peach">
-          <p className="flex items-center gap-2 font-bold text-lg">
-            <Lock className="w-5 h-5 text-milou-500" />
-            Få dina 3–5 viktigaste åtgärder
-          </p>
-          <p className="text-sm text-gray-600 mt-1">Skräddarsydda för sajten, direkt på skärmen.</p>
-          <label htmlFor="audit-email" className="sr-only">
-            E-post
-          </label>
-          <input
-            id="audit-email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="din@epost.se"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-4 w-full border-2 border-gray-900 px-3 py-2.5 outline-none focus:border-milou-500"
-          />
-          <label className="mt-3 flex items-start gap-2 text-xs text-gray-600">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 accent-milou-500" />
-            Jag godkänner att Milou sparar min e-post och kontaktar mig om resultatet.
-          </label>
-          {error && (
-            <p role="alert" className="mt-2 text-sm text-milou-600">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={busy || !email || !consent}
-            className="mt-4 w-full bg-milou-500 hover:bg-milou-600 text-white font-bold py-2.5 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-          >
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-            {busy ? "Skriver dina åtgärder…" : "Visa åtgärderna"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-const IMPACT_STYLE: Record<AuditAction["impact"], string> = {
-  hög: "bg-milou-500 text-white",
-  medel: "bg-peach text-gray-900",
-  låg: "bg-gray-100 text-gray-700",
-};
-
-function Actions({ advice }: { advice: UnlockedAudit }) {
-  return (
-    <div className="mt-12">
-      <p className="text-lg">{advice.summary}</p>
-      <ol className="mt-6 space-y-4">
-        {advice.actions.map((a, i) => (
-          <li key={i} className="border-l-4 border-milou-500 bg-gray-50 p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="font-bold tabular-nums text-milou-500">{i + 1}.</span>
-              <h3 className="font-bold">{a.title}</h3>
-              <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 ${IMPACT_STYLE[a.impact]}`}>{a.impact} effekt</span>
-            </div>
-            <p className="mt-2 text-gray-700">{a.description}</p>
-          </li>
-        ))}
-      </ol>
-      <div className="mt-8 bg-red-fade text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <p className="font-bold text-lg">Vill du ha hjälp att genomföra dem?</p>
-        <a href={CONTACT_URL} target="_top" className="bg-white text-gray-900 font-bold px-5 py-2.5 hover:bg-peach transition-colors text-center">
-          Boka ett samtal med Milou
-        </a>
-      </div>
+    <div className="mt-12 bg-red-fade text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <p className="font-bold text-lg">Vill du veta hur ni blir mer synliga?</p>
+      <a href={CONTACT_URL} target="_top" className="bg-white text-gray-900 font-bold px-5 py-2.5 hover:bg-peach transition-colors text-center">
+        Kontakta oss
+      </a>
     </div>
   );
 }

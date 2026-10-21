@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { score } from "@/lib/audit/checks";
 import { auditSite, SiteError } from "@/lib/audit/crawl";
-import { isDemo, saveDemoRun } from "@/lib/audit/demo";
+import { isDemo } from "@/lib/audit/demo";
 import { FetchError, normalizeUrl } from "@/lib/audit/fetch";
 import { auditError, ipHash, toPublic } from "@/lib/audit/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -17,8 +17,7 @@ const CACHE_MS = 24 * HOUR;
 
 /**
  * Publik: ingen session. Startsidan och ett urval undersidor hämtas,
- * kontrolleras och betygssätts. Svaret innehåller betyget och kontrollerna
- * men inte åtgärderna — de kräver e-post och hämtas via /unlock.
+ * kontrolleras och betygssätts. Svaret innehåller betyget och kontrollerna.
  */
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -76,14 +75,12 @@ export async function POST(request: NextRequest) {
   };
 
   if (!sb) {
-    const id = randomUUID();
-    saveDemoRun(id, { finalUrl: audit.finalUrl, checks: audit.checks, extract: audit.extract });
-    return NextResponse.json(toPublic({ id, ...row }));
+    return NextResponse.json(toPublic({ id: randomUUID(), ...row }));
   }
 
   const { data, error } = await sb
     .from("audit_runs")
-    .insert({ ...row, extract: audit.extract, ip_hash: ip })
+    .insert({ ...row, ip_hash: ip })
     .select("id, url, host, score, seo_score, geo_score, checks, pages")
     .single();
   if (error || !data) return auditError("SERVER_ERROR", 500);
