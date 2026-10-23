@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Action, Priority } from "@/lib/audit/actions";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import AuditButton from "../AuditButton";
+import ProjectActions from "../ProjectActions";
 
 interface HistoryRow {
   id: string;
@@ -85,6 +86,7 @@ export default async function AuditProjectPage({
               ? `${run.final_url} · ${run.pages.length} sidor · senaste audit ${fmt.format(new Date(run.created_at))}${run.created_by ? ` av ${run.created_by}` : ""}`
               : `${project.domain} · ingen audit körd ännu`}
           </p>
+          <ProjectActions key={project.name} projectId={project.id} name={project.name} />
         </div>
         <AuditButton projectId={project.id} />
       </div>
