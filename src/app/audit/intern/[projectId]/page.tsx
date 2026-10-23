@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import type { Action, Priority } from "@/lib/audit/actions";
+import { domainOf } from "@/lib/audit/projects";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import AuditButton from "../AuditButton";
 import ProjectActions from "../ProjectActions";
@@ -69,8 +70,11 @@ export default async function AuditProjectPage({
     : { data: null };
   const run = runData as RunRow | null;
 
-  // Föregående körning i projektet, för att visa hur betyget har ändrats.
-  const previous = run ? history.find((h) => h.created_at < run.created_at) : undefined;
+  // Föregående körning av samma domän, för att visa hur betyget har ändrats.
+  // Körningar från före ett domänbyte jämförs inte.
+  const previous = run
+    ? history.find((h) => h.created_at < run.created_at && domainOf(h.host) === domainOf(run.host))
+    : undefined;
   const actions = run?.actions ?? [];
 
   return (
