@@ -86,7 +86,7 @@ export default async function AuditProjectPage({
               ? `${run.final_url} · ${run.pages.length} sidor · senaste audit ${fmt.format(new Date(run.created_at))}${run.created_by ? ` av ${run.created_by}` : ""}`
               : `${project.domain} · ingen audit körd ännu`}
           </p>
-          <ProjectActions key={project.name} projectId={project.id} name={project.name} />
+          <ProjectActions key={`${project.name}|${project.domain}`} projectId={project.id} name={project.name} domain={project.domain} />
         </div>
         <AuditButton projectId={project.id} />
       </div>
