@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { toActions } from "@/lib/audit/actions";
 import { score } from "@/lib/audit/checks";
 import { auditSite, SiteError } from "@/lib/audit/crawl";
-import { FetchError, normalizeUrl } from "@/lib/audit/fetch";
+import { FetchError } from "@/lib/audit/fetch";
 import { auditError } from "@/lib/audit/server";
 import { getSessionToken, validateSession } from "@/lib/auth/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -10,24 +10,21 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 export const maxDuration = 60;
 
 /**
- * Intern, bakom inloggning via proxy. Granskar alltid på nytt, utan cache och
- * gränser, och sparar körningen i audit_internal_runs så att historiken finns
- * kvar. Hålls isär från det publika verktygets audit_runs.
+ * Intern, bakom inloggning via proxy. Granskar ett projekts domän på nytt,
+ * utan cache och gränser, och sparar körningen i audit_internal_runs. Hålls
+ * isär från det publika verktygets audit_runs.
  */
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
-  if (typeof body?.url !== "string") return auditError("INVALID_URL");
+  if (typeof body?.projectId !== "string") return auditError("NOT_FOUND", 404);
 
-  let start: URL;
-  try {
-    start = normalizeUrl(body.url);
-  } catch (err) {
-    return auditError(err instanceof FetchError ? err.code : "INVALID_URL");
-  }
+  const sb = getSupabaseAdminClient();
+  const { data: project } = await sb.from("audit_projects").select("id, url").eq("id", body.projectId).maybeSingle();
+  if (!project) return auditError("NOT_FOUND", 404);
 
   let audit;
   try {
-    audit = await auditSite(start);
+    audit = await auditSite(new URL(project.url));
   } catch (err) {
     if (err instanceof FetchError || err instanceof SiteError) return auditError(err.code, 422);
     throw err;
@@ -37,10 +34,11 @@ export async function POST(request: NextRequest) {
   const user = token ? await validateSession(token).catch(() => null) : null;
 
   const scores = score(audit.checks);
-  const { data, error } = await getSupabaseAdminClient()
+  const { data, error } = await sb
     .from("audit_internal_runs")
     .insert({
-      url: start.toString(),
+      project_id: project.id,
+      url: project.url,
       final_url: audit.finalUrl,
       host: new URL(audit.finalUrl).hostname,
       score: scores.score,
