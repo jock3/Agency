@@ -1,5 +1,16 @@
-import { getSupabaseClient } from "@/lib/supabase/client";
+"use server";
+
+import { authedDb, pick } from "@/lib/api/server";
 import type { MediaConcept } from "@/lib/types";
+
+/** Columns the browser may change. */
+const FIELDS = [
+  "name",
+  "start_date",
+  "end_date",
+  "color",
+  "sort_order",
+] as const;
 
 const CONCEPT_COLORS = [
   "#E60330", "#f59e0b", "#10b981", "#931644", "#5B173C",
@@ -12,7 +23,7 @@ export async function createConcept(
   periodEnd: string,
   sortOrder: number
 ): Promise<MediaConcept> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const color = CONCEPT_COLORS[sortOrder % CONCEPT_COLORS.length];
   const { data, error } = await sb
     .from("media_concepts")
@@ -26,18 +37,18 @@ export async function createConcept(
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function updateConcept(id: string, updates: Partial<MediaConcept>): Promise<void> {
-  const sb = getSupabaseClient();
-  const { error } = await sb.from("media_concepts").update(updates).eq("id", id);
-  if (error) throw error;
+  const sb = await authedDb();
+  const { error } = await sb.from("media_concepts").update(pick<MediaConcept>(updates, FIELDS)).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteConcept(id: string): Promise<void> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const { error } = await sb.from("media_concepts").delete().eq("id", id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }

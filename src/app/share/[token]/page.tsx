@@ -1,9 +1,9 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { FullMediaPlan } from "@/lib/types";
 import ShareView from "./ShareView";
 
 async function getFullPlanByToken(token: string): Promise<FullMediaPlan | null> {
-  const sb = getSupabaseServerClient();
+  const sb = getSupabaseAdminClient();
 
   const { data: plan, error: planErr } = await sb
     .from("media_plans")

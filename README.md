@@ -34,9 +34,20 @@ nyckeln svarar tavlan med fel i stället för att tyst visa en tom tavla.
 
 ## Auth
 
-Inloggning sker med namn + 6-siffrig PIN mot Supabase-funktionerna `app_login`
-och `app_signup`. PIN-koder lagras bcrypt-hashade; fem felaktiga försök låser
-kontot i 15 minuter. Adminfunktioner ligger under `/admin`.
+Inloggning sker med namn + 6-siffrig PIN mot Supabase-funktionen `app_login`.
+PIN-koder lagras bcrypt-hashade; fem felaktiga försök låser kontot i 15 minuter.
+
+Det finns ingen öppen registrering. En admin lägger till användare på `/admin`,
+som anropar `app_signup` från servern med service-role-nyckeln. Anon-rollen får
+inte köra `app_signup` (migration 0011).
+
+## Mediaplaner och kampanjer
+
+Tabellerna `media_*` och `campaign_*` nekar anon-rollen helt (migration 0011).
+Webbläsaren når dem bara via Server Functions i `src/lib/api/*.ts`, som börjar
+med `authedDb()`: ingen giltig sessionskaka, ingen databas. Uppdateringar
+filtreras genom en lista över tillåtna kolumner per tabell. Kundlänkarna
+`/share/[token]` och `/share/kampanj/[token]` läser med service-role.
 
 ## Uppgiftstavlan
 

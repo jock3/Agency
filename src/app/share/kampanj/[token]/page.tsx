@@ -1,9 +1,9 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { FullCampaignPlan } from "@/lib/types";
 import CampaignShareView from "./CampaignShareView";
 
 async function getFullCampaignPlanByToken(token: string): Promise<FullCampaignPlan | null> {
-  const sb = getSupabaseServerClient();
+  const sb = getSupabaseAdminClient();
 
   const { data: plan, error: planErr } = await sb
     .from("campaign_plans")

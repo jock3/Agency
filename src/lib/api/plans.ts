@@ -1,19 +1,33 @@
-import { getSupabaseClient } from "@/lib/supabase/client";
+"use server";
+
+import { authedDb, pick } from "@/lib/api/server";
 import type { MediaPlan, FullMediaPlan } from "@/lib/types";
 
+/** Columns the browser may change. */
+const FIELDS = [
+  "campaign_name",
+  "period_start",
+  "period_end",
+  "archived",
+  "client_id",
+  "planned_budget",
+  "status",
+  "tags",
+] as const;
+
 export async function getPlans(): Promise<MediaPlan[]> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const { data, error } = await sb
     .from("media_plans")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function getFullPlan(id: string): Promise<FullMediaPlan | null> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
 
   // Step 1: fetch plan + categories + concepts + deadlines in parallel
   const [planRes, conceptsRes, categoriesRes, deadlinesRes] = await Promise.all([
@@ -44,36 +58,25 @@ export async function getFullPlan(id: string): Promise<FullMediaPlan | null> {
   };
 }
 
-export async function getFullPlanByToken(token: string): Promise<FullMediaPlan | null> {
-  const sb = getSupabaseClient();
-  const { data: plan, error } = await sb
-    .from("media_plans")
-    .select("*")
-    .eq("share_token", token)
-    .single();
-  if (error || !plan) return null;
-  return getFullPlan(plan.id);
-}
-
 export async function createPlan(
   campaignName: string,
   periodStart: string,
   periodEnd: string
 ): Promise<MediaPlan> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const { data, error } = await sb
     .from("media_plans")
     .insert({ campaign_name: campaignName, period_start: periodStart, period_end: periodEnd })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function updatePlan(id: string, updates: Partial<MediaPlan>): Promise<void> {
-  const sb = getSupabaseClient();
-  const { error } = await sb.from("media_plans").update(updates).eq("id", id);
-  if (error) throw error;
+  const sb = await authedDb();
+  const { error } = await sb.from("media_plans").update(pick<MediaPlan>(updates, FIELDS)).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function archivePlan(id: string, archived: boolean): Promise<void> {
@@ -81,13 +84,13 @@ export async function archivePlan(id: string, archived: boolean): Promise<void> 
 }
 
 export async function deletePlan(id: string): Promise<void> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const { error } = await sb.from("media_plans").delete().eq("id", id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function generateShareToken(id: string): Promise<string> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const { data: existing } = await sb
     .from("media_plans")
     .select("share_token")
@@ -101,25 +104,12 @@ export async function generateShareToken(id: string): Promise<string> {
     .eq("id", id)
     .select("share_token")
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data.share_token;
 }
 
-export async function getShareTokenByClientId(clientId: string): Promise<string | null> {
-  const sb = getSupabaseClient();
-  const { data, error } = await sb
-    .from("media_plans")
-    .select("share_token")
-    .eq("client_id", clientId)
-    .eq("archived", false)
-    .order("updated_at", { ascending: false })
-    .limit(1);
-  if (error || !data || data.length === 0 || !data[0].share_token) return null;
-  return data[0].share_token;
-}
-
 export async function duplicatePlan(id: string): Promise<MediaPlan> {
-  const sb = getSupabaseClient();
+  const sb = await authedDb();
   const original = await getFullPlan(id);
   if (!original) throw new Error("Plan not found");
 
@@ -132,7 +122,7 @@ export async function duplicatePlan(id: string): Promise<MediaPlan> {
     })
     .select()
     .single();
-  if (planErr) throw planErr;
+  if (planErr) throw new Error(planErr.message);
 
   for (const cat of original.categories) {
     const { data: newCat, error: catErr } = await sb
@@ -140,7 +130,7 @@ export async function duplicatePlan(id: string): Promise<MediaPlan> {
       .insert({ plan_id: newPlan.id, name: cat.name, color: cat.color, budget: cat.budget, sort_order: cat.sort_order })
       .select()
       .single();
-    if (catErr) throw catErr;
+    if (catErr) throw new Error(catErr.message);
 
     if (cat.lines.length > 0) {
       const newLines = cat.lines.map((l) => ({
@@ -156,7 +146,7 @@ export async function duplicatePlan(id: string): Promise<MediaPlan> {
         estimated_reach: l.estimated_reach,
       }));
       const { error: lineErr } = await sb.from("media_lines").insert(newLines);
-      if (lineErr) throw lineErr;
+      if (lineErr) throw new Error(lineErr.message);
     }
   }
 

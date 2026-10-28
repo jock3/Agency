@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const SESSION_COOKIE = "session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
-function supabaseHeaders() {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+function supabaseHeaders(key: string) {
   return {
     apikey: key,
     Authorization: `Bearer ${key}`,
@@ -12,11 +11,13 @@ function supabaseHeaders() {
   };
 }
 
-async function callRpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+/** Calls an auth RPC. `app_signup` is not executable by the anon role, so it
+ *  passes the service-role key; everything else goes out with the anon key. */
+async function callRpc<T>(fn: string, args: Record<string, unknown>, key?: string): Promise<T> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
     method: "POST",
-    headers: supabaseHeaders(),
+    headers: supabaseHeaders(key ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!),
     body: JSON.stringify(args),
     cache: "no-store",
   });
@@ -49,11 +50,6 @@ interface AuthRpcRow {
 function unwrapAuthRow(row: AuthRpcRow): AuthSession {
   if (row.error_code || !row.token) throw new AuthError(row.error_code ?? "REQUEST_FAILED");
   return { token: row.token, user_id: row.user_id!, name: row.name!, is_admin: row.is_admin! };
-}
-
-export async function signup(name: string, pin: string): Promise<AuthSession> {
-  const rows = await callRpc<AuthRpcRow[]>("app_signup", { p_name: name, p_pin: pin });
-  return unwrapAuthRow(rows[0]);
 }
 
 export async function login(name: string, pin: string): Promise<AuthSession> {
@@ -113,4 +109,22 @@ export async function adminUnlockUser(token: string, targetUserId: string): Prom
 
 export async function adminSetAdmin(token: string, targetUserId: string, isAdmin: boolean): Promise<void> {
   await callRpc<null>("app_admin_set_admin", { p_token: token, p_target_user_id: targetUserId, p_is_admin: isAdmin });
+}
+
+/**
+ * Creates an account on behalf of an admin. There is no open signup: the anon
+ * role cannot execute `app_signup`, so accounts only come into being here.
+ * `app_signup` also opens a session for the new user; the admin has no use for
+ * it, so it is closed straight away.
+ */
+export async function adminCreateUser(token: string, name: string, pin: string): Promise<void> {
+  const caller = await validateSession(token);
+  if (!caller?.is_admin) throw new AuthError("NOT_AUTHORIZED");
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to create users");
+
+  const rows = await callRpc<AuthRpcRow[]>("app_signup", { p_name: name, p_pin: pin }, serviceKey);
+  const created = unwrapAuthRow(rows[0]);
+  await logoutToken(created.token);
 }

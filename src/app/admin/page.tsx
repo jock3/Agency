@@ -6,11 +6,22 @@ import UserBadge from "@/components/UserBadge";
 import type { AppUser } from "@/lib/types";
 import type { AdminUserRow } from "@/lib/auth/session";
 
+const CREATE_ERRORS: Record<string, string> = {
+  NAME_TAKEN: "Namnet är redan taget.",
+  NAME_REQUIRED: "Ange ett namn.",
+  INVALID_PIN: "PIN-koden måste vara exakt 6 siffror.",
+};
+
 export default function AdminPage() {
   const [currentUser, setCurrentUser] = useState<AppUser | null | undefined>(undefined);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [created, setCreated] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -50,6 +61,33 @@ export default function AdminPage() {
     load();
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    setCreated(null);
+    setCreating(true);
+    try {
+      const res = await fetch("/api/auth/admin/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, pin: newPin }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setCreated(newName.trim());
+        setNewName("");
+        setNewPin("");
+        load();
+      } else {
+        setCreateError(CREATE_ERRORS[data.error] ?? "Kunde inte skapa användaren.");
+      }
+    } catch {
+      setCreateError("Kunde inte nå servern. Försök igen.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const isLocked = (u: AdminUserRow) => u.locked_until && new Date(u.locked_until) > new Date();
 
   if (currentUser === undefined) return null;
@@ -74,7 +112,50 @@ export default function AdminPage() {
 
       <main className="max-w-3xl mx-auto p-6">
         <h1 className="text-lg font-semibold text-gray-900 mb-1">Användare</h1>
-        <p className="text-sm text-gray-500 mb-6">Lås upp konton eller ge/ta bort adminbehörighet.</p>
+        <p className="text-sm text-gray-500 mb-6">
+          Lägg till kollegor, lås upp konton eller ge/ta bort adminbehörighet. Ingen kan skapa ett konto själv.
+        </p>
+
+        <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Lägg till användare</h2>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Namn"
+              aria-label="Namn"
+              required
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-milou-500"
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="PIN, 6 siffror"
+              aria-label="PIN-kod"
+              autoComplete="off"
+              required
+              className="sm:w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-milou-500"
+            />
+            <button
+              type="submit"
+              disabled={creating}
+              className="px-4 py-2 rounded-lg bg-milou-500 text-white text-sm font-medium hover:bg-milou-600 transition-colors disabled:opacity-50"
+            >
+              {creating ? "Skapar..." : "Lägg till"}
+            </button>
+          </div>
+          {createError && <p className="text-sm text-red-600 mt-2">{createError}</p>}
+          {created && (
+            <p className="text-sm text-gray-600 mt-2">
+              {created} är tillagd. Skicka namnet och PIN-koden till personen.
+            </p>
+          )}
+        </form>
 
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mb-4">{error}</p>}
 
