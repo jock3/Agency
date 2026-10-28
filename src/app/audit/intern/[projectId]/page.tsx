@@ -84,7 +84,7 @@ export default async function AuditProjectPage({
           <Link href="/audit/intern" className="flex items-center gap-1 text-xs text-gray-500 hover:text-milou-500">
             <ArrowLeft className="w-3 h-3" /> Alla projekt
           </Link>
-          <h1 className="text-2xl font-bold mt-1">{project.name}</h1>
+          <h2 className="text-2xl font-bold mt-1">{project.name}</h2>
           <p className="text-sm text-gray-500 mt-1">
             {run
               ? `${run.final_url} · ${run.pages.length} sidor · senaste audit ${fmt.format(new Date(run.created_at))}${run.created_by ? ` av ${run.created_by}` : ""}`

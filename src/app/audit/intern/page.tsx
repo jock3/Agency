@@ -43,7 +43,7 @@ export default async function AuditProjectsPage() {
 
   return (
     <main className="max-w-6xl w-full mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold">SEO/GEO-audit — internt</h1>
+      <h2 className="text-2xl font-bold">Internt verktyg</h2>
       <p className="text-sm text-gray-500 mt-1">Projekt med betyg och datum för senaste granskningen.</p>
 
       {error && <p className="mt-6 text-milou-600">Kunde inte läsa projekten. Är migration 0010 körd?</p>}

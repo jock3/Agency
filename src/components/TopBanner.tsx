@@ -4,13 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MilouLogo from "./MilouLogo";
 
-const SECTIONS = [
+// Verktygen som visas för kunder. Uppgifter är internt och ligger till höger.
+const TOOLS = [
   { href: "/mediaplan", label: "Mediaplaner" },
   { href: "/kampanj", label: "Kampanjer" },
-  { href: "/todo", label: "Uppgifter" },
   { href: "/formatkoll", label: "Formatkoll" },
   { href: "/audit", label: "SEO/GEO-audit" },
 ];
+
+function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`px-3 h-8 flex items-center whitespace-nowrap text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach ${
+        active ? "bg-peach text-gray-800" : "text-white hover:text-peach"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
 
 export default function TopBanner() {
   const pathname = usePathname();
@@ -18,29 +32,25 @@ export default function TopBanner() {
   if (hidden) return null;
 
   return (
-    <div className="bg-[#1C1C1C] text-white px-4 h-10 flex items-center justify-between text-sm shrink-0">
-      <div className="flex items-center gap-5 min-w-0">
-        <MilouLogo className="h-4 w-auto text-white shrink-0" />
-        <nav className="flex items-center gap-1">
-          {SECTIONS.map((s) => {
-            const active = pathname.startsWith(s.href);
-            return (
-              <Link
-                key={s.href}
-                href={s.href}
-                className={`px-3 py-1 text-xs font-bold transition-colors ${
-                  active ? "bg-peach text-gray-800" : "text-white hover:text-peach"
-                }`}
-              >
-                {s.label}
-              </Link>
-            );
-          })}
-        </nav>
+    <div className="bg-gray-900 text-white h-14 flex items-center gap-6 px-4 sm:px-8 shrink-0">
+      <Link
+        href="/"
+        aria-label="Till AI-hubben"
+        className="shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-peach"
+      >
+        <MilouLogo className="h-[18px] w-auto text-white" />
+      </Link>
+      <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
+        {TOOLS.map((t) => (
+          <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
+        ))}
+      </nav>
+      <div className="flex items-center gap-1 shrink-0">
+        <NavLink href="/todo" label="Uppgifter" active={pathname.startsWith("/todo")} />
+        <a href="/api/auth/logout" className="hidden md:block px-3 text-sm text-gray-400 hover:text-white transition-colors">
+          Logga ut
+        </a>
       </div>
-      <a href="/api/auth/logout" className="text-xs text-gray-400 hover:text-white transition-colors shrink-0">
-        Logga ut
-      </a>
     </div>
   );
 }

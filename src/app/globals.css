@@ -26,9 +26,27 @@
     @apply bg-gray-50 text-gray-900;
     font-family: 'Komet', system-ui, -apple-system, sans-serif;
   }
+
+  /* Bara Komet Regular finns, och fet Komet blir syntetiserad. All vikt över
+     400 sätts därför i REM, som har riktiga vikter. */
+  b,
+  strong,
+  .font-medium,
+  .font-semibold,
+  .font-bold,
+  .font-extrabold,
+  .font-black {
+    font-family: var(--font-rem), 'Komet', system-ui, sans-serif;
+  }
 }
 
 @layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
@@ -68,6 +86,24 @@
   }
   .milou-plate:nth-child(3n):hover {
     box-shadow: -16px -16px 0 0 #ff999c;
+  }
+
+  /* Hubbens kapslar glider upp till sina förskjutna höjder när sidan laddas.
+     Den enda rörelsen som inte startas av användaren. */
+  .hub-capsule {
+    animation: hub-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+  }
+  @keyframes hub-rise {
+    from {
+      opacity: 0;
+      transform: translateY(48px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hub-capsule {
+      animation: none;
+    }
   }
 
   /* Rubrikband: tätt färgblock bakom varje textrad, som hero-rubrikerna. */

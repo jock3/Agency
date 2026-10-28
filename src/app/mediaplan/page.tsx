@@ -7,6 +7,7 @@ import PlanCard from "@/components/dashboard/PlanCard";
 import NewPlanModal from "@/components/dashboard/NewPlanModal";
 import PlanOverlay from "@/components/plan-overlay/PlanOverlay";
 import TagFilterBar from "@/components/shared/TagFilterBar";
+import PageHeader, { PageHeaderButton } from "@/components/PageHeader";
 
 export default function Dashboard() {
   const [plans, setPlans] = useState<MediaPlan[]>([]);
@@ -65,16 +66,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      {/* Section header */}
-      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Mediaplaner</h1>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          + Ny mediaplan
-        </button>
-      </header>
+      <PageHeader
+        title="Mediaplaner"
+        description="Budget, kanaler och tidsplan per kund, med en vy kunden kan öppna via länk."
+        action={<PageHeaderButton onClick={() => setShowNewModal(true)}>+ Ny mediaplan</PageHeaderButton>}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (

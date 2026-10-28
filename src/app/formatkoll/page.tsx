@@ -5,6 +5,7 @@ import Link from "next/link";
 import ArrowSquare from "@/components/shared/ArrowSquare";
 import { createProject, deleteProject, listProjects } from "@/lib/api/formatkoll";
 import type { FormatkollListRow } from "@/lib/formatkoll/types";
+import PageHeader, { PageHeaderButton } from "@/components/PageHeader";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -76,15 +77,11 @@ export default function FormatkollDashboard() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Formatkoll</h1>
-        <button
-          onClick={() => setShowNew(true)}
-          className="bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          + Nytt projekt
-        </button>
-      </header>
+      <PageHeader
+        title="Formatkoll"
+        description="Se annonsen i varje format, med säkra zoner, innan den går ut."
+        action={<PageHeaderButton onClick={() => setShowNew(true)}>+ Nytt projekt</PageHeaderButton>}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {error && (

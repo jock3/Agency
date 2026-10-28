@@ -23,6 +23,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["Komet", "system-ui", "sans-serif"],
+        display: ["var(--font-rem)", "Komet", "system-ui", "sans-serif"],
         accent: ["Verveine", "cursive"],
       },
       colors: {

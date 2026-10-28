@@ -13,6 +13,7 @@ import CampaignPlanCard from "@/components/kampanj-dashboard/CampaignPlanCard";
 import NewCampaignPlanModal from "@/components/kampanj-dashboard/NewCampaignPlanModal";
 import CampaignOverlay from "@/components/campaign-overlay/CampaignOverlay";
 import TagFilterBar from "@/components/shared/TagFilterBar";
+import PageHeader, { PageHeaderButton } from "@/components/PageHeader";
 
 export default function KampanjDashboard() {
   const [plans, setPlans] = useState<CampaignPlan[]>([]);
@@ -71,15 +72,11 @@ export default function KampanjDashboard() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <header className="bg-gray-900 text-white px-6 py-5 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Kampanjer</h1>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          + Ny kampanj
-        </button>
-      </header>
+      <PageHeader
+        title="Kampanjer"
+        description="Kampanjplaner per plattform med tidslinje och delbar kundvy."
+        action={<PageHeaderButton onClick={() => setShowNewModal(true)}>+ Ny kampanj</PageHeaderButton>}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (

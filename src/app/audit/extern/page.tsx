@@ -34,7 +34,7 @@ export default async function AuditExternPage() {
     <main className="max-w-6xl w-full mx-auto px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">SEO/GEO-audit — externt</h1>
+          <h2 className="text-2xl font-bold">Externt verktyg</h2>
           <p className="text-sm text-gray-500 mt-1">Granskningar från det publika verktyget. Senaste 200 körningarna.</p>
         </div>
         <Link href="/share/audit" target="_blank" className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 text-white px-4 py-2">

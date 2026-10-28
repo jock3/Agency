@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { REM } from "next/font/google";
 import "./globals.css";
 import TopBanner from "@/components/TopBanner";
 
+// REM bär all fetstil. Repot har bara Komet Regular, så fet Komet blev en
+// webbläsarsyntetiserad, grötig fetstil. Se globals.css.
+const rem = REM({ subsets: ["latin"], variable: "--font-rem", display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Milou Verktyg",
-  description: "Mediaplaner och kampanjplaner",
+  title: "Milou AI-hub",
+  description: "Milous verktyg för mediaplaner, kampanjer, annonsformat och synlighet i sök och AI-svar",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -24,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sv">
+    <html lang="sv" className={rem.variable}>
       <body className="min-h-screen flex flex-col">
         <TopBanner />
         <div className="flex-1 min-h-0 flex flex-col">{children}</div>
