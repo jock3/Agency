@@ -82,7 +82,7 @@ export default function Popover({ anchorRef, onClose, children, width = 220, ali
 
 export function PopLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="px-2 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+    <div className="px-2 pb-1 pt-1.5 text-xs font-bold text-gray-500">
       {children}
     </div>
   );

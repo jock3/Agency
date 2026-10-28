@@ -84,7 +84,7 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
                 style={{ width: DAY_W }}
               >
                 {(d.getDate() === 1 || i === 0) && (
-                  <span className="block text-[9px] uppercase text-gray-400">
+                  <span className="block text-[10px] text-gray-400">
                     {MON_SHORT[d.getMonth()]}
                   </span>
                 )}

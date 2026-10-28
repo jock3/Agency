@@ -848,12 +848,12 @@ export default function TodoPage() {
       />
 
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="border-b border-gray-100 bg-white px-6 pb-3 pt-4">
+        <header className="border-b border-gray-100 bg-white px-6 pb-4 pt-6">
           <div className="flex items-center gap-3">
             {editingTitle ? (
               <EditInput
                 value={settings.board_title}
-                className="text-xl font-semibold"
+                className="font-display font-extrabold text-3xl"
                 onCancel={() => setEditingTitle(false)}
                 onCommit={(v) => {
                   if (v) saveSettings({ board_title: v });
@@ -867,7 +867,7 @@ export default function TodoPage() {
                 title="Byt namn på tavlan"
                 className="group flex items-center gap-2"
               >
-                <h1 className="text-xl font-semibold text-gray-900">{settings.board_title}</h1>
+                <h1 className="font-display font-extrabold text-3xl leading-tight text-gray-900">{settings.board_title}</h1>
                 <Pencil size={14} className="text-gray-300 opacity-0 group-hover:opacity-100" />
               </button>
             )}
@@ -885,8 +885,8 @@ export default function TodoPage() {
             </span>
           </div>
           <p className="mt-0.5 text-sm text-gray-500">
-            {stats.total} objekt · {stats.done} klara
-            {stats.overdue > 0 && <span className="text-red-500"> · {stats.overdue} försenade</span>}
+            {stats.total} objekt, {stats.done} klara
+            {stats.overdue > 0 && <span className="text-red-500">, {stats.overdue} försenade</span>}
           </p>
         </header>
 

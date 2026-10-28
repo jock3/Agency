@@ -19,10 +19,11 @@ export const STATUS_MAP = Object.fromEntries(STATUSES.map((s) => [s.key, s])) as
   (typeof STATUSES)[number]
 >;
 
+// Prioritet i Milous plum- och röda familj, så den inte krockar med statusfärgerna.
 export const PRIORITIES: { key: Exclude<TodoPriority, "none">; label: string; color: string }[] = [
-  { key: "high", label: "Hög", color: "#7C5CE0" },
-  { key: "medium", label: "Medel", color: "#4E7FD9" },
-  { key: "low", label: "Låg", color: "#8B96A3" },
+  { key: "high", label: "Hög", color: "#5B173C" },
+  { key: "medium", label: "Medel", color: "#C02058" },
+  { key: "low", label: "Låg", color: "#8F8F8F" },
 ];
 
 export const PRIORITY_MAP = Object.fromEntries(PRIORITIES.map((p) => [p.key, p])) as Record<

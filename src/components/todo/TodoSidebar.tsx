@@ -92,7 +92,7 @@ export default function TodoSidebar({
 
       {!collapsed && (
         <div className="px-4 pb-1.5 pt-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <span className="text-xs font-bold text-gray-500">
             Grupper
           </span>
         </div>

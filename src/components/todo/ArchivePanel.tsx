@@ -63,7 +63,7 @@ export default function ArchivePanel({
                 <strong className="block truncate text-sm text-gray-800">{l.name}</strong>
                 <span className="text-xs text-gray-400">
                   {(tasksByList[l.id] ?? []).length} objekt
-                  {l.archived_at && ` · arkiverad ${fmtDate(l.archived_at.slice(0, 10))}`}
+                  {l.archived_at && `, arkiverad ${fmtDate(l.archived_at.slice(0, 10))}`}
                 </span>
               </div>
               <button

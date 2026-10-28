@@ -211,7 +211,7 @@ function ColumnHeaderRow({
       <button
         type="button"
         onClick={() => onSort("title")}
-        className="flex items-center gap-1 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-600"
+        className="flex items-center gap-1 text-left text-xs font-bold text-gray-500 hover:text-gray-600"
       >
         Objekt {sortIcon("title")}
       </button>
@@ -219,7 +219,7 @@ function ColumnHeaderRow({
         col.key === "group" ? (
           <div
             key={col.key}
-            className="text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400"
+            className="text-center text-xs font-bold text-gray-500"
           >
             {col.label}
           </div>
@@ -228,7 +228,7 @@ function ColumnHeaderRow({
             key={col.key}
             type="button"
             onClick={() => onSort(col.key)}
-            className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-600"
+            className="flex items-center justify-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-600"
           >
             {col.label} {sortIcon(col.key)}
           </button>

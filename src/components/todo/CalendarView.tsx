@@ -87,7 +87,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="border-b border-gray-200 bg-gray-50 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400"
+            className="border-b border-gray-200 bg-gray-50 py-1.5 text-center text-xs font-bold text-gray-500"
           >
             {d}
           </div>

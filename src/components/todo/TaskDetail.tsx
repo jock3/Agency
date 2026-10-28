@@ -328,7 +328,7 @@ function Prop({
 }) {
   return (
     <div className={wide ? "col-span-2" : ""}>
-      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+      <label className="mb-1 block text-xs font-bold text-gray-500">
         {label}
       </label>
       <div className="relative flex items-center">{children}</div>

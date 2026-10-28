@@ -90,7 +90,7 @@ export default function GroupHeader({
       )}
 
       <span className="text-xs text-gray-400">
-        {tasks.length} objekt{done > 0 ? ` · ${done} klara` : ""}
+        {tasks.length} objekt{done > 0 ? `, ${done} klara` : ""}
       </span>
 
       {allDone && (
