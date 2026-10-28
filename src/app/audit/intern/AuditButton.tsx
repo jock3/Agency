@@ -42,7 +42,7 @@ export default function AuditButton({ projectId }: { projectId: string }) {
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
         {loading ? "Granskar …" : "Ny audit"}
       </button>
-      {error && <p className="mt-2 text-sm text-milou-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-milou-300">{error}</p>}
     </div>
   );
 }
