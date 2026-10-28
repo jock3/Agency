@@ -13,7 +13,8 @@ interface Props {
 }
 
 /** Period bar with an elapsed-time overlay, so a glance shows both the span
- *  and how much of it is already gone. */
+ *  and how much of it is already gone. Tinted rather than solid, so a column of
+ *  them does not drown the rest of the row. */
 export default function TimelineCell({ start, end, color, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
@@ -30,12 +31,12 @@ export default function TimelineCell({ start, end, color, onChange }: Props) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        style={has ? { background: color } : undefined}
-        className={`relative w-full overflow-hidden px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90 ${
-          has ? "text-white" : "border border-dashed border-gray-300 text-gray-300"
+        style={has ? { background: color + "1F", boxShadow: `inset 3px 0 0 ${color}` } : undefined}
+        className={`relative w-full overflow-hidden px-3 py-1.5 text-xs font-medium transition-[filter] hover:brightness-95 ${
+          has ? "text-gray-800" : "border border-dashed border-gray-300 text-gray-300"
         }`}
       >
-        {has && <span className="absolute inset-y-0 left-0 bg-black/20" style={{ width: pct + "%" }} />}
+        {has && <span className="absolute inset-y-0 left-0" style={{ width: pct + "%", background: color + "33" }} />}
         <span className="relative truncate">{has ? fmtRange(start, end) : "Ange period"}</span>
       </button>
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import * as api from "@/lib/api/todo";
 import type { UserOption } from "@/lib/api/todo";
 import { COLUMNS, PRIORITIES, STATUSES, STATUS_MAP } from "@/lib/todo/constants";
 import { defaultStatus, runAutomations, type AutomationEvent } from "@/lib/todo/automations";
-import { advanceDate, isOverdue, todayISO, uid } from "@/lib/todo/utils";
+import { advanceDate, dkey, isOverdue, todayISO, uid } from "@/lib/todo/utils";
+import type { ParsedTask } from "@/lib/todo/quickadd";
 import type {
   Automation,
   BoardSettings,
@@ -21,8 +21,10 @@ import ArchivePanel from "@/components/todo/ArchivePanel";
 import AutomationsModal from "@/components/todo/AutomationsModal";
 import BulkBar from "@/components/todo/BulkBar";
 import CalendarView from "@/components/todo/CalendarView";
-import EditInput from "@/components/todo/EditInput";
+import CommandDeck from "@/components/todo/CommandDeck";
 import EmptyState from "@/components/todo/EmptyState";
+import KanbanView from "@/components/todo/KanbanView";
+import type { FocusItem } from "@/components/todo/FocusLane";
 import TaskBoard from "@/components/todo/TaskBoard";
 import TaskDetail from "@/components/todo/TaskDetail";
 import TimelineView from "@/components/todo/TimelineView";
@@ -58,7 +60,6 @@ export default function TodoPage() {
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState(false);
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [autoOpen, setAutoOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -68,6 +69,7 @@ export default function TodoPage() {
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusFns = useRef<Record<string, () => void>>({});
+  const quickAddRef = useRef<HTMLInputElement>(null);
   const pending = useRef(0);
 
   /* ── Toast ───────────────────────────────────────────────────── */
@@ -300,17 +302,43 @@ export default function TodoPage() {
     [settings.hidden_cols],
   );
 
-  const stats = useMemo(() => {
-    let total = 0;
+  /** Veckan måndag till söndag: det som blivit klart, mot det som var planerat. */
+  const week = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    const [from, to] = [dkey(start), dkey(end)];
     let done = 0;
-    let overdue = 0;
+    let open = 0;
     for (const t of tasks) {
-      total++;
-      if (t.status === "done") done++;
-      if (isOverdue(t)) overdue++;
+      if (t.status === "done") {
+        const at = t.completed_at ? dkey(new Date(t.completed_at)) : null;
+        if (at && at >= from && at <= to) done++;
+      } else if (t.due_date && t.due_date >= from && t.due_date <= to) {
+        open++;
+      }
     }
-    return { total, done, overdue };
+    return { done, total: done + open };
   }, [tasks]);
+
+  /** Fokus: försenat, sedan idag, sedan hög prioritet inom en vecka, sedan pågående. */
+  const focus = useMemo<FocusItem[]>(() => {
+    const today = todayISO();
+    const inAWeek = dkey(new Date(Date.now() + 7 * 86400000));
+    const listById = Object.fromEntries(activeLists.map((l) => [l.id, l]));
+    const bucket = (t: TodoTask) => {
+      if (isOverdue(t)) return 0;
+      if (t.due_date === today) return 1;
+      if (t.priority === "high" && t.due_date && t.due_date <= inAWeek) return 2;
+      if (t.status === "working") return 3;
+      return 9;
+    };
+    return tasks
+      .filter((t) => t.status !== "done" && t.list_id && listById[t.list_id] && bucket(t) < 9)
+      .sort((a, b) => bucket(a) - bucket(b) || (a.due_date || "9999").localeCompare(b.due_date || "9999"))
+      .slice(0, 4)
+      .map((t) => ({ task: t, list: listById[t.list_id!] }));
+  }, [tasks, activeLists]);
 
   const quickCounts = useMemo(
     () => ({
@@ -380,18 +408,34 @@ export default function TodoPage() {
   );
 
   const createTask = useCallback(
-    (listId: string, title: string) => {
+    (listId: string, title: string, fields: Partial<TodoTask> = {}) => {
       const siblings = tasksByList[listId] ?? [];
       const sortOrder = (siblings[siblings.length - 1]?.sort_order ?? 0) + 1;
       const status = defaultStatus(settings.automations);
 
       persist(
         api
-          .createTask(listId, title, { status, sort_order: sortOrder })
+          .createTask(listId, title, { status, sort_order: sortOrder, ...fields })
           .then((task) => setTasks((prev) => [...prev, task])),
       );
     },
     [tasksByList, settings.automations, persist],
+  );
+
+  const quickAdd = useCallback(
+    (p: ParsedTask & { listId: string }) => {
+      const list = activeLists.find((l) => l.id === p.listId);
+      if (list?.collapsed) updateList(list.id, { collapsed: false });
+      createTask(p.listId, p.title.trim(), {
+        ...(p.due ? { due_date: p.due } : {}),
+        ...(p.priority ? { priority: p.priority } : {}),
+        ...(p.personId ? { assigned_to: p.personId } : {}),
+      });
+      showToast(`Lades till i ${list?.name ?? "gruppen"}`);
+    },
+    // updateList is declared further down and only read when the callback
+    // runs, so it stays out of the dependency list (it would hit the TDZ).
+    [activeLists, createTask, showToast],
   );
 
   const duplicateTask = useCallback(
@@ -812,14 +856,32 @@ export default function TodoPage() {
   }, []);
 
   const newTaskFromToolbar = () => {
-    const first = activeLists[0];
-    if (!first) {
+    if (!activeLists.length) {
       createGroup();
       return;
     }
-    if (first.collapsed) updateList(first.id, { collapsed: false });
-    requestAnimationFrame(() => focusFns.current[first.id]?.());
+    quickAddRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    quickAddRef.current?.focus();
   };
+
+  /* Kortkommandon: N för nytt objekt, 1–4 för vyerna. Bara när fokus inte
+     redan ligger i ett fält. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement;
+      if (el.closest("input, textarea, select, [contenteditable=true]")) return;
+      const views: BoardView[] = ["table", "board", "timeline", "calendar"];
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        quickAddRef.current?.focus();
+      } else if (/^[1-4]$/.test(e.key)) {
+        setView(views[Number(e.key) - 1]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const jumpToGroup = (listId: string) => {
     document
@@ -833,7 +895,9 @@ export default function TodoPage() {
   /* ── Render ──────────────────────────────────────────────────── */
 
   return (
-    <div className="flex h-full min-h-0 bg-gray-50">
+    // Fast höjd under toppbaren (h-14), så att bara huvudytan scrollar och
+    // sidomenyn står kvar.
+    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 bg-gray-50">
       <TodoSidebar
         lists={activeLists}
         quickView={quickView}
@@ -847,48 +911,25 @@ export default function TodoPage() {
         archivedCount={archivedLists.length}
       />
 
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="border-b border-gray-100 bg-white px-6 pb-4 pt-6">
-          <div className="flex items-center gap-3">
-            {editingTitle ? (
-              <EditInput
-                value={settings.board_title}
-                className="font-display font-extrabold text-3xl"
-                onCancel={() => setEditingTitle(false)}
-                onCommit={(v) => {
-                  if (v) saveSettings({ board_title: v });
-                  setEditingTitle(false);
-                }}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEditingTitle(true)}
-                title="Byt namn på tavlan"
-                className="group flex items-center gap-2"
-              >
-                <h1 className="font-display font-extrabold text-3xl leading-tight text-gray-900">{settings.board_title}</h1>
-                <Pencil size={14} className="text-gray-300 opacity-0 group-hover:opacity-100" />
-              </button>
-            )}
-            <span
-              role="status"
-              className={`text-xs ${saveState === "error" ? "text-red-500" : "text-gray-400"}`}
-            >
-              {saveState === "saving"
-                ? "Sparar…"
-                : saveState === "saved"
-                  ? "Sparad"
-                  : saveState === "error"
-                    ? "Fel vid sparning"
-                    : ""}
-            </span>
-          </div>
-          <p className="mt-0.5 text-sm text-gray-500">
-            {stats.total} objekt, {stats.done} klara
-            {stats.overdue > 0 && <span className="text-red-500">, {stats.overdue} försenade</span>}
-          </p>
-        </header>
+      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <CommandDeck
+          ref={quickAddRef}
+          userName={currentUser?.name ?? null}
+          boardTitle={settings.board_title}
+          onRenameBoard={(v) => saveSettings({ board_title: v })}
+          saveState={saveState}
+          counts={quickCounts}
+          week={week}
+          quickView={quickView}
+          onQuickView={setQuickView}
+          users={users}
+          lists={activeLists}
+          currentUserId={currentUser?.id ?? null}
+          onQuickAdd={quickAdd}
+          focus={focus}
+          onComplete={(id) => updateTask(id, { status: "done" }, "status")}
+          onOpen={setDrawerTaskId}
+        />
 
         <Toolbar
           onNewTask={newTaskFromToolbar}
@@ -909,7 +950,7 @@ export default function TodoPage() {
           onToast={showToast}
         />
 
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="flex-1">
           {loading ? (
             <div className="mx-auto max-w-5xl space-y-3 p-8">
               {[...Array(6)].map((_, i) => (
@@ -925,6 +966,15 @@ export default function TodoPage() {
             <TimelineView lists={activeLists} tasksByList={tasksByList} onOpen={setDrawerTaskId} />
           ) : view === "calendar" ? (
             <CalendarView lists={activeLists} tasks={tasks} onOpen={setDrawerTaskId} />
+          ) : view === "board" ? (
+            <KanbanView
+              lists={activeLists}
+              tasks={activeLists.flatMap((l) => shownByList[l.id] ?? [])}
+              users={users}
+              subtasksByTask={subtasksByTask}
+              onUpdateTask={updateTask}
+              onOpen={setDrawerTaskId}
+            />
           ) : (
             <TaskBoard
               lists={activeLists}

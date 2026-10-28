@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   CalendarDays,
   Check,
+  Columns3,
   EyeOff,
   Filter,
   GanttChart,
@@ -39,7 +40,7 @@ export const EMPTY_FILTERS: Filters = {
   overdue: false,
 };
 
-export type BoardView = "table" | "timeline" | "calendar";
+export type BoardView = "table" | "board" | "timeline" | "calendar";
 
 interface Props {
   onNewTask: () => void;
@@ -110,6 +111,7 @@ export default function Toolbar({
 
   const views: [BoardView, typeof Rows3, string][] = [
     ["table", Rows3, "Tabell"],
+    ["board", Columns3, "Tavla"],
     ["timeline", GanttChart, "Tidslinje"],
     ["calendar", CalendarDays, "Kalender"],
   ];
@@ -118,7 +120,7 @@ export default function Toolbar({
     <div
       role="toolbar"
       aria-label="Tavlans verktyg"
-      className="flex flex-wrap items-center gap-1.5 border-b border-gray-200 bg-white px-6 py-2.5"
+      className="sticky top-0 z-20 flex flex-wrap items-center gap-1.5 border-b border-gray-200 bg-white px-6 py-2.5"
     >
       <button
         type="button"
@@ -134,10 +136,11 @@ export default function Toolbar({
       <div className="mx-1 h-5 w-px bg-gray-200" />
 
       <div role="tablist" aria-label="Vy" className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5">
-        {views.map(([v, Icon, label]) => (
+        {views.map(([v, Icon, label], i) => (
           <button
             key={v}
             role="tab"
+            title={`${label} (${i + 1})`}
             aria-selected={view === v}
             onClick={() => setView(v)}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${

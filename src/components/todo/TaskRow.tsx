@@ -21,6 +21,7 @@ import DateCell from "./DateCell";
 import TimelineCell from "./TimelineCell";
 import GroupCell from "./GroupCell";
 import EditInput from "./EditInput";
+import DoneCheck from "./DoneCheck";
 import { COLUMNS, REPEAT_LABEL } from "@/lib/todo/constants";
 import { isOverdue } from "@/lib/todo/utils";
 import type { UserOption } from "@/lib/api/todo";
@@ -160,6 +161,15 @@ export default function TaskRow({
               <span className="text-[10px] font-semibold">{subtasks.length}</span>
             )}
           </button>
+
+          <DoneCheck
+            done={task.status === "done"}
+            onToggle={() =>
+              onUpdateTask(task.id, { status: task.status === "done" ? "todo" : "done" }, "status")
+            }
+            label={`Bocka av ${task.title}`}
+            size={18}
+          />
 
           {editing ? (
             <EditInput

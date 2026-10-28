@@ -26,14 +26,13 @@ export default function PriorityPill({ priority, onChange }: Props) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        style={cfg ? { background: cfg.color } : undefined}
-        className={`flex w-full items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-opacity hover:opacity-90 ${
-          cfg ? "text-white" : "text-gray-300 hover:bg-gray-100"
+        className={`flex w-full items-center gap-1.5 px-2 py-1.5 text-xs font-medium transition-colors hover:bg-gray-100 ${
+          cfg ? "text-gray-800" : "justify-center text-gray-300"
         }`}
       >
         {cfg ? (
           <>
-            <Flag size={11} strokeWidth={2.5} /> {cfg.label}
+            <Flag size={12} strokeWidth={2.5} style={{ color: cfg.color }} fill={priority === "high" ? cfg.color : "none"} /> {cfg.label}
           </>
         ) : (
           "–"
@@ -51,10 +50,9 @@ export default function PriorityPill({ priority, onChange }: Props) {
                   onChange(p.key);
                   setOpen(false);
                 }}
-                style={{ background: p.color }}
-                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-800 transition-colors hover:bg-gray-100"
               >
-                <Flag size={12} strokeWidth={2.5} />
+                <Flag size={12} strokeWidth={2.5} style={{ color: p.color }} fill={p.key === "high" ? p.color : "none"} />
                 <span className="flex-1 text-left">{p.label}</span>
                 {p.key === priority && <Check size={14} strokeWidth={3} />}
               </button>
