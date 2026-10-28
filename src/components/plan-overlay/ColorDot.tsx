@@ -50,7 +50,7 @@ export default function ColorDot({ color, onChange }: Props) {
       <button
         ref={btnRef}
         onClick={handleOpen}
-        className="w-3.5 h-3.5 rounded-full shrink-0 border-2 border-transparent hover:border-white hover:scale-110 transition-all ring-1 ring-black/20"
+        className="w-3 h-3 shrink-0 ring-1 ring-black/10 hover:scale-125 transition-transform"
         style={{ backgroundColor: color }}
         title="Byt färg"
       />

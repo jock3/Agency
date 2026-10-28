@@ -12,11 +12,50 @@ import { updateConcept, createConcept, deleteConcept } from "@/lib/api/concepts"
 import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadlines";
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
+import { Plus, X } from "lucide-react";
 
-const INFO_COLS_FULL = "200px 80px 90px 60px 100px 90px";
-const INFO_COLS_COMPACT = "200px 100px 90px";
+const INFO_COLS_FULL = "232px 96px 112px 64px 116px 100px";
+const INFO_COLS_COMPACT = "232px 116px 100px";
 const INFO_COL_COUNT_FULL = 6;
 const INFO_COL_COUNT_COMPACT = 3;
+
+/* Färgerna hör till kategorin: varje rad får en nyans av kategorins färg, så
+   att staplarna i en kategori syns som en grupp och kategorierna skiljer sig åt.
+   Radernas egna färgfält finns kvar i datan men styr inte längre ritningen. */
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h.padEnd(6, "0");
+  return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) || 0) as [number, number, number];
+}
+
+function mixHex(a: string, b: string, amount: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  const m = (x: number, y: number) => Math.round(x + (y - x) * amount).toString(16).padStart(2, "0");
+  return `#${m(r1, r2)}${m(g1, g2)}${m(b1, b2)}`;
+}
+
+function isLight(hex: string): boolean {
+  const [r, g, b] = hexToRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62;
+}
+
+function lineShade(base: string, idx: number): string {
+  if (idx === 0) return base;
+  const amount = Math.min(0.15 + idx * 0.2, 0.7);
+  return isLight(base) ? mixHex(base, "#1C1C1C", amount * 0.6) : mixHex(base, "#FFFFFF", amount);
+}
+
+/** Bakgrund för tidslinjens körfält: en tunn linje vid varje vecka. */
+function laneStyle(weekCount: number): React.CSSProperties {
+  return {
+    gridColumn: `span ${weekCount}`,
+    backgroundImage: "linear-gradient(to right, #EFEFEF 1px, transparent 1px)",
+    backgroundSize: `${100 / weekCount}% 100%`,
+  };
+}
+
+const LANE = "relative border-b border-l border-gray-100 border-l-gray-200 bg-white";
 
 function getDeadlineLeft(date: string, weeks: WeekColumn[], weekCount: number): number | null {
   const idx = weeks.findIndex(
@@ -52,9 +91,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   const INFO_COL_COUNT = compact ? INFO_COL_COUNT_COMPACT : INFO_COL_COUNT_FULL;
   const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
 
-  const cellClass = "border-r border-b border-gray-100 px-1 py-2.5 text-xs flex items-center";
+  const cellClass = "border-b border-gray-100 px-3 min-h-[48px] text-sm flex items-center";
   const stickyClass = "sticky left-0 z-10 bg-white";
-  const headerBg = "bg-[#F2F2F2] text-[#1C1C1C]";
 
   // ── Toasts ──────────────────────────────────────────────
   const [undoToast, setUndoToast] = useState<{ revert: () => void } | null>(null);
@@ -225,19 +263,17 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     <div className="overflow-x-auto scrollbar-thin px-4 py-2 hidden md:block">
       <div
         style={{ display: "grid", gridTemplateColumns: gridCols }}
-        className="min-w-max border-l border-t border-gray-100"
+        className="min-w-max bg-white"
       >
         {/* ── Month header row ── */}
         <div
-          className={`${cellClass} sticky left-0 z-10 bg-white text-[#6C6C6C] font-bold text-sm col-span-${INFO_COL_COUNT}`}
+          className={`${cellClass} ${stickyClass} border-b-0 min-h-[40px]`}
           style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
-        >
-          Kanaler och tidsplan
-        </div>
+        />
         {months.map((m) => (
           <div
             key={m.label}
-            className={`${cellClass} bg-[#1C1C1C] text-white font-semibold justify-center`}
+            className="min-h-[40px] px-3 flex items-end pb-1.5 border-l border-gray-200 font-display font-bold text-base text-gray-900 capitalize"
             style={{ gridColumn: `span ${m.spanCols}` }}
           >
             {m.label}
@@ -245,17 +281,21 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         ))}
 
         {/* ── Column headers (info + week labels) ── */}
-        {(compact ? ["Kanal/Plattform", "Kostnad", "Räckvidd"] : ["Kanal/Plattform", "Pris/enhet", "Enhet", "Antal", "Kostnad", "Räckvidd"]).map((h, i) => (
+        {(compact ? ["Kanal", "Kostnad", "Räckvidd"] : ["Kanal", "À-pris", "Enhet", "Antal", "Kostnad", "Räckvidd"]).map((h, i) => (
           <div
             key={h}
-            className={`${cellClass} ${stickyClass} bg-white text-[#E60330] text-sm font-bold border-b-2 border-[#E60330]`}
-            style={{ left: i === 0 ? 0 : undefined }}
+            className={`${cellClass} ${i === 0 ? stickyClass : "bg-white"} min-h-[36px] text-xs text-gray-500 border-gray-200 ${
+              ["À-pris", "Kostnad", "Räckvidd"].includes(h) ? "justify-end" : h === "Antal" ? "justify-center" : ""
+            }`}
           >
             {h}
           </div>
         ))}
-        {weeks.map((w) => (
-          <div key={w.index} className={`${cellClass} bg-[#F2F2F2] text-[#6C6C6C] justify-center`}>
+        {weeks.map((w, i) => (
+          <div
+            key={w.index}
+            className={`min-h-[36px] flex items-center justify-center border-b border-gray-200 text-xs text-gray-500 tabular-nums ${i === 0 ? "border-l border-l-gray-200" : "border-l border-l-[#EFEFEF]"}`}
+          >
             {w.label}
           </div>
         ))}
@@ -264,48 +304,56 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {(plan.deadlines.length > 0 || !readOnly) && (
           <>
             <div
-              className={`${cellClass} ${stickyClass} bg-white flex-wrap gap-x-3 gap-y-1`}
+              className={`${cellClass} ${stickyClass} py-3 flex-col items-start justify-center gap-1.5`}
               style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
             >
-              {plan.deadlines.map((d) => (
-                <div key={d.id} className="flex items-center gap-1 shrink-0">
-                  <div style={{ width: 8, height: 8, backgroundColor: d.color, transform: "rotate(45deg)", borderRadius: 1, flexShrink: 0 }} />
-                  {readOnly ? (
-                    <span className="text-xs font-medium" style={{ color: d.color }}>{d.name} — {d.date}</span>
-                  ) : (
-                    <>
-                      <InlineEdit
-                        value={d.name}
-                        onSave={(name) => handleUpdateDeadline(d.id, { name })}
-                        className="text-xs font-medium"
-                        style={{ color: d.color }}
-                      />
-                      <input
-                        type="date"
-                        value={d.date}
-                        onChange={(e) => handleUpdateDeadline(d.id, { date: e.target.value })}
-                        className="text-xs border-0 bg-transparent cursor-pointer"
-                        style={{ color: d.color }}
-                      />
-                      <ColorDot color={d.color} onChange={(color) => handleUpdateDeadline(d.id, { color })} />
-                      <button onClick={() => handleDeleteDeadline(d.id)} className="text-red-300 hover:text-red-500 text-xs">×</button>
-                    </>
-                  )}
-                </div>
-              ))}
-              {!readOnly && (
-                <button onClick={handleAddDeadline} className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
-                  + Deadline
-                </button>
-              )}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                {plan.deadlines.map((d) => (
+                  <div key={d.id} className="group/dl flex items-center gap-2 shrink-0 text-xs">
+                    {readOnly ? (
+                      <>
+                        <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: d.color }} />
+                        <span className="font-bold text-gray-900">{d.name}</span>
+                        <span className="text-gray-500 tabular-nums">{d.date}</span>
+                      </>
+                    ) : (
+                      <>
+                        <ColorDot color={d.color} onChange={(color) => handleUpdateDeadline(d.id, { color })} />
+                        <InlineEdit
+                          value={d.name}
+                          onSave={(name) => handleUpdateDeadline(d.id, { name })}
+                          className="text-xs font-bold text-gray-900"
+                        />
+                        <input
+                          type="date"
+                          value={d.date}
+                          onChange={(e) => handleUpdateDeadline(d.id, { date: e.target.value })}
+                          className="text-xs text-gray-500 border-0 bg-transparent cursor-pointer tabular-nums"
+                        />
+                        <button
+                          onClick={() => handleDeleteDeadline(d.id)}
+                          title="Ta bort deadline"
+                          className="text-gray-300 hover:text-milou-500 opacity-0 group-hover/dl:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {!readOnly && <AddButton onClick={handleAddDeadline}>Deadline</AddButton>}
+              </div>
             </div>
-            <div style={{ gridColumn: `span ${weekCount}` }} className="relative border-b border-gray-100 bg-white">
+            <div style={laneStyle(weekCount)} className={`${LANE} min-h-[48px]`}>
               {plan.deadlines.map((d) => {
                 const left = getDeadlineLeft(d.date, weeks, weekCount);
                 if (left === null) return null;
                 return (
-                  <div key={d.id} style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "2px", backgroundColor: d.color, zIndex: 4 }}>
-                    <span style={{ position: "absolute", top: "4px", left: "4px", fontSize: "10px", color: d.color, whiteSpace: "nowrap", fontWeight: 600 }}>
+                  <div key={d.id} style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "1px", backgroundColor: d.color, zIndex: 4 }}>
+                    <span
+                      className="absolute top-2 left-0 -translate-x-1/2 whitespace-nowrap text-[11px] font-bold text-white px-1.5 py-0.5"
+                      style={{ backgroundColor: d.color }}
+                    >
                       {d.name}
                     </span>
                   </div>
@@ -339,17 +387,12 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {!readOnly && (
           <>
             <div
-              className={`${cellClass} ${stickyClass} bg-gray-50 col-span-${INFO_COL_COUNT}`}
+              className={`${cellClass} ${stickyClass} min-h-[40px]`}
               style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
             >
-              <button
-                onClick={handleAddConcept}
-                className="text-xs text-milou-500 hover:text-milou-700 font-medium"
-              >
-                + Lägg till koncept
-              </button>
+              <AddButton onClick={handleAddConcept}>Koncept</AddButton>
             </div>
-            <div style={{ gridColumn: `span ${weekCount}` }} className="bg-gray-50 border-b border-gray-100" />
+            <div style={laneStyle(weekCount)} className={LANE} />
           </>
         )}
 
@@ -381,17 +424,12 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {!readOnly && (
           <>
             <div
-              className={`${cellClass} ${stickyClass} bg-gray-50`}
+              className={`${cellClass} ${stickyClass} min-h-[56px]`}
               style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
             >
-              <button
-                onClick={handleAddCategory}
-                className="text-xs text-milou-500 hover:text-milou-700 font-medium"
-              >
-                + Lägg till kategori
-              </button>
+              <AddButton onClick={handleAddCategory}>Kategori</AddButton>
             </div>
-            <div style={{ gridColumn: `span ${weekCount}` }} className="bg-gray-50 border-b border-gray-100" />
+            <div style={laneStyle(weekCount)} className={LANE} />
           </>
         )}
 
@@ -422,13 +460,16 @@ function GanttConceptRow({
   return (
     <>
       <div
-        className={`${cellClass} ${stickyClass} text-sm font-bold`}
-        style={{ gridColumn: `1 / span ${infoColCount}`, backgroundColor: concept.color + "22", borderLeft: `3px solid ${concept.color}` }}
+        className={`${cellClass} ${stickyClass} group/row`}
+        style={{ gridColumn: `1 / span ${infoColCount}` }}
       >
         {readOnly ? (
-          <span style={{ color: concept.color }}>{concept.name}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="w-3 h-3 shrink-0 border-2" style={{ borderColor: concept.color }} />
+            <span className="font-bold text-gray-900">{concept.name}</span>
+          </div>
         ) : (
-          <div className="flex items-center gap-2 w-full">
+          <div className="flex items-center gap-2.5 w-full">
             <ColorDot
               color={concept.color}
               onChange={(color) => onUpdate({ color })}
@@ -436,45 +477,41 @@ function GanttConceptRow({
             <InlineEdit
               value={concept.name}
               onSave={(name) => onUpdate({ name })}
-              className="font-bold text-sm"
-              style={{ color: concept.color }}
+              className="font-bold text-sm text-gray-900"
             />
-            <div className="ml-auto flex gap-3">
+            <div className="ml-auto flex items-center gap-1 text-gray-500">
               <input
                 type="date"
                 value={concept.start_date}
                 onChange={(e) => onUpdate({ start_date: e.target.value })}
-                className="text-xs border-0 bg-transparent text-gray-500 cursor-pointer"
+                className="text-xs border-0 bg-transparent cursor-pointer tabular-nums"
               />
+              <span aria-hidden className="text-gray-300">till</span>
               <input
                 type="date"
                 value={concept.end_date}
                 onChange={(e) => onUpdate({ end_date: e.target.value })}
-                className="text-xs border-0 bg-transparent text-gray-500 cursor-pointer"
+                className="text-xs border-0 bg-transparent cursor-pointer tabular-nums"
               />
-              <button onClick={onDelete} className="text-red-300 hover:text-red-500 text-xs">×</button>
+              <DeleteButton onClick={onDelete} title="Ta bort koncept" />
             </div>
           </div>
         )}
       </div>
 
-      {/* Timeline band */}
-      <div
-        style={{ gridColumn: `span ${weekCount}`, backgroundColor: concept.color + "11" }}
-        className="relative border-b border-gray-100 flex items-center"
-      >
+      {/* Timeline band: koncept ritas som kontur, mediaraderna som fyllda staplar */}
+      <div style={laneStyle(weekCount)} className={`${LANE} flex items-center`}>
         {span && (
           <div
             style={{
               position: "absolute",
               left: `${((span.colStart - 1) / weekCount) * 100}%`,
               width: `${((span.colEnd - span.colStart) / weekCount) * 100}%`,
-              backgroundColor: concept.color + "55",
-              borderLeft: `3px solid ${concept.color}`,
+              borderColor: concept.color,
             }}
-            className="h-5 rounded-sm flex items-center px-1"
+            className="h-7 border-2 bg-white flex items-center px-2.5 z-[5]"
           >
-            <span className="text-xs font-medium truncate" style={{ color: concept.color }}>
+            <span className="text-xs font-bold truncate" style={{ color: isLight(concept.color) ? "#1C1C1C" : concept.color }}>
               {concept.name}
             </span>
           </div>
@@ -511,44 +548,59 @@ function GanttCategorySection({
 }) {
   const total = calcCategoryTotal(category.lines);
   const reach = calcCategoryReach(category.lines);
+  const accent = { boxShadow: `inset 4px 0 0 ${category.color}` };
+
+  // Kategorins hela utsträckning, som en tunn linje i rubrikraden.
+  const spans = category.lines.map((l) => getSpan(l.start_date, l.end_date)).filter((x): x is { colStart: number; colEnd: number } => !!x);
+  const extent = spans.length
+    ? { colStart: Math.min(...spans.map((x) => x.colStart)), colEnd: Math.max(...spans.map((x) => x.colEnd)) }
+    : null;
 
   return (
     <>
+      {/* Luft mellan kategorierna */}
+      <div className={`${stickyClass} h-6`} style={{ gridColumn: `1 / span ${infoColCount}` }} />
+      <div style={laneStyle(weekCount)} className="relative border-l border-gray-200 bg-white h-6" />
+
       {/* Category header — spans first (infoColCount-1) cols */}
       <div
-        className={`${cellClass} ${stickyClass} font-bold text-sm`}
-        style={{
-          gridColumn: `1 / span ${infoColCount - 1}`,
-          backgroundColor: category.color + "22",
-          borderLeft: `3px solid ${category.color}`,
-          borderTop: `2px solid ${category.color}55`,
-        }}
+        className={`${cellClass} ${stickyClass} group/row min-h-[52px] border-gray-200`}
+        style={{ gridColumn: `1 / span ${infoColCount - 1}`, ...accent }}
       >
-        {readOnly ? (
-          <span style={{ color: category.color }}>{category.name}</span>
-        ) : (
-          <div className="flex items-center gap-2 w-full">
-            <ColorDot
-              color={category.color}
-              onChange={(color) => onCategoryUpdate({ color })}
-            />
+        <div className="flex items-center gap-2.5 w-full pl-1">
+          {readOnly ? (
+            <span className="w-3 h-3 shrink-0" style={{ backgroundColor: category.color }} />
+          ) : (
+            <ColorDot color={category.color} onChange={(color) => onCategoryUpdate({ color })} />
+          )}
+          {readOnly ? (
+            <span className="font-display font-bold text-base text-gray-900">{category.name}</span>
+          ) : (
             <InlineEdit
               value={category.name}
               onSave={(name) => onCategoryUpdate({ name })}
-              className="font-bold text-sm"
-              style={{ color: category.color }}
+              className="font-display font-bold text-base text-gray-900"
             />
-            <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>
-            <button onClick={onDeleteCategory} className="text-red-300 hover:text-red-500 text-xs ml-1">×</button>
-          </div>
-        )}
-        {readOnly && <span className="ml-auto text-xs" style={{ color: category.color, opacity: 0.7 }}>{formatSEK(total)}</span>}
+          )}
+          {!readOnly && <DeleteButton onClick={onDeleteCategory} title="Ta bort kategori" />}
+          <span className="ml-auto font-bold text-gray-900 tabular-nums">{formatSEK(total)}</span>
+        </div>
       </div>
       {/* Category reach col */}
-      <div className={`${cellClass} justify-end text-xs font-semibold`} style={{ backgroundColor: category.color + "22", borderTop: `2px solid ${category.color}55` }}>
-        <span style={{ color: category.color, opacity: 0.7 }}>{formatReach(reach)}</span>
+      <div className={`${cellClass} min-h-[52px] border-gray-200 justify-end font-bold text-gray-900 tabular-nums`}>
+        {formatReach(reach)}
       </div>
-      <div style={{ gridColumn: `span ${weekCount}`, backgroundColor: category.color + "11", borderTop: `2px solid ${category.color}55` }} className="relative border-b border-gray-100">
+      <div style={laneStyle(weekCount)} className={`${LANE} border-b-gray-200`}>
+        {extent && (
+          <div
+            className="absolute bottom-0 h-1"
+            style={{
+              left: `${((extent.colStart - 1) / weekCount) * 100}%`,
+              width: `${((extent.colEnd - extent.colStart) / weekCount) * 100}%`,
+              backgroundColor: category.color,
+            }}
+          />
+        )}
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
       </div>
 
@@ -570,6 +622,8 @@ function GanttCategorySection({
           onAddLine={!readOnly ? onAddLine : undefined}
           lineIndex={idx}
           lineCount={category.lines.length}
+          barColor={lineShade(category.color, idx)}
+          accentColor={category.color}
           onReorder={!readOnly ? (dir) => onReorderLine(line.id, dir) : undefined}
           cellClass={cellClass}
           stickyClass={stickyClass}
@@ -580,17 +634,12 @@ function GanttCategorySection({
       {!readOnly && (
         <>
           <div
-            className={`${cellClass} ${stickyClass} bg-gray-50`}
-            style={{ gridColumn: `1 / span ${infoColCount}` }}
+            className={`${cellClass} ${stickyClass} min-h-[40px] pl-8`}
+            style={{ gridColumn: `1 / span ${infoColCount}`, ...accent }}
           >
-            <button
-              onClick={onAddLine}
-              className="text-xs text-milou-500 hover:text-milou-700"
-            >
-              + Lägg till rad
-            </button>
+            <AddButton onClick={onAddLine}>Rad</AddButton>
           </div>
-          <div style={{ gridColumn: `span ${weekCount}` }} className="bg-gray-50 border-b border-gray-100" />
+          <div style={laneStyle(weekCount)} className={LANE} />
         </>
       )}
     </>
@@ -606,7 +655,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, barColor, accentColor, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -623,6 +672,8 @@ function GanttLineRow({
   lineIndex?: number;
   lineCount?: number;
   onReorder?: (direction: "up" | "down") => void;
+  barColor: string;
+  accentColor: string;
   cellClass: string;
   stickyClass: string;
 }) {
@@ -757,9 +808,9 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-1.5 group`}>
-        {!readOnly && onReorder && (
-          <div className="flex flex-col gap-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset 4px 0 0 ${accentColor}` }}>
+        {!readOnly && onReorder ? (
+          <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onReorder("up")}
               disabled={lineIndex === 0}
@@ -775,20 +826,22 @@ function GanttLineRow({
               title="Flytta ner"
             >▼</button>
           </div>
+        ) : (
+          <span className="w-2 shrink-0" />
         )}
-        {!readOnly && (
-          <ColorDot color={line.color} onChange={(color) => onUpdate({ color })} />
-        )}
+        <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: barColor }} aria-hidden />
         {readOnly ? (
-          <span className="text-xs">{line.platform_name}</span>
+          <span className="text-gray-900 truncate">{line.platform_name}</span>
         ) : (
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <InlineEdit
               value={line.platform_name}
               onSave={(platform_name) => onUpdate({ platform_name })}
-              className="text-xs flex-1 min-w-0"
+              className="text-sm text-gray-900 flex-1 min-w-0"
             />
-            <button onClick={onDelete} className="text-red-300 hover:text-red-500 text-xs shrink-0">×</button>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <DeleteButton onClick={onDelete} title="Ta bort rad" />
+            </span>
           </div>
         )}
       </div>
@@ -797,13 +850,13 @@ function GanttLineRow({
       {!compact && (
         <div className={`${cellClass} justify-end`}>
           {readOnly ? (
-            <span>{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
+            <span className="text-gray-700 tabular-nums">{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
           ) : (
             <InlineEdit
               value={String(line.cost_per_unit ?? 0)}
               onSave={(v) => onUpdate({ cost_per_unit: Number(v) || 0 })}
               type="number"
-              className="text-xs text-right w-full"
+              className="text-sm text-right w-full tabular-nums"
             />
           )}
         </div>
@@ -813,12 +866,12 @@ function GanttLineRow({
       {!compact && (
         <div className={`${cellClass}`}>
           {readOnly ? (
-            <span className="truncate">{line.unit_type}</span>
+            <span className="truncate text-gray-700">{line.unit_type}</span>
           ) : (
             <select
               value={line.unit_type}
               onChange={(e) => onUpdate({ unit_type: e.target.value })}
-              className="text-xs w-full bg-transparent border-0 focus:outline-none cursor-pointer"
+              className="text-sm text-gray-700 w-full bg-transparent border-0 focus:outline-none cursor-pointer"
             >
               {["per månad", "per vecka", "per sida", "per dagar", "fast pris"].map((u) => (
                 <option key={u}>{u}</option>
@@ -832,34 +885,34 @@ function GanttLineRow({
       {!compact && (
         <div className={`${cellClass} justify-center`}>
           {readOnly ? (
-            <span>{line.quantity}</span>
+            <span className="text-gray-700 tabular-nums">{line.quantity}</span>
           ) : (
             <InlineEdit
               value={String(line.quantity ?? 0)}
               onSave={(v) => onUpdate({ quantity: Number(v) || 0 })}
               type="number"
-              className="text-xs text-center w-full"
+              className="text-sm text-center w-full tabular-nums"
             />
           )}
         </div>
       )}
 
       {/* Total */}
-      <div className={`${cellClass} justify-end text-xs text-gray-600 font-medium`}>
+      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`}>
         {formatSEK(total)}
       </div>
 
       {/* Estimated reach */}
       <div className={`${cellClass} justify-end`}>
         {readOnly ? (
-          <span className="text-xs text-gray-600">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
+          <span className="text-gray-700 tabular-nums">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
         ) : (
           <InlineEdit
             value={line.estimated_reach ? String(line.estimated_reach) : ""}
             onSave={(v) => onUpdate({ estimated_reach: v ? Number(v) : null })}
             onTabOut={onAddLine}
             type="number"
-            className="text-xs text-right w-full"
+            className="text-sm text-gray-700 text-right w-full tabular-nums"
             placeholder="–"
           />
         )}
@@ -868,8 +921,8 @@ function GanttLineRow({
       {/* Gantt bar cell */}
       <div
         ref={containerRef}
-        style={{ gridColumn: `span ${weekCount}` }}
-        className="relative border-b border-gray-100 bg-white"
+        style={laneStyle(weekCount)}
+        className={`${LANE} group/bar`}
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
 
@@ -914,7 +967,7 @@ function GanttLineRow({
           <button
             onClick={handleAddDeadline}
             style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", zIndex: 6, userSelect: "none" }}
-            className="text-gray-300 hover:text-[#E60330]"
+            className="text-gray-300 hover:text-[#E60330] opacity-0 group-hover/bar:opacity-100 transition-opacity"
             title="Lägg till deadline"
           >
             <svg viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3 inline-block">
@@ -929,10 +982,11 @@ function GanttLineRow({
               position: "absolute",
               left: `${((displaySpan.colStart - 1) / weekCount) * 100}%`,
               width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
-              backgroundColor: line.color,
-              top: "15%",
-              height: "70%",
-              borderRadius: "4px",
+              backgroundColor: barColor,
+              top: "50%",
+              height: "20px",
+              transform: "translateY(-50%)",
+              zIndex: 5,
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
               userSelect: "none",
             }}
@@ -943,25 +997,25 @@ function GanttLineRow({
               <>
                 {/* Left resize handle */}
                 <div
+                  className="opacity-0 group-hover/bar:opacity-100 transition-opacity"
                   style={{
                     position: "absolute",
                     left: 0, top: 0, bottom: 0,
-                    width: "8px",
+                    width: "6px",
                     cursor: "w-resize",
-                    borderRadius: "4px 0 0 4px",
-                    backgroundColor: "rgba(0,0,0,0.18)",
+                    backgroundColor: "rgba(0,0,0,0.2)",
                   }}
                   onPointerDown={(e) => { e.stopPropagation(); startDrag(e, "left"); }}
                 />
                 {/* Right resize handle */}
                 <div
+                  className="opacity-0 group-hover/bar:opacity-100 transition-opacity"
                   style={{
                     position: "absolute",
                     right: 0, top: 0, bottom: 0,
-                    width: "8px",
+                    width: "6px",
                     cursor: "e-resize",
-                    borderRadius: "0 4px 4px 0",
-                    backgroundColor: "rgba(0,0,0,0.18)",
+                    backgroundColor: "rgba(0,0,0,0.2)",
                   }}
                   onPointerDown={(e) => { e.stopPropagation(); startDrag(e, "right"); }}
                 />
@@ -1007,7 +1061,7 @@ function DeadlineMarkers({ deadlines, weeks, weekCount }: { deadlines: MediaDead
         return (
           <div
             key={d.id}
-            style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "2px", backgroundColor: d.color, opacity: 0.55, zIndex: 4, pointerEvents: "none" }}
+            style={{ position: "absolute", left: `${left}%`, top: 0, bottom: 0, width: "1px", backgroundColor: d.color, opacity: 0.45, zIndex: 4, pointerEvents: "none" }}
           />
         );
       })}
@@ -1030,13 +1084,13 @@ function BudgetSummaryRow({
 }) {
   const totalReach = plan.categories.reduce((sum, cat) => sum + calcCategoryReach(cat.lines), 0);
 
-  const summaryBorder = "border-t-2 border-[#1C1C1C]";
+  const summaryBorder = "border-t-2 border-b-0 border-gray-900 min-h-[60px] mt-6";
 
   return (
     <>
       {/* Col 1: "Budget" label — matches Kanal/Plattform column */}
       <div className={`${cellClass} ${stickyClass} bg-white ${summaryBorder}`}>
-        <span className="text-sm font-bold text-[#1C1C1C]">Totalt</span>
+        <span className="font-display font-bold text-base text-gray-900">Totalt</span>
       </div>
 
       {/* Middle info cols (full) or just Totalt col (compact) */}
@@ -1056,10 +1110,10 @@ function BudgetSummaryRow({
             onSave={(v) => onPlanUpdate({ planned_budget: v ? Number(v) : null })}
             type="number"
             placeholder="–"
-            className="text-sm font-bold text-[#1C1C1C] text-right w-full"
+            className="font-display font-bold text-base text-gray-900 text-right w-full tabular-nums"
           />
         ) : (
-          <span className="text-sm font-bold text-[#1C1C1C]">
+          <span className="font-display font-bold text-base text-gray-900 tabular-nums">
             {plan.planned_budget ? formatSEK(plan.planned_budget) : "–"}
           </span>
         )}
@@ -1067,11 +1121,32 @@ function BudgetSummaryRow({
 
       {/* Räckvidd col */}
       <div className={`${cellClass} bg-white ${summaryBorder} justify-end`}>
-        <span className="text-sm font-bold text-[#1C1C1C]">{formatReach(totalReach)}</span>
+        <span className="font-display font-bold text-base text-gray-900 tabular-nums">{formatReach(totalReach)}</span>
       </div>
 
       {/* Timeline area — white, no gray */}
       <div style={{ gridColumn: `span ${weekCount}` }} className={`bg-white ${summaryBorder}`} />
     </>
+  );
+}
+
+/* ─── Små kontroller ────────────────────────────────────── */
+function AddButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-milou-500 transition-colors"
+    >
+      <Plus className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+      {children}
+    </button>
+  );
+}
+
+function DeleteButton({ onClick, title }: { onClick: () => void; title: string }) {
+  return (
+    <button onClick={onClick} title={title} aria-label={title} className="text-gray-300 hover:text-milou-500 transition-colors shrink-0">
+      <X className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+    </button>
   );
 }
