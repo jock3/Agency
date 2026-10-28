@@ -28,8 +28,6 @@ export default function TopBanner() {
   const hidden = pathname.startsWith("/login") || pathname.startsWith("/share");
   if (hidden) return null;
 
-  const link = (t: ToolLink) => <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />;
-
   return (
     <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">
       <Link
@@ -40,14 +38,13 @@ export default function TopBanner() {
         <MilouLogo className="h-[18px] w-auto text-white" />
       </Link>
       <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
-        {TOOLS.filter((t) => !t.internal).map(link)}
+        {TOOLS.map((t) => (
+          <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
+        ))}
       </nav>
-      <div className="flex items-center gap-1 shrink-0">
-        {TOOLS.filter((t) => t.internal).map(link)}
-        <a href="/api/auth/logout" className="hidden md:block px-3 text-sm text-gray-400 hover:text-white transition-colors">
-          Logga ut
-        </a>
-      </div>
+      <a href="/api/auth/logout" className="hidden md:block shrink-0 px-3 text-sm text-gray-400 hover:text-white transition-colors">
+        Logga ut
+      </a>
     </div>
   );
 }
