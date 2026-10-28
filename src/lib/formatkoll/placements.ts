@@ -189,9 +189,9 @@ const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
  */
 export function frameLabel(ratio: Ratio, natural: NaturalSize | undefined): string {
   const src = sourceFor(ratio);
-  if (!natural || !natural.w || !natural.h) return `${ratio} · ${src.note}`;
+  if (!natural || !natural.w || !natural.h) return `${ratio}, ${src.note}`;
   const d = gcd(natural.w, natural.h);
-  return `${natural.w / d}:${natural.h / d} · ${natural.w} × ${natural.h}`;
+  return `${natural.w / d}:${natural.h / d}, ${natural.w} × ${natural.h}`;
 }
 
 /** Ramens proportion: filens egen om den är känd, annars slottens nominella. */

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft, Check, Link2 } from "lucide-react";
 import PreviewWorkspace, { emptyAssets, type AssetMap } from "@/components/formatkoll/PreviewWorkspace";
 import { RATIOS, type NaturalSize, type Ratio } from "@/lib/formatkoll/placements";
 import { kindOfPath } from "@/lib/formatkoll/media";
@@ -125,36 +126,54 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
   const expiry = expiryText(project.expires_at);
   const uploaded = RATIOS.filter((r) => assets[r]).length;
 
-  const header = (
-    <div className="flex items-center gap-3 text-[13px]">
-      <Link href="/formatkoll" className="text-gray-400 hover:text-white transition-colors">
-        ← Projekt
+  const headerLeft = (
+    <div className="flex items-center gap-4 min-w-0 mr-2">
+      <Link
+        href="/formatkoll"
+        aria-label="Till alla projekt"
+        className="shrink-0 w-10 h-10 flex items-center justify-center border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
       </Link>
-      <span className="font-semibold">{project.title}</span>
-      <span className="text-gray-400">{uploaded}/3 filer</span>
-      {busyRatio && <span className="text-milou-300">Laddar upp {busyRatio}…</span>}
-      {saving && !busyRatio && <span className="text-gray-400">Sparar…</span>}
-      {error && <span className="text-milou-300">{error}</span>}
-      <span className={expiry.expired ? "text-milou-300" : "text-gray-400"}>{expiry.text}</span>
-      <span className="flex items-center gap-1">
-        {[1, 3, 7].map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => extend(d)}
-            className="px-2 py-0.5 rounded bg-[#2B2B2B] border border-[#3a3a3a] text-gray-300 hover:bg-gray-700 transition-colors"
-            title={`Sätt utgång till ${d} dagar från nu`}
-          >
-            {d}d
-          </button>
-        ))}
-      </span>
+      <div className="min-w-0">
+        <h1 className="font-display font-extrabold text-xl leading-tight truncate">{project.title}</h1>
+        <p className="text-[13px] text-gray-600 truncate">
+          {clientName || "Ingen kund angiven"}
+          <span className="text-gray-400">, {uploaded} av 3 format</span>
+        </p>
+      </div>
+    </div>
+  );
+
+  const status = busyRatio ? `Laddar upp ${busyRatio}…` : saving ? "Sparar…" : null;
+
+  const header = (
+    <div className="flex items-center gap-4 text-[13px]">
+      {status && <span className="text-gray-500">{status}</span>}
+      {error && <span className="text-milou-600">{error}</span>}
+      <div className="flex items-center gap-2">
+        <span className={expiry.expired ? "text-milou-600 font-bold" : "text-gray-600"}>{expiry.text}</span>
+        <span className="flex border border-gray-200" role="group" aria-label="Förläng länken">
+          {[1, 3, 7].map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => extend(d)}
+              className="px-2.5 h-8 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-l border-gray-200 first:border-l-0"
+              title={`Låt länken gälla ${d} ${d === 1 ? "dag" : "dagar"} från nu`}
+            >
+              {d} d
+            </button>
+          ))}
+        </span>
+      </div>
       <button
         type="button"
         onClick={copyLink}
-        className="px-3 py-1.5 rounded-lg bg-milou-500 text-white font-medium hover:bg-milou-600 transition-colors"
+        className="h-10 px-4 flex items-center gap-2 bg-milou-500 text-white font-bold hover:bg-milou-600 transition-colors"
       >
-        {copied ? "Kopierad" : "Kopiera delningslänk"}
+        {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+        {copied ? "Länken är kopierad" : "Kopiera kundlänk"}
       </button>
     </div>
   );
@@ -184,7 +203,9 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
         setCaptions(next);
         queueSave({ captions: next });
       }}
+      headerLeft={headerLeft}
       headerRight={header}
+      busyRatio={busyRatio}
     />
   );
 }

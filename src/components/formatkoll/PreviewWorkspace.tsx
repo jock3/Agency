@@ -52,8 +52,12 @@ interface Props {
    *  stället för att först visa slottens nominella format och hoppa till rätt
    *  när videons metadata kommit in. */
   initialNaturals?: Partial<Record<Ratio, NaturalSize>>;
+  /** Projektets namn och tillbaka-länk, först i toppraden. */
+  headerLeft?: React.ReactNode;
   /** Titel/kopiera-länk/sparstatus i toppraden. */
   headerRight?: React.ReactNode;
+  /** Formatet som laddas upp just nu, för status i filhållarna. */
+  busyRatio?: Ratio | null;
 }
 
 export default function PreviewWorkspace({
@@ -67,7 +71,9 @@ export default function PreviewWorkspace({
   onCaptionChange,
   captions,
   onCaptionOverride,
+  headerLeft,
   headerRight,
+  busyRatio = null,
 }: Props) {
   const [placement, setPlacement] = useState<Placement>(PLACEMENTS[0]);
   // Samlingsvyn är förstaläget: alla placeringar bredvid varandra.
@@ -177,11 +183,18 @@ export default function PreviewWorkspace({
 
   return (
     <div className={`fk-root${calibrating ? " fk-calibrating" : ""}`}>
-      <header className="fk-top">
-        <div className="fk-wordmark">
-          Formatk<span>o</span>ll
-        </div>
-        {!readOnly && onPickFile && <SourceSlots assets={assets} onPick={onPickFile} />}
+      {/* Kundvyn har inget annat sidhuvud, så där är raden mörk och bär
+          ordmärket. I redigeraren ligger den under appens meny och blir ljus. */}
+      <header className={`fk-top${readOnly ? "" : " fk-top-light"}`}>
+        {readOnly && (
+          <div className="fk-wordmark">
+            Formatk<span>o</span>ll
+          </div>
+        )}
+        {headerLeft}
+        {!readOnly && onPickFile && hasAnyFile && (
+          <SourceSlots assets={assets} onPick={onPickFile} busy={busyRatio} />
+        )}
         {headerRight && <div style={{ marginLeft: "auto" }}>{headerRight}</div>}
       </header>
 
@@ -272,11 +285,13 @@ export default function PreviewWorkspace({
       </div>
 
       <main className="fk-stage">
-        {!hasAnyFile && !readOnly && (
-          <div className="fk-hint">Dra in dina filer i rutorna uppe till vänster</div>
-        )}
-
-        {viewAll ? (
+        {!hasAnyFile && !readOnly && onPickFile ? (
+          <div className="fk-start">
+            <h2>Ladda upp kampanjens filmer</h2>
+            <p>Ett format räcker för att se alla placeringar som använder det. Fler format ger fler kanaler.</p>
+            <SourceSlots assets={assets} onPick={onPickFile} busy={busyRatio} variant="drop" />
+          </div>
+        ) : viewAll ? (
           <div className="fk-overview">
             {tiles.map(({ placement: p, ratio: r }) => {
               const a = assets[r];
@@ -299,7 +314,7 @@ export default function PreviewWorkspace({
             })}
             {tiles.length === 0 && (
               <p className="fk-overview-empty">
-                Ladda upp en fil så dyker placeringarna upp här.
+                {readOnly ? "Filmerna är inte uppladdade än." : "Ladda upp en fil så dyker placeringarna upp här."}
               </p>
             )}
           </div>
@@ -320,25 +335,27 @@ export default function PreviewWorkspace({
           />
         )}
 
-        <StageControls
-          placement={active}
-          ratio={ratio}
-          onRatio={setRatio}
-          showSafe={showSafe}
-          onShowSafe={setShowSafe}
-          showChrome={showChrome}
-          onShowChrome={setShowChrome}
-          muted={muted}
-          onToggleSound={toggleSound}
-          onReplay={replay}
-          playable={asset?.kind === "video"}
-          overview={viewAll}
-          meta={
-            viewAll
-              ? `Alla placeringar · ${tiles.length} av ${PLACEMENTS.length}`
-              : `${active.channel} · ${active.name} · ${ratio}${asset ? ` · ${asset.name}` : " · ingen fil"}`
-          }
-        />
+        {(hasAnyFile || readOnly) && (
+          <StageControls
+            placement={active}
+            ratio={ratio}
+            onRatio={setRatio}
+            showSafe={showSafe}
+            onShowSafe={setShowSafe}
+            showChrome={showChrome}
+            onShowChrome={setShowChrome}
+            muted={muted}
+            onToggleSound={toggleSound}
+            onReplay={replay}
+            playable={asset?.kind === "video"}
+            overview={viewAll}
+            meta={
+              viewAll
+                ? `${tiles.length} av ${PLACEMENTS.length} placeringar`
+                : `${active.channel} ${active.name}, ${ratio}, ${asset ? asset.name : "ingen fil"}`
+            }
+          />
+        )}
       </main>
 
       {calibrating && (

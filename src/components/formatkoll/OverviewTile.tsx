@@ -59,9 +59,8 @@ export default function OverviewTile({
   return (
     <div className="fk-tile" ref={tileRef}>
       <button type="button" className="fk-tile-head" onClick={onOpen}>
-        <b>
-          {placement.channel} · {placement.name}
-        </b>
+        <b>{placement.channel}</b>
+        <span>{placement.name}</span>
         <em>{ratio}</em>
       </button>
       <div className="fk-tile-frame">

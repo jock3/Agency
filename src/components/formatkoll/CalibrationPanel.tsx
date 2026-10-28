@@ -107,7 +107,7 @@ export default function CalibrationPanel({
 
       <div className="fk-cal-block">
         <h3>
-          {placement.channel} · {placement.name}
+          {placement.channel} {placement.name}
         </h3>
         {EDGES.map(([edge, label]) => (
           <div key={edge} className="fk-cal-row">
