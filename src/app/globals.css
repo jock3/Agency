@@ -92,7 +92,7 @@
      Den enda rörelsen som inte startas av användaren. */
   .hub-capsule {
     animation: hub-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+    animation-delay: calc(var(--i, 0) * 90ms + 560ms);
   }
   @keyframes hub-rise {
     from {
@@ -100,9 +100,70 @@
       transform: translateY(48px);
     }
   }
+
+  /* Rubrikbanden sveper in rad för rad, som markerad text, innan kapslarna
+     kommer. Banden är inline-block så att clip-path gäller hela raden. */
+  .hub-band {
+    display: inline-block;
+    /* Lägre än rubrikens radhöjd, så att en tydlig springa blir kvar mellan
+       banden i stället för ett hårstrå. */
+    line-height: 1.18;
+    animation: hub-wipe 0.6s cubic-bezier(0.7, 0, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 140ms + 80ms);
+  }
+  @keyframes hub-wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  .hub-fade {
+    animation: hub-fade 0.8s ease-out 0.5s both;
+  }
+  @keyframes hub-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Hover på en kapsel: Milou-plattan, en solid förskjuten färgyta, skjuts
+     fram bakom kapseln medan den lyfter. Färg och riktning sätts per kapsel
+     med --plate och --plate-x. */
+  .hub-link {
+    transition:
+      transform 0.3s ease-in-out,
+      box-shadow 0.3s ease-in-out;
+    box-shadow: 0 0 0 0 var(--plate);
+  }
+  .hub-link:hover,
+  .hub-link:focus-visible {
+    transform: translateY(-6px);
+    box-shadow: var(--plate-x, -12px) 12px 0 0 var(--plate);
+  }
+  .hub-link .hub-icon,
+  .hub-link .hub-arrow {
+    transition: transform 0.3s ease-in-out;
+  }
+  .hub-link:hover .hub-icon {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  .hub-link:hover .hub-arrow {
+    transform: translateX(4px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .hub-capsule {
+    .hub-capsule,
+    .hub-band,
+    .hub-fade {
       animation: none;
+    }
+    .hub-link:hover,
+    .hub-link:focus-visible,
+    .hub-link:hover .hub-icon,
+    .hub-link:hover .hub-arrow {
+      transform: none;
     }
   }
 

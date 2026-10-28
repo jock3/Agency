@@ -10,6 +10,9 @@ interface Tool {
   tone: string;
   /** Förskjutning i höjdled på desktop, som tjänstekapslarna på milou.se. */
   offset: string;
+  /** Hover-plattans färg och sida: -12px lägger den till vänster, 12px till höger. */
+  plate: string;
+  plateX: string;
 }
 
 const CAPSULES: Tool[] = [
@@ -19,6 +22,8 @@ const CAPSULES: Tool[] = [
     does: "Budget, kanaler och tidsplan i en vy.",
     tone: "bg-plum text-white",
     offset: "md:mt-0",
+    plate: "#FFBFB6",
+    plateX: "-12px",
   },
   {
     href: "/kampanj",
@@ -26,6 +31,8 @@ const CAPSULES: Tool[] = [
     does: "Kampanjplaner per plattform, med tidslinje.",
     tone: "bg-blush text-gray-900",
     offset: "md:mt-12",
+    plate: "#5B173C",
+    plateX: "12px",
   },
   {
     href: "/formatkoll",
@@ -33,6 +40,8 @@ const CAPSULES: Tool[] = [
     does: "Annonsen i rätt format, före lansering.",
     tone: "bg-peach text-gray-900",
     offset: "md:mt-4",
+    plate: "#FF999C",
+    plateX: "-12px",
   },
   {
     href: "/audit",
@@ -46,6 +55,8 @@ const CAPSULES: Tool[] = [
     does: "Synlighet i Google och i AI-svar.",
     tone: "bg-beige text-gray-900",
     offset: "md:mt-20",
+    plate: "#FFBFB6",
+    plateX: "12px",
   },
   {
     href: "/todo",
@@ -53,6 +64,8 @@ const CAPSULES: Tool[] = [
     does: "Teamets deadlines och att göra.",
     tone: "bg-white text-gray-900",
     offset: "md:mt-8",
+    plate: "#E60330",
+    plateX: "-12px",
   },
 ];
 
@@ -65,13 +78,13 @@ export default function HubPage() {
               för hand så att varje band blir en hel fras, och radavståndet
               lämnar en springa mellan banden. */}
           <h1 className="font-display font-extrabold text-[34px] leading-[1.4] md:text-[64px] md:leading-[1.34] tracking-[-0.01em]">
-            <span className="milou-band bg-plum">Milous AI-hub.</span>
+            <span className="hub-band milou-band bg-plum" style={{ "--i": 0 } as React.CSSProperties}>Milous AI-hub.</span>
             <br />
-            <span className="milou-band bg-peach text-gray-900">Verktygen bakom</span>
+            <span className="hub-band milou-band bg-peach text-gray-900" style={{ "--i": 1 } as React.CSSProperties}>Verktygen bakom</span>
             <br />
-            <span className="milou-band bg-peach text-gray-900">era kampanjer.</span>
+            <span className="hub-band milou-band bg-peach text-gray-900" style={{ "--i": 2 } as React.CSSProperties}>era kampanjer.</span>
           </h1>
-          <p className="mt-6 lg:mt-0 text-lg md:text-xl md:leading-8 text-gray-400 max-w-[34ch] lg:pb-2">
+          <p className="hub-fade mt-6 lg:mt-0 text-lg md:text-xl md:leading-8 text-gray-400 max-w-[34ch] lg:pb-2">
             Här planerar vi media, bygger kampanjer, testar annonsformat och mäter hur synliga ni är i sök och
             AI-svar.
           </p>
@@ -86,10 +99,11 @@ export default function HubPage() {
             <li key={t.href} className={`hub-capsule ${t.offset}`} style={{ "--i": i } as React.CSSProperties}>
               <Link
                 href={t.href}
-                className={`group ${t.tone} rounded-[2.5rem] md:rounded-full flex md:flex-col items-center gap-6 md:gap-0 py-7 pl-9 pr-6 md:px-8 md:pt-12 md:pb-9 md:h-[340px] md:text-center focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-milou-500`}
+                style={{ "--plate": t.plate, "--plate-x": t.plateX } as React.CSSProperties}
+                className={`hub-link group ${t.tone} rounded-[2.5rem] md:rounded-full flex md:flex-col items-center gap-6 md:gap-0 py-7 pl-9 pr-6 md:px-8 md:pt-12 md:pb-9 md:h-[340px] md:text-center focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-milou-500`}
               >
                 <div className="flex-1 min-w-0">
-                  <Icon aria-hidden className="w-7 h-7 md:w-9 md:h-9 mb-3 md:mb-4 md:mx-auto" strokeWidth={1.5} />
+                  <Icon aria-hidden className="hub-icon w-7 h-7 md:w-9 md:h-9 mb-3 md:mb-4 md:mx-auto" strokeWidth={1.5} />
                   <h2 className="font-display font-extrabold text-2xl leading-tight md:text-[26px] md:leading-[1.2]">{t.name}</h2>
                   <p className="mt-2 md:mt-5 text-sm md:text-base leading-6 opacity-80">{t.does}</p>
                 </div>
@@ -97,7 +111,7 @@ export default function HubPage() {
                   aria-hidden
                   className="shrink-0 w-14 h-14 bg-milou-500 group-hover:bg-milou-600 transition-colors flex items-center justify-center"
                 >
-                  <ArrowRight className="w-6 h-6 text-white" strokeWidth={1.5} />
+                  <ArrowRight className="hub-arrow w-6 h-6 text-white" strokeWidth={1.5} />
                 </span>
               </Link>
             </li>
