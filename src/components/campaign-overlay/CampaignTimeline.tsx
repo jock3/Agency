@@ -51,10 +51,10 @@ export default function CampaignTimeline({ plan, readOnly, compact, onPlanChange
         className="min-w-max border-l border-t border-gray-100"
       >
         <div
-          className={`${cellClass} sticky left-0 z-10 bg-white text-[#1C1C1C] font-bold text-lg`}
+          className={`${cellClass} sticky left-0 z-10 bg-white text-[#6C6C6C] font-bold text-sm`}
           style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
         >
-          {plan.name}
+          Kampanjer och tidsplan
         </div>
         {months.map((m) => (
           <div
@@ -113,7 +113,7 @@ export default function CampaignTimeline({ plan, readOnly, compact, onPlanChange
 
         {/* Budget summary */}
         <div className={`${cellClass} ${stickyClass} bg-white border-t-2 border-[#1C1C1C]`}>
-          <span className="text-xs font-semibold text-[#6C6C6C] uppercase tracking-wide">Totalt</span>
+          <span className="text-sm font-bold text-[#1C1C1C]">Totalt</span>
         </div>
         {!compact && <div className={`${cellClass} bg-white border-t-2 border-[#1C1C1C]`} />}
         <div className={`${cellClass} bg-white border-t-2 border-[#1C1C1C] justify-end`}>

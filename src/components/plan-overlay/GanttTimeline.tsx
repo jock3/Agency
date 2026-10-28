@@ -229,10 +229,10 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
       >
         {/* ── Month header row ── */}
         <div
-          className={`${cellClass} sticky left-0 z-10 bg-white text-[#1C1C1C] font-bold text-lg col-span-${INFO_COL_COUNT}`}
+          className={`${cellClass} sticky left-0 z-10 bg-white text-[#6C6C6C] font-bold text-sm col-span-${INFO_COL_COUNT}`}
           style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
         >
-          {plan.campaign_name}
+          Kanaler och tidsplan
         </div>
         {months.map((m) => (
           <div
@@ -422,7 +422,7 @@ function GanttConceptRow({
   return (
     <>
       <div
-        className={`${cellClass} ${stickyClass} text-xs font-semibold uppercase tracking-wide`}
+        className={`${cellClass} ${stickyClass} text-sm font-bold`}
         style={{ gridColumn: `1 / span ${infoColCount}`, backgroundColor: concept.color + "22", borderLeft: `3px solid ${concept.color}` }}
       >
         {readOnly ? (
@@ -436,7 +436,7 @@ function GanttConceptRow({
             <InlineEdit
               value={concept.name}
               onSave={(name) => onUpdate({ name })}
-              className="font-semibold text-xs"
+              className="font-bold text-sm"
               style={{ color: concept.color }}
             />
             <div className="ml-auto flex gap-3">
@@ -1036,7 +1036,7 @@ function BudgetSummaryRow({
     <>
       {/* Col 1: "Budget" label — matches Kanal/Plattform column */}
       <div className={`${cellClass} ${stickyClass} bg-white ${summaryBorder}`}>
-        <span className="text-xs font-semibold text-[#6C6C6C] uppercase tracking-wide">Totalt</span>
+        <span className="text-sm font-bold text-[#1C1C1C]">Totalt</span>
       </div>
 
       {/* Middle info cols (full) or just Totalt col (compact) */}

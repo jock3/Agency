@@ -68,7 +68,10 @@ export default function InlineEdit({ value, onSave, onTabOut, type = "text", cla
       style={style}
       title="Klicka för att redigera"
     >
-      {value || placeholder || "–"}
+      {/* Tal visas med tusentalsavgränsare, men redigeras som rena siffror. */}
+      {type === "number" && value && !Number.isNaN(Number(value))
+        ? Number(value).toLocaleString("sv-SE")
+        : value || placeholder || "–"}
     </span>
   );
 }

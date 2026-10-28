@@ -29,12 +29,12 @@ export default function TagEditor({ tags, onChange }: Props) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="flex items-center gap-1 text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] pl-2 pr-1 py-0.5"
+          className="flex items-center gap-1 h-7 text-xs font-bold bg-peach text-gray-900 pl-2.5 pr-1"
         >
           {tag}
           <button
             onClick={() => removeTag(tag)}
-            className="text-gray-500 hover:text-white leading-none"
+            className="w-5 h-5 flex items-center justify-center text-gray-700 hover:text-gray-900 leading-none"
             title="Ta bort tagg"
           >
             ×
@@ -52,8 +52,8 @@ export default function TagEditor({ tags, onChange }: Props) {
           }
         }}
         onBlur={addTag}
-        placeholder="+ Tagg"
-        className="text-xs bg-[#2B2B2B] text-gray-200 border border-[#3a3a3a] px-2 py-0.5 w-20 focus:outline-none focus:border-milou-500 placeholder:text-gray-500"
+        placeholder="Lägg till tagg"
+        className="h-7 text-xs bg-white text-gray-900 border border-dashed border-gray-300 px-2 w-24 focus:outline-none focus:border-solid focus:border-gray-900 placeholder:text-gray-500"
       />
     </div>
   );
