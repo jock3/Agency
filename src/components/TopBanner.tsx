@@ -3,25 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MilouLogo from "./MilouLogo";
+import { TOOLS, type ToolLink } from "./tools";
 
-// Verktygen som visas för kunder. Uppgifter är internt och ligger till höger.
-const TOOLS = [
-  { href: "/mediaplan", label: "Mediaplaner" },
-  { href: "/kampanj", label: "Kampanjer" },
-  { href: "/formatkoll", label: "Formatkoll" },
-  { href: "/audit", label: "SEO/GEO-audit" },
-];
-
-function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+// På smala skärmar visas bara ikonerna, så att alla verktyg får plats.
+function NavLink({ href, label, Icon, active }: ToolLink & { active: boolean }) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`px-3 h-8 flex items-center whitespace-nowrap text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach ${
+      aria-label={label}
+      title={label}
+      className={`px-2.5 lg:px-3 h-8 flex items-center gap-2 whitespace-nowrap text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach ${
         active ? "bg-peach text-gray-800" : "text-white hover:text-peach"
       }`}
     >
-      {label}
+      <Icon className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+      <span className="hidden md:inline">{label}</span>
     </Link>
   );
 }
@@ -31,8 +28,10 @@ export default function TopBanner() {
   const hidden = pathname.startsWith("/login") || pathname.startsWith("/share");
   if (hidden) return null;
 
+  const link = (t: ToolLink) => <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />;
+
   return (
-    <div className="bg-gray-900 text-white h-14 flex items-center gap-6 px-4 sm:px-8 shrink-0">
+    <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">
       <Link
         href="/"
         aria-label="Till AI-hubben"
@@ -41,12 +40,10 @@ export default function TopBanner() {
         <MilouLogo className="h-[18px] w-auto text-white" />
       </Link>
       <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
-        {TOOLS.map((t) => (
-          <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
-        ))}
+        {TOOLS.filter((t) => !t.internal).map(link)}
       </nav>
       <div className="flex items-center gap-1 shrink-0">
-        <NavLink href="/todo" label="Uppgifter" active={pathname.startsWith("/todo")} />
+        {TOOLS.filter((t) => t.internal).map(link)}
         <a href="/api/auth/logout" className="hidden md:block px-3 text-sm text-gray-400 hover:text-white transition-colors">
           Logga ut
         </a>

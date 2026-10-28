@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { toolByHref } from "@/components/tools";
 
 interface Tool {
   href: string;
@@ -11,7 +12,7 @@ interface Tool {
   offset: string;
 }
 
-const TOOLS: Tool[] = [
+const CAPSULES: Tool[] = [
   {
     href: "/mediaplan",
     name: "Mediaplaner",
@@ -79,13 +80,16 @@ export default function HubPage() {
 
       <section className="max-w-[1240px] mx-auto px-6 md:px-8 -mt-8 md:-mt-[160px] pb-24">
         <ul className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-start">
-          {TOOLS.map((t, i) => (
+          {CAPSULES.map((t, i) => {
+            const { Icon } = toolByHref(t.href);
+            return (
             <li key={t.href} className={`hub-capsule ${t.offset}`} style={{ "--i": i } as React.CSSProperties}>
               <Link
                 href={t.href}
-                className={`group ${t.tone} rounded-[2.5rem] md:rounded-full flex md:flex-col items-center gap-6 md:gap-0 py-7 pl-9 pr-6 md:px-8 md:pt-16 md:pb-9 md:h-[340px] md:text-center focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-milou-500`}
+                className={`group ${t.tone} rounded-[2.5rem] md:rounded-full flex md:flex-col items-center gap-6 md:gap-0 py-7 pl-9 pr-6 md:px-8 md:pt-12 md:pb-9 md:h-[340px] md:text-center focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-milou-500`}
               >
                 <div className="flex-1 min-w-0">
+                  <Icon aria-hidden className="w-7 h-7 md:w-9 md:h-9 mb-3 md:mb-4 md:mx-auto" strokeWidth={1.5} />
                   <h2 className="font-display font-extrabold text-2xl leading-tight md:text-[26px] md:leading-[1.2]">{t.name}</h2>
                   <p className="mt-2 md:mt-5 text-sm md:text-base leading-6 opacity-80">{t.does}</p>
                 </div>
@@ -97,7 +101,8 @@ export default function HubPage() {
                 </span>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
     </main>
