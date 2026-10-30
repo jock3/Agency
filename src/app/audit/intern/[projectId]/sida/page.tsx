@@ -7,7 +7,9 @@ import { aiEnabled, type PageAi } from "@/lib/audit/ai";
 import { score } from "@/lib/audit/checks";
 import type { AuditedPage, Check } from "@/lib/audit/types";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { assistantEnabled } from "@/lib/audit/assistant";
 import PageAudit from "../../PageAudit";
+import SuggestButton from "../../SuggestButton";
 
 const PRIORITIES: { key: Priority; label: string; accent: string }[] = [
   { key: "critical", label: "Kritiskt", accent: "border-milou-500" },
@@ -149,6 +151,7 @@ export default async function AuditPagePage({
                       </div>
                       <p className="text-sm text-gray-500 mt-1.5">{a.detail}</p>
                       {a.fix && <p className="mt-1 max-w-[80ch]">{a.fix}</p>}
+                      <SuggestButton projectId={project.id} checkId={a.id} url={url} enabled={assistantEnabled()} />
                     </li>
                   ))}
                 </ul>

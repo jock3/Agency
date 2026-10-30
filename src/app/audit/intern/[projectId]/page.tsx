@@ -10,6 +10,7 @@ import type { AuditedPage } from "@/lib/audit/types";
 import { assistantEnabled } from "@/lib/audit/assistant";
 import Assistant from "../Assistant";
 import AuditButton from "../AuditButton";
+import SuggestButton from "../SuggestButton";
 import PageAudit from "../PageAudit";
 import ProjectActions from "../ProjectActions";
 import TrendChart from "../TrendChart";
@@ -224,6 +225,7 @@ export default async function AuditProjectPage({
                           </div>
                           <p className="text-sm text-gray-500 mt-1.5">{a.detail}</p>
                           {a.fix && <p className="mt-1 max-w-[80ch]">{a.fix}</p>}
+                          <SuggestButton projectId={project.id} checkId={a.id} enabled={assistantEnabled()} />
                         </li>
                       ))}
                     </ul>
