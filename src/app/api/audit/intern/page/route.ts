@@ -40,7 +40,15 @@ export async function POST(request: NextRequest) {
 
   const scores = score(audit.checks);
   const actions = toActions(audit.checks);
-  const ai = await suggestForPage(audit.url, actions);
+  const { data: last } = await sb
+    .from("audit_page_runs")
+    .select("ai")
+    .eq("project_id", project.id)
+    .eq("url", audit.url)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const ai = await suggestForPage(audit.url, actions, last?.ai ?? null);
   const { error } = await sb.from("audit_page_runs").insert({
     project_id: project.id,
     url: audit.url,

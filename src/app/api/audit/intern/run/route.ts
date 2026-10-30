@@ -36,7 +36,15 @@ export async function POST(request: NextRequest) {
 
   const scores = score(audit.checks);
   const actions = toActions(audit.checks);
+  const { data: last } = await sb
+    .from("audit_internal_runs")
+    .select("actions, ai_summary")
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const aiSummary = await summarizeAudit({
+    previous: last ? { actions: last.actions, summary: last.ai_summary } : null,
     domain: project.url,
     seoScore: scores.seoScore,
     geoScore: scores.geoScore,
