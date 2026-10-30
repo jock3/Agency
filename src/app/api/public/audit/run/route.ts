@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
     seo_score: scores.seoScore,
     geo_score: scores.geoScore,
     checks: audit.checks,
-    pages: audit.pages,
+    // Sidornas kontroller behövs bara internt och ska inte lagras för besökare.
+    pages: audit.pages.map(({ checks, ...page }) => page),
   };
 
   if (!sb) {

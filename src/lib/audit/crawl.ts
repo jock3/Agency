@@ -18,6 +18,21 @@ const BUDGET_MS = 25_000;
 const SKIP_EXT = /\.(pdf|jpe?g|png|gif|svg|webp|avif|ico|zip|mp4|mov|mp3|docx?|xlsx?|pptx?|xml|json|txt|css|js)$/i;
 const SKIP_PATH = /\/(wp-admin|wp-login|wp-json|feed|cart|checkout|kassa|varukorg|login|logga-in|my-account|mitt-konto|cdn-cgi)(\/|$)/i;
 
+/** Svarstiden får inte avgöra betyget av en slump. Är första svaret nära
+ *  gränsen mäts sidan en gång till och det snabbaste värdet gäller, så
+ *  kallstarter och nätverksbrus inte tappar en poäng mellan två körningar. */
+const SLOW_MS = 700;
+async function fetchSteady(url: URL, timeout?: number): Promise<FetchResult> {
+  const first = await safeFetch(url, timeout);
+  if (first.status >= 400 || first.ms < SLOW_MS) return first;
+  try {
+    const second = await safeFetch(url, timeout);
+    return second.ms < first.ms ? { ...first, ms: second.ms } : first;
+  } catch {
+    return first;
+  }
+}
+
 export class SiteError extends Error {
   constructor(public code: string) {
     super(code);
@@ -96,7 +111,7 @@ export interface SiteAudit {
 export async function auditSite(start: URL): Promise<SiteAudit> {
   const began = Date.now();
 
-  const home = await safeFetch(start);
+  const home = await fetchSteady(start);
   if (home.status >= 400) throw new SiteError("SITE_ERROR");
   if (!isHtml(home)) throw new SiteError("NOT_HTML");
   const homeUrl = new URL(home.url);
@@ -125,7 +140,7 @@ export async function auditSite(start: URL): Promise<SiteAudit> {
       const target = queue.shift()!;
       attempted++;
       try {
-        const res = await safeFetch(target, SUBPAGE_TIMEOUT_MS);
+        const res = await fetchSteady(target, SUBPAGE_TIMEOUT_MS);
         // Bara länkar från startsidan räknas som trasiga — en död URL i
         // sitemapen är en annan sorts fel.
         if (res.status >= 400) {
@@ -169,7 +184,7 @@ export interface PageAudit {
 /** Granskar en enskild sida med sidkontrollerna. Sajtkontroller (robots.txt,
  *  sitemap …) hör till hela domänen och ingår inte. */
 export async function auditPage(url: URL): Promise<PageAudit> {
-  const res = await safeFetch(url);
+  const res = await fetchSteady(url);
   if (res.status >= 400) throw new SiteError("SITE_ERROR");
   if (!isHtml(res)) throw new SiteError("NOT_HTML");
   const page = analyzePage({ url: res.url, html: res.body, ms: res.ms, status: res.status });

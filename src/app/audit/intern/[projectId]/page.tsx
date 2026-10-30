@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Action, Priority } from "@/lib/audit/actions";
 import { domainOf } from "@/lib/audit/projects";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { score } from "@/lib/audit/checks";
 import type { AuditedPage } from "@/lib/audit/types";
 import AuditButton from "../AuditButton";
 import PageAudit from "../PageAudit";
@@ -249,6 +250,9 @@ export default async function AuditProjectPage({
               <tbody>
                 {auditedPages.map((p) => {
                   const own = singleRuns.get(p.url);
+                  const fromAudit = !own && p.checks ? score(p.checks) : null;
+                  const seo = own?.seo_score ?? fromAudit?.seoScore;
+                  const geo = own?.geo_score ?? fromAudit?.geoScore;
                   return (
                     <tr key={p.url} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 max-w-md">
@@ -258,8 +262,8 @@ export default async function AuditProjectPage({
                         <span className="text-gray-500 text-xs">{pathOf(p.url)}</span>
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums font-bold">{p.issues}</td>
-                      <td className="py-3 px-4 text-right tabular-nums">{own?.seo_score ?? "–"}</td>
-                      <td className="py-3 px-4 text-right tabular-nums">{own?.geo_score ?? "–"}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{seo ?? "–"}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{geo ?? "–"}</td>
                     </tr>
                   );
                 })}
