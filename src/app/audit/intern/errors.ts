@@ -7,6 +7,7 @@ export const AUDIT_ERRORS: Record<string, string> = {
   TOO_MANY_REDIRECTS: "Sajten omdirigerar för många gånger.",
   SITE_ERROR: "Sajten svarade med ett fel.",
   NOT_HTML: "Adressen pekar inte på en webbsida.",
+  AI_DISABLED: "AI är avstängt. Lägg in ANTHROPIC_API_KEY i miljövariablerna.",
   WRONG_DOMAIN: "Adressen hör inte till projektets domän.",
   INVALID_NAME: "Ge projektet ett namn.",
   DUPLICATE: "Det finns redan ett projekt för den domänen.",

@@ -7,6 +7,8 @@ import { domainOf } from "@/lib/audit/projects";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { score } from "@/lib/audit/checks";
 import type { AuditedPage } from "@/lib/audit/types";
+import { assistantEnabled } from "@/lib/audit/assistant";
+import Assistant from "../Assistant";
 import AuditButton from "../AuditButton";
 import PageAudit from "../PageAudit";
 import ProjectActions from "../ProjectActions";
@@ -148,6 +150,8 @@ export default async function AuditProjectPage({
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         {error && <p className="mb-6 text-milou-600">Kunde inte läsa historiken. Är migration 0010 körd?</p>}
+
+        <Assistant projectId={project.id} domain={project.domain} enabled={assistantEnabled()} />
 
         <section>
           <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
