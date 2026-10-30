@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { toActions } from "@/lib/audit/actions";
+import { summarizeAudit } from "@/lib/audit/ai";
 import { score } from "@/lib/audit/checks";
 import { auditSite, SiteError } from "@/lib/audit/crawl";
 import { FetchError } from "@/lib/audit/fetch";
@@ -34,6 +35,14 @@ export async function POST(request: NextRequest) {
   const user = token ? await validateSession(token).catch(() => null) : null;
 
   const scores = score(audit.checks);
+  const actions = toActions(audit.checks);
+  const aiSummary = await summarizeAudit({
+    domain: project.url,
+    seoScore: scores.seoScore,
+    geoScore: scores.geoScore,
+    pageCount: audit.pages.length,
+    actions,
+  });
   const { data, error } = await sb
     .from("audit_internal_runs")
     .insert({
@@ -45,7 +54,8 @@ export async function POST(request: NextRequest) {
       seo_score: scores.seoScore,
       geo_score: scores.geoScore,
       checks: audit.checks,
-      actions: toActions(audit.checks),
+      actions,
+      ai_summary: aiSummary,
       pages: audit.pages,
       created_by: user?.name ?? null,
     })

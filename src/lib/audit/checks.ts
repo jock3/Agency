@@ -3,7 +3,8 @@ import type { Check, CheckGroup, CheckStatus } from "./types";
 
 /**
  * Fasta kontroller. Betyget kommer härifrån och inte från Claude, så samma sajt
- * får samma betyg varje gång. Claude skriver bara åtgärdstexterna.
+ * får samma betyg varje gång. Åtgärdstexterna är fasta; Claude skriver bara
+ * extra text ovanpå i ai.ts.
  *
  * Kontrollerna finns i två sorter. Sidkontroller (titel, rubriker, schema …)
  * körs på varje granskad sida och vägs sedan ihop i `aggregate`. Sajtkontroller

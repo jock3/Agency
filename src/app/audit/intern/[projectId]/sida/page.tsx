@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import { toActions, type Action, type Priority } from "@/lib/audit/actions";
+import { aiEnabled, type PageAi } from "@/lib/audit/ai";
 import { score } from "@/lib/audit/checks";
 import type { AuditedPage, Check } from "@/lib/audit/types";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -23,6 +24,7 @@ interface PageRun {
   seo_score: number;
   geo_score: number;
   actions: Action[];
+  ai: PageAi | null;
   created_by: string | null;
   created_at: string;
 }
@@ -57,7 +59,7 @@ export default async function AuditPagePage({
 
   const { data: runsData } = await sb
     .from("audit_page_runs")
-    .select("id, title, seo_score, geo_score, actions, created_by, created_at")
+    .select("id, title, seo_score, geo_score, actions, ai, created_by, created_at")
     .eq("project_id", project.id)
     .eq("url", url)
     .order("created_at", { ascending: false })
@@ -78,7 +80,7 @@ export default async function AuditPagePage({
     const page = ((siteRun?.pages ?? []) as AuditedPage[]).find((p) => p.url === url);
     if (siteRun && page?.checks) {
       const s = score(page.checks as Check[]);
-      current = { id: siteRun.id, title: page.title, seo_score: s.seoScore, geo_score: s.geoScore, actions: toActions(page.checks), created_by: siteRun.created_by, created_at: siteRun.created_at };
+      current = { id: siteRun.id, title: page.title, seo_score: s.seoScore, geo_score: s.geoScore, actions: toActions(page.checks), ai: null, created_by: siteRun.created_by, created_at: siteRun.created_at };
       source = `Fulla auditen ${fmt.format(new Date(siteRun.created_at))}`;
     }
   }
@@ -126,6 +128,7 @@ export default async function AuditPagePage({
       </section>
 
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-4">
+        {current && <AiPanel ai={current.ai} enabled={aiEnabled()} />}
         {!current ? (
           <p className="bg-white px-5 py-6 text-gray-600">Sidan är inte granskad ännu. Tryck på Granska om sidan.</p>
         ) : actions.length === 0 ? (
@@ -156,5 +159,52 @@ export default async function AuditPagePage({
         <p className="text-xs text-gray-500">Enskilda sidor granskas med sidkontrollerna. Sajtövergripande saker som robots.txt och sitemap finns bara i projektets fulla audit.</p>
       </div>
     </main>
+  );
+}
+
+function AiPanel({ ai, enabled }: { ai: PageAi | null; enabled: boolean }) {
+  if (!ai) {
+    return (
+      <p className="bg-white border-l-4 border-plum px-5 py-4 text-sm text-gray-600">
+        {enabled ? "Inga AI-förslag för den här granskningen. Tryck på Granska om sidan för att få nya." : "AI-förslag är avstängda. Lägg till ANTHROPIC_API_KEY i miljövariablerna för att slå på dem."}
+      </p>
+    );
+  }
+  return (
+    <section className="bg-white border-l-4 border-plum px-5 py-5 space-y-5">
+      <div>
+        <h2 className="font-bold text-lg">AI-förslag</h2>
+        {ai.intent && <p className="text-gray-600 mt-1 max-w-[80ch]">{ai.intent}</p>}
+      </div>
+      {ai.titles.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold mb-1.5">Titelförslag</h3>
+          <ul className="space-y-1">
+            {ai.titles.map((t) => (
+              <li key={t}>{t} <span className="text-xs text-gray-400 tabular-nums">{t.length} tecken</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ai.description && (
+        <div>
+          <h3 className="text-sm font-bold mb-1.5">Metabeskrivning</h3>
+          <p className="max-w-[80ch]">{ai.description} <span className="text-xs text-gray-400 tabular-nums">{ai.description.length} tecken</span></p>
+        </div>
+      )}
+      {ai.contentTips.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold mb-1.5">Innehåll</h3>
+          <ul className="list-disc pl-5 space-y-1 max-w-[80ch]">{ai.contentTips.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+      )}
+      {ai.geoTips.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold mb-1.5">Synas i AI-svar (GEO)</h3>
+          <ul className="list-disc pl-5 space-y-1 max-w-[80ch]">{ai.geoTips.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+      )}
+      <p className="text-xs text-gray-500">Skrivet av AI från sidans innehåll. Läs igenom innan det används. Betygen påverkas inte.</p>
+    </section>
   );
 }

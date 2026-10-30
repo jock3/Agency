@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { toActions } from "@/lib/audit/actions";
+import { suggestForPage } from "@/lib/audit/ai";
 import { score } from "@/lib/audit/checks";
 import { auditPage, SiteError } from "@/lib/audit/crawl";
 import { FetchError, normalizeUrl } from "@/lib/audit/fetch";
@@ -8,7 +9,7 @@ import { auditError } from "@/lib/audit/server";
 import { getSessionToken, validateSession } from "@/lib/auth/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * Intern, bakom inloggning via proxy. Granskar en enskild sida i ett projekt.
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
   const user = token ? await validateSession(token).catch(() => null) : null;
 
   const scores = score(audit.checks);
+  const actions = toActions(audit.checks);
+  const ai = await suggestForPage(audit.url, actions);
   const { error } = await sb.from("audit_page_runs").insert({
     project_id: project.id,
     url: audit.url,
@@ -46,7 +49,8 @@ export async function POST(request: NextRequest) {
     seo_score: scores.seoScore,
     geo_score: scores.geoScore,
     checks: audit.checks,
-    actions: toActions(audit.checks),
+    actions,
+    ai,
     created_by: user?.name ?? null,
   });
   if (error) return auditError("SERVER_ERROR", 500);

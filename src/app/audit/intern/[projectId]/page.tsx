@@ -24,6 +24,7 @@ interface HistoryRow {
 interface RunRow extends HistoryRow {
   actions: Action[];
   pages: unknown[];
+  ai_summary: string | null;
 }
 
 const PRIORITIES: { key: Priority; label: string; hint: string; accent: string }[] = [
@@ -66,7 +67,7 @@ export default async function AuditProjectPage({
   const { data: runData } = selectedId
     ? await sb
         .from("audit_internal_runs")
-        .select("id, final_url, host, seo_score, geo_score, created_by, created_at, actions, pages")
+        .select("id, final_url, host, seo_score, geo_score, created_by, created_at, actions, pages, ai_summary")
         .eq("id", selectedId)
         .eq("project_id", project.id)
         .maybeSingle()
@@ -162,6 +163,14 @@ export default async function AuditProjectPage({
               })}
             </ul>
           </div>
+
+          {run?.ai_summary && (
+            <div className="mb-4 bg-white border-l-4 border-plum px-5 py-4">
+              <h3 className="font-bold mb-2">Sammanfattning</h3>
+              <p className="whitespace-pre-line max-w-[80ch]">{run.ai_summary}</p>
+              <p className="mt-2 text-xs text-gray-500">Skriven av AI utifrån fynden nedan. Betygen sätts av fasta kontroller.</p>
+            </div>
+          )}
 
           {prevActions && (fixed.length > 0 || added.length > 0) && (
             <div className="mb-4 bg-white px-5 py-4 text-sm grid gap-4 sm:grid-cols-2">
