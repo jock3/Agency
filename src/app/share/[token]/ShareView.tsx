@@ -6,6 +6,7 @@ import GanttTimeline from "@/components/plan-overlay/GanttTimeline";
 import { formatSwedishDateFull } from "@/lib/utils/dates";
 import { calcPlanTotal, calcPlanReach, formatSEK, formatReach } from "@/lib/utils/budget";
 import MilouLogo from "@/components/MilouLogo";
+import MobilePlanList from "./MobilePlanList";
 
 export default function ShareView({ plan }: { plan: FullMediaPlan }) {
   const [exporting, setExporting] = useState(false);
@@ -44,18 +45,18 @@ export default function ShareView({ plan }: { plan: FullMediaPlan }) {
           <div className="flex items-center gap-4 min-w-0">
             <MilouLogo className="h-7 w-auto text-white" />
             <div className="min-w-0">
-              <h1 className="text-base font-semibold truncate">{plan.campaign_name}</h1>
+              <h1 className="text-base font-semibold sm:truncate">{plan.campaign_name}</h1>
               <p className="text-sm text-gray-400">
                 {formatSwedishDateFull(plan.period_start)} – {formatSwedishDateFull(plan.period_end)}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4 shrink-0 mt-2 sm:mt-0">
-            <div className="hidden sm:block text-right">
+          <div className="flex flex-wrap items-center gap-4 shrink-0 mt-2 sm:mt-0">
+            <div className="text-left sm:text-right">
               <div className="text-xs text-gray-400">Total budget</div>
               <div className="text-sm font-bold text-white">{formatSEK(calcPlanTotal(plan))}</div>
             </div>
-            <div className="hidden sm:block text-right">
+            <div className="text-left sm:text-right">
               <div className="text-xs text-gray-400">Beräknad räckvidd</div>
               <div className="text-sm font-bold text-white">{formatReach(calcPlanReach(plan))}</div>
             </div>
@@ -65,7 +66,7 @@ export default function ShareView({ plan }: { plan: FullMediaPlan }) {
             <button
               onClick={handleExportImage}
               disabled={exporting}
-              className="text-xs bg-milou-500 hover:bg-milou-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition-colors"
+              className="hidden md:inline-block text-xs bg-milou-500 hover:bg-milou-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition-colors"
             >
               {exporting ? "Exporterar…" : "Exportera bild"}
             </button>
@@ -86,7 +87,7 @@ export default function ShareView({ plan }: { plan: FullMediaPlan }) {
       )}
 
       {/* Gantt capture area */}
-      <div ref={captureRef} className="bg-white overflow-x-auto">
+      <div ref={captureRef} className="hidden md:block bg-white overflow-x-auto">
         {/* Export header — appears in PNG export */}
         <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-white">
           <div>
@@ -110,6 +111,8 @@ export default function ShareView({ plan }: { plan: FullMediaPlan }) {
           <GanttTimeline plan={plan} readOnly compact onPlanChanged={() => {}} />
         </div>
       </div>
+
+      <MobilePlanList plan={plan} />
 
       <div className="text-center text-xs text-gray-300 py-4">
         Skapad med Mediaplaner

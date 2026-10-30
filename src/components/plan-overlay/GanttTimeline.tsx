@@ -4,7 +4,7 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { format, differenceInWeeks } from "date-fns";
 import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
-import { calcLineTotal, calcCategoryTotal, calcCategoryReach, formatSEK, formatReach } from "@/lib/utils/budget";
+import { calcLineTotal, calcCategoryTotal, calcCategoryReach, calcPlanTotal, formatSEK, formatReach } from "@/lib/utils/budget";
 import { updatePlan } from "@/lib/api/plans";
 import { updateLine, createLine, deleteLine, reorderLines } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
@@ -1075,8 +1075,10 @@ function BudgetSummaryRow({
             className="font-display font-bold text-base text-gray-900 text-right w-full tabular-nums"
           />
         ) : (
+          // The client sees the sum of the lines, same figure as "Total budget" in the header.
+          // planned_budget is an internal frame and is only shown in the editor.
           <span className="font-display font-bold text-base text-gray-900 tabular-nums">
-            {plan.planned_budget ? formatSEK(plan.planned_budget) : "–"}
+            {formatSEK(calcPlanTotal(plan))}
           </span>
         )}
       </div>
