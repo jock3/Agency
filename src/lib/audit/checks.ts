@@ -115,7 +115,10 @@ export interface PageResult {
   url: string;
   status: number;
   title: string;
+  description: string;
   h1: string;
+  /** Sidan länkar till sociala profiler via schema.org sameAs. */
+  hasSameAs: boolean;
   checks: Check[];
   schemaTypes: string[];
   /** Interna och externa länkar, menylänkar först. Används för att välja
@@ -194,11 +197,20 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
       : check("structure", "seo", "Rubrikstruktur", 1, "warn", `Bara ${h2Count} underrubriker (H2).`, "Dela upp innehållet med beskrivande H2-rubriker så både läsare och sökmotorer ser strukturen."),
   );
 
-  checks.push(
-    $('link[rel="canonical"]').attr("href")
-      ? check("canonical", "seo", "Kanonisk URL", 1, "pass", "Canonical-länk finns.", "")
-      : check("canonical", "seo", "Kanonisk URL", 1, "warn", "Ingen canonical-länk.", "Lägg till <link rel=\"canonical\"> så sökmotorer vet vilken URL som är originalet."),
-  );
+  const canonical = $('link[rel="canonical"]').attr("href")?.trim();
+  let canonicalHost: string | null = null;
+  try {
+    if (canonical) canonicalHost = new URL(canonical, input.url).hostname.replace(/^www\./, "");
+  } catch {
+    // Ogiltig canonical behandlas som saknad.
+  }
+  if (!canonical || !canonicalHost) {
+    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "warn", "Ingen giltig canonical-länk.", "Lägg till <link rel=\"canonical\"> så sökmotorer vet vilken URL som är originalet."));
+  } else if (canonicalHost !== new URL(input.url).hostname.replace(/^www\./, "")) {
+    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "fail", `Canonical pekar på en annan domän: ${canonicalHost}.`, "Låt canonical peka på sidans egen URL — som det ser ut nu försöker sidan lämna över sin synlighet till en annan sajt."));
+  } else {
+    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "pass", "Canonical-länk finns.", ""));
+  }
 
   checks.push(
     $('meta[name="viewport"]').length > 0
@@ -221,6 +233,21 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     const share = missingAlt / images.length;
     checks.push(check("alt", "seo", "Alt-texter på bilder", 1, share > 0.5 ? "fail" : "warn", `${missingAlt} av ${images.length} bilder saknar alt-text.`, "Beskriv bilderna med alt-text — det hjälper både tillgänglighet och bildsök."));
   }
+
+  const unsized = images.filter((_, el) => !($(el).attr("width") && $(el).attr("height"))).length;
+  checks.push(
+    images.length === 0 || unsized === 0
+      ? check("imgsize", "seo", "Bildstorlekar angivna", 1, "pass", images.length ? "Alla bilder har width och height." : "Inga bilder på sidan.", "")
+      : check("imgsize", "seo", "Bildstorlekar angivna", 1, unsized / images.length > 0.5 ? "fail" : "warn", `${unsized} av ${images.length} bilder saknar width och height.`, "Ange width och height på bilderna så sidan inte hoppar när de laddas — det är en del av Googles Core Web Vitals (CLS)."),
+  );
+
+  const host = new URL(input.url).hostname.replace(/^www\./, "");
+  const internalLinks = links.filter((l) => new URL(l).hostname.replace(/^www\./, "") === host).length;
+  checks.push(
+    internalLinks >= 5
+      ? check("internal", "seo", "Intern länkning", 1, "pass", `${internalLinks} interna länkar.`, "")
+      : check("internal", "seo", "Intern länkning", 1, internalLinks >= 2 ? "warn" : "fail", `Bara ${internalLinks} interna länkar.`, "Länka till relaterade sidor i texten och i menyn — interna länkar hjälper sökrobotar hitta sidor och fördelar styrka mellan dem."),
+  );
 
   checks.push(
     ["og:title", "og:description", "og:image"].every((p) => $(`meta[property="${p}"]`).attr("content")?.trim())
@@ -282,6 +309,16 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
       : check("freshness", "geo", "Datum och aktualitet", 1, "warn", "Inget datum.", "Märk upp när innehållet senast uppdaterades — AI-tjänster föredrar färsk och daterad information."),
   );
 
+  const hasAuthor =
+    $('meta[name="author"], [rel="author"], [itemprop="author"], [class*="author"], [class*="byline"]').length > 0 ||
+    schemaTypes.some((t) => /^Person$/i.test(t)) ||
+    /"author"\s*:/.test(input.html);
+  checks.push(
+    hasAuthor
+      ? check("author", "geo", "Avsändare med namn", 1, "pass", "Författare eller person anges.", "")
+      : check("author", "geo", "Avsändare med namn", 1, "warn", "Ingen författare eller namngiven person.", "Visa vem som skrivit eller står bakom innehållet, gärna med Person-schema — AI-tjänster väger expertis och trovärdighet (E-E-A-T)."),
+  );
+
   checks.push(
     $("ul li, ol li").length >= 5 || $("table").length > 0
       ? check("lists", "geo", "Lätt att citera", 1, "pass", "Listor eller tabeller finns.", "")
@@ -292,7 +329,9 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     url: input.url,
     status: input.status,
     title,
+    description,
     h1: h1s[0] ?? "",
+    hasSameAs: /"sameAs"\s*:/.test(input.html),
     checks,
     schemaTypes,
     links,
@@ -305,7 +344,7 @@ const POINTS: Record<CheckStatus, number> = { pass: 1, warn: 0.5, fail: 0 };
 
 /** Kontroller där det räcker att en sida klarar det: kontaktuppgifter och
  *  frågor och svar brukar bo på egna sidor, inte på varje sida. */
-const ANY_PAGE = new Set(["entity", "questions"]);
+const ANY_PAGE = new Set(["entity", "questions", "author"]);
 
 const pathOf = (url: string) => {
   const u = new URL(url);
@@ -414,6 +453,26 @@ export function siteChecks(input: {
     );
   }
 
+  const described = input.pages.filter((p) => p.description);
+  if (described.length >= 3) {
+    const counts = new Map<string, number>();
+    described.forEach((p) => counts.set(p.description, (counts.get(p.description) ?? 0) + 1));
+    const dupes = [...counts].filter(([, c]) => c > 1);
+    checks.push(
+      dupes.length === 0
+        ? check("uniquedesc", "seo", "Unika metabeskrivningar", 1, "pass", `Alla ${described.length} sidor har egna beskrivningar.`, "")
+        : check(
+            "uniquedesc",
+            "seo",
+            "Unika metabeskrivningar",
+            1,
+            dupes.some(([, c]) => c >= described.length / 2) ? "fail" : "warn",
+            `${dupes.reduce((s, [, c]) => s + c, 0)} sidor delar metabeskrivning.`,
+            "Skriv en egen metabeskrivning per sida — samma text överallt ger sökresultat som ser likadana ut och lägre klickfrekvens.",
+          ),
+    );
+  }
+
   if (input.robotsTxt) {
     const named = new Set(robotsGroups(input.robotsTxt).flatMap((g) => g.agents));
     // En bot utan egen grupp följer *-gruppen.
@@ -432,6 +491,12 @@ export function siteChecks(input: {
     org
       ? check("org", "geo", "Organisation beskriven", 2, "pass", `Organisationsschema finns (${pathOf(org.url)}).`, "")
       : check("org", "geo", "Organisation beskriven", 2, "fail", "Inget Organization- eller LocalBusiness-schema på de granskade sidorna.", "Beskriv företaget med Organization- eller LocalBusiness-schema: namn, logotyp, adress, kontaktuppgifter och sameAs-länkar till sociala profiler."),
+  );
+
+  checks.push(
+    input.pages.some((p) => p.hasSameAs)
+      ? check("sameas", "geo", "Sociala profiler kopplade", 1, "pass", "sameAs-länkar finns i schemat.", "")
+      : check("sameas", "geo", "Sociala profiler kopplade", 1, "warn", "Inga sameAs-länkar i schemat.", "Lägg till sameAs i Organization-schemat med länkar till LinkedIn, Facebook, Instagram och andra profiler, så AI-tjänster kan koppla ihop varumärket."),
   );
 
   checks.push(

@@ -7,6 +7,7 @@ import { domainOf } from "@/lib/audit/projects";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import AuditButton from "../AuditButton";
 import ProjectActions from "../ProjectActions";
+import TrendChart from "../TrendChart";
 
 interface HistoryRow {
   id: string;
@@ -77,6 +78,16 @@ export default async function AuditProjectPage({
     : undefined;
   const actions = run?.actions ?? [];
 
+  // Vad som har hänt med åtgärderna sedan förra körningen.
+  const { data: prevData } = previous
+    ? await sb.from("audit_internal_runs").select("actions").eq("id", previous.id).maybeSingle()
+    : { data: null };
+  const prevActions = (prevData?.actions ?? null) as Action[] | null;
+  const prevIds = new Set(prevActions?.map((a) => a.id));
+  const nowIds = new Set(actions.map((a) => a.id));
+  const fixed = prevActions ? prevActions.filter((a) => !nowIds.has(a.id)) : [];
+  const added = prevActions ? actions.filter((a) => !prevIds.has(a.id)) : [];
+
   const lastRun = run
     ? `${run.pages.length} sidor granskade ${fmt.format(new Date(run.created_at))}${run.created_by ? ` av ${run.created_by}` : ""}`
     : "Ingen audit körd ännu";
@@ -129,6 +140,19 @@ export default async function AuditProjectPage({
             </ul>
           </div>
 
+          {prevActions && (fixed.length > 0 || added.length > 0) && (
+            <div className="mb-4 bg-white px-5 py-4 text-sm grid gap-4 sm:grid-cols-2">
+              <div>
+                <h3 className="font-bold mb-1.5">Åtgärdat sedan förra ({fixed.length})</h3>
+                {fixed.length === 0 ? <p className="text-gray-500">Inget ännu.</p> : <ul className="text-gray-700 space-y-0.5">{fixed.map((a) => <li key={a.id}>✓ {a.title}</li>)}</ul>}
+              </div>
+              <div>
+                <h3 className="font-bold mb-1.5">Nytt sedan förra ({added.length})</h3>
+                {added.length === 0 ? <p className="text-gray-500">Inget nytt.</p> : <ul className="text-gray-700 space-y-0.5">{added.map((a) => <li key={a.id}>! {a.title}</li>)}</ul>}
+              </div>
+            </div>
+          )}
+
           {!run ? (
             <p className="bg-white px-5 py-6 text-gray-600">Kör en audit för att få betyg och åtgärder för {project.domain}.</p>
           ) : (
@@ -171,6 +195,13 @@ export default async function AuditProjectPage({
               })}
             </div>
           )}
+        </section>
+
+        <section className="mt-12">
+          <h2 className="font-display font-extrabold text-2xl mb-4">Utveckling</h2>
+          <TrendChart
+            points={[...history].reverse().map((h) => ({ seo: h.seo_score, geo: h.geo_score, label: fmt.format(new Date(h.created_at)) }))}
+          />
         </section>
 
         <section className="mt-12">
