@@ -91,7 +91,7 @@ export async function summarizeAudit(input: { domain: string; seoScore: number; 
     effort: "low",
     system: "Du är en senior SEO- och GEO-konsult på en svensk reklambyrå. Skriv på svenska, konkret och utan fluff. Betygen är redan satta av fasta kontroller; du ändrar dem inte.",
     user: `Domän: ${input.domain}\nSEO ${input.seoScore}/10, GEO ${input.geoScore}/10, ${input.pageCount} sidor granskade.\n\nFynd:\n${list}\n\nSkriv en sammanfattning på högst 120 ord: först ett par meningar om läget, sedan de tre viktigaste sakerna att göra i prioritetsordning (numrerad lista, en rad var, med varför de ger effekt). Ingen rubrik.`,
-    maxTokens: 1500,
+    maxTokens: 3000,
     // Den fulla auditen har redan använt det mesta av sina 60 sekunder.
     timeout: 15_000,
   });
@@ -134,7 +134,8 @@ export async function suggestForPage(url: string, actions: Action[]): Promise<Pa
     schema: PAGE_SCHEMA,
     system: `Du är en senior SEO- och GEO-konsult på en svensk reklambyrå. Skriv på svenska. ${GUARD}`,
     user: `URL: ${url}\n\nKontrollerna hittade:\n${findings}\n\n<sida>\nTitel: ${ctx.title}\nMetabeskrivning: ${ctx.description}\nRubriker:\n${ctx.heads.join("\n")}\n\nBrödtext (kortad):\n${ctx.text}\n</sida>\n\nFyll i:\n- intent: en mening om vad sidan svarar på och vilken sökintention den matchar\n- titles: 3 förslag på sidtitel, 30–60 tecken, viktigaste sökordet först\n- description: ett förslag på metabeskrivning, 120–160 tecken, som säljer in klicket\n- contentTips: 3–4 konkreta tips för att förbättra innehållet för sökmotorer\n- geoTips: 2–3 konkreta tips för att bli citerad i AI-svar, till exempel frågor att besvara eller fakta att lyfta ut`,
-    maxTokens: 3000,
+    // Rymmer även modellens tänkande, annars kapas svaret.
+    maxTokens: 6000,
   });
   if (!raw) return null;
   try {
