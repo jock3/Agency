@@ -5,7 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import type { Action, Priority } from "@/lib/audit/actions";
 import { domainOf } from "@/lib/audit/projects";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import type { AuditedPage } from "@/lib/audit/types";
 import AuditButton from "../AuditButton";
+import PageAudit from "../PageAudit";
 import ProjectActions from "../ProjectActions";
 import TrendChart from "../TrendChart";
 
@@ -77,6 +79,27 @@ export default async function AuditProjectPage({
     ? history.find((h) => h.created_at < run.created_at && domainOf(h.host) === domainOf(run.host))
     : undefined;
   const actions = run?.actions ?? [];
+
+  // Sidor: de som den senaste fulla auditen granskade, plus sidor som
+  // granskats enskilt (senaste körningen per URL).
+  const auditedPages = (run?.pages ?? []) as AuditedPage[];
+  const { data: pageRunData } = await sb
+    .from("audit_page_runs")
+    .select("url, title, seo_score, geo_score, created_at")
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const singleRuns = new Map<string, { title: string; seo_score: number; geo_score: number; created_at: string }>();
+  for (const r of pageRunData ?? []) if (!singleRuns.has(r.url)) singleRuns.set(r.url, r);
+  const extraPages = [...singleRuns].filter(([u]) => !auditedPages.some((p) => p.url === u));
+  const pathOf = (u: string) => {
+    try {
+      const x = new URL(u);
+      return x.pathname + x.search;
+    } catch {
+      return u;
+    }
+  };
 
   // Vad som har hänt med åtgärderna sedan förra körningen.
   const { data: prevData } = previous
@@ -195,6 +218,59 @@ export default async function AuditProjectPage({
               })}
             </div>
           )}
+        </section>
+
+        <section className="mt-12">
+          <h2 className="font-display font-extrabold text-2xl mb-4">Sidor</h2>
+          <div className="mb-4">
+            <PageAudit projectId={project.id} />
+          </div>
+          {auditedPages.length + extraPages.length === 0 ? (
+            <p className="text-sm text-gray-500">Inga sidor granskade ännu.</p>
+          ) : (
+            <table className="w-full text-sm bg-white">
+              <thead className="text-left text-gray-500 border-b border-gray-200">
+                <tr>
+                  <th className="py-3 px-4 font-normal">Sida</th>
+                  <th className="py-3 px-4 font-normal text-right">Brister</th>
+                  <th className="py-3 px-4 font-normal text-right">SEO</th>
+                  <th className="py-3 px-4 font-normal text-right">GEO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditedPages.map((p) => {
+                  const own = singleRuns.get(p.url);
+                  return (
+                    <tr key={p.url} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                      <td className="py-3 px-4 max-w-md">
+                        <Link href={`/audit/intern/${project.id}/sida?url=${encodeURIComponent(p.url)}`} className="font-bold hover:text-milou-500 block truncate">
+                          {p.title || pathOf(p.url)}
+                        </Link>
+                        <span className="text-gray-500 text-xs">{pathOf(p.url)}</span>
+                      </td>
+                      <td className="py-3 px-4 text-right tabular-nums font-bold">{p.issues}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{own?.seo_score ?? "–"}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{own?.geo_score ?? "–"}</td>
+                    </tr>
+                  );
+                })}
+                {extraPages.map(([u, r]) => (
+                  <tr key={u} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                    <td className="py-3 px-4 max-w-md">
+                      <Link href={`/audit/intern/${project.id}/sida?url=${encodeURIComponent(u)}`} className="font-bold hover:text-milou-500 block truncate">
+                        {r.title || pathOf(u)}
+                      </Link>
+                      <span className="text-gray-500 text-xs">{pathOf(u)} · egen granskning</span>
+                    </td>
+                    <td className="py-3 px-4 text-right text-gray-400">–</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{r.seo_score}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{r.geo_score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p className="mt-2 text-xs text-gray-500">Fulla auditen granskar ett urval på upp till 10 sidor. Lägg till fler genom att granska dem här.</p>
         </section>
 
         <section className="mt-12">

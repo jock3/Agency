@@ -20,6 +20,8 @@ export interface AuditedPage {
   status: number;
   /** Antal sidkontroller som inte är godkända. */
   issues: number;
+  /** Sidans egna kontroller. Bara internt: fix-texterna får inte nå besökaren. */
+  checks?: Check[];
 }
 
 /** Det besökaren får se — utan fix-texter och vikter. */

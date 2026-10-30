@@ -37,6 +37,6 @@ export function toPublic(row: RunRow): PublicAuditResult {
     seoScore: row.seo_score,
     geoScore: row.geo_score,
     checks: row.checks.map(({ id, group, label, status, detail }) => ({ id, group, label, status, detail })),
-    pages: row.pages ?? [],
+    pages: (row.pages ?? []).map(({ url, title, status, issues }) => ({ url, title, status, issues })),
   };
 }

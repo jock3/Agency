@@ -155,6 +155,23 @@ export async function auditSite(start: URL): Promise<SiteAudit> {
   return {
     finalUrl: home.url,
     checks,
-    pages: pages.map((p) => ({ url: p.url, title: p.title, status: p.status, issues: issuesOf(p).length })),
+    pages: pages.map((p) => ({ url: p.url, title: p.title, status: p.status, issues: issuesOf(p).length, checks: p.checks })),
   };
+}
+
+export interface PageAudit {
+  url: string;
+  title: string;
+  status: number;
+  checks: Check[];
+}
+
+/** Granskar en enskild sida med sidkontrollerna. Sajtkontroller (robots.txt,
+ *  sitemap …) hör till hela domänen och ingår inte. */
+export async function auditPage(url: URL): Promise<PageAudit> {
+  const res = await safeFetch(url);
+  if (res.status >= 400) throw new SiteError("SITE_ERROR");
+  if (!isHtml(res)) throw new SiteError("NOT_HTML");
+  const page = analyzePage({ url: res.url, html: res.body, ms: res.ms, status: res.status });
+  return { url: res.url, title: page.title, status: page.status, checks: page.checks };
 }
