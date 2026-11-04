@@ -27,6 +27,8 @@ export interface PageAi {
   hash?: string;
 }
 
+export type AskImage = { label: string } & ({ url: string } | { base64: string; mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" });
+
 export interface AskOptions {
   /** Namn i loggen, så kostnaden går att fördela per funktion. */
   label: string;
@@ -34,8 +36,8 @@ export interface AskOptions {
   user: string;
   maxTokens: number;
   timeout?: number;
-  /** Bilder som Anthropic hämtar själv från adressen och som Claude får titta på. */
-  images?: { url: string; label: string }[];
+  /** Bilder som Claude får titta på: antingen en adress som Anthropic hämtar själv, eller bilden som data. */
+  images?: AskImage[];
   effort?: "low" | "medium" | "high";
   /** JSON-schema. Svaret är då garanterat giltig JSON som följer schemat. */
   schema?: Record<string, unknown>;
@@ -46,7 +48,12 @@ export async function ask(o: AskOptions): Promise<string | null> {
   try {
     const client = new Anthropic();
     const content: Anthropic.ContentBlockParam[] = [{ type: "text", text: o.user }];
-    for (const img of o.images ?? []) content.push({ type: "text", text: img.label }, { type: "image", source: { type: "url", url: img.url } });
+    for (const img of o.images ?? []) {
+      content.push(
+        { type: "text", text: img.label },
+        { type: "image", source: "url" in img ? { type: "url", url: img.url } : { type: "base64", media_type: img.mediaType, data: img.base64 } },
+      );
+    }
     const res = await client.messages.create(
       {
         model: MODEL,
