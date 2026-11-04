@@ -84,7 +84,9 @@ export function isBlockedAddress(ip: string): boolean {
 
 type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void;
 
-function safeLookup(hostname: string, options: object, callback: LookupCallback) {
+/** DNS-uppslagning som vägrar privata och reserverade adresser. Används även
+ *  av tillgänglighetsgranskningens proxy, så webbläsaren går genom samma spärr. */
+export function safeLookup(hostname: string, options: object, callback: LookupCallback) {
   dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
     if (err) return callback(err, "");
     const list = addresses as LookupAddress[];

@@ -6,7 +6,20 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { AUDIT_ERRORS, fallbackError } from "./errors";
 
 /** Kör en ny granskning av projektets domän och visar körningen när den är sparad. */
-export default function AuditButton({ projectId }: { projectId: string }) {
+export default function AuditButton({
+  projectId,
+  apiBase = "/api/audit/intern",
+  pageBase = "/audit/intern",
+  label = "Ny audit",
+  hint,
+}: {
+  projectId: string;
+  apiBase?: string;
+  pageBase?: string;
+  label?: string;
+  /** Visas under knappen medan granskningen pågår. */
+  hint?: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,14 +29,14 @@ export default function AuditButton({ projectId }: { projectId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/audit/intern/run", {
+      const res = await fetch(`${apiBase}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setError(AUDIT_ERRORS[data.error] ?? fallbackError);
-      else router.push(`/audit/intern/${projectId}?run=${data.id}`);
+      else router.push(`${pageBase}/${projectId}?run=${data.id}`);
     } catch {
       setError(fallbackError);
     } finally {
@@ -40,8 +53,9 @@ export default function AuditButton({ projectId }: { projectId: string }) {
         className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 disabled:opacity-50 text-white px-4 py-2"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-        {loading ? "Granskar …" : "Ny audit"}
+        {loading ? "Granskar …" : label}
       </button>
+      {loading && hint && <p className="mt-2 text-sm text-gray-400">{hint}</p>}
       {error && <p className="mt-2 text-sm text-milou-300">{error}</p>}
     </div>
   );

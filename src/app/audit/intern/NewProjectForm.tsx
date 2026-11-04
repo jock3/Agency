@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { AUDIT_ERRORS, fallbackError } from "./errors";
 
-export default function NewProjectForm() {
+export default function NewProjectForm({
+  apiBase = "/api/audit/intern",
+  pageBase = "/audit/intern",
+}: { apiBase?: string; pageBase?: string } = {}) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -18,7 +21,7 @@ export default function NewProjectForm() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/audit/intern/projects", {
+      const res = await fetch(`${apiBase}/projects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, url }),
@@ -28,7 +31,7 @@ export default function NewProjectForm() {
         setError(AUDIT_ERRORS[data.error] ?? fallbackError);
         setLoading(false);
       } else {
-        router.push(`/audit/intern/${data.id}`);
+        router.push(`${pageBase}/${data.id}`);
       }
     } catch {
       setError(fallbackError);

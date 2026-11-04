@@ -12,6 +12,7 @@ export const AUDIT_ERRORS: Record<string, string> = {
   INVALID_NAME: "Ge projektet ett namn.",
   DUPLICATE: "Det finns redan ett projekt för den domänen.",
   NOT_FOUND: "Projektet finns inte längre.",
+  BROWSER_ERROR: "Webbläsaren som granskar sidan kunde inte starta. Försök igen.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
 export const fallbackError = "Något gick fel. Försök igen.";

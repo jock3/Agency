@@ -8,7 +8,19 @@ import { AUDIT_ERRORS, fallbackError } from "./errors";
 type Mode = "idle" | "edit" | "delete";
 
 /** Ändra namn och domän på eller ta bort ett projekt. Borttagning kräver en extra bekräftelse. */
-export default function ProjectActions({ projectId, name, domain }: { projectId: string; name: string; domain: string }) {
+export default function ProjectActions({
+  projectId,
+  name,
+  domain,
+  apiBase = "/api/audit/intern",
+  pageBase = "/audit/intern",
+}: {
+  projectId: string;
+  name: string;
+  domain: string;
+  apiBase?: string;
+  pageBase?: string;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("idle");
   const [draft, setDraft] = useState(name);
@@ -27,7 +39,7 @@ export default function ProjectActions({ projectId, name, domain }: { projectId:
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/audit/intern/projects/${projectId}`, {
+      const res = await fetch(`${apiBase}/projects/${projectId}`, {
         method,
         headers: { "Content-Type": "application/json" },
         body:
@@ -39,7 +51,7 @@ export default function ProjectActions({ projectId, name, domain }: { projectId:
       if (!res.ok) {
         setError(AUDIT_ERRORS[data.error] ?? fallbackError);
       } else if (method === "DELETE") {
-        router.push("/audit/intern");
+        router.push(pageBase);
         return;
       } else {
         setMode("idle");

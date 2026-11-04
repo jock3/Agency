@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Tillgänglighetsgranskningen kör Chromium på servern. Paketen laddas med
+  // vanlig require, och Chromiums komprimerade binärer måste följa med i
+  // funktionen (de läses från disk, så spårningen hittar dem inte själv).
+  serverExternalPackages: ["puppeteer-core", "axe-core"],
+  outputFileTracingIncludes: {
+    "/api/tillganglighet/run": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+  },
   async headers() {
     return [
       {

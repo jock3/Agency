@@ -69,7 +69,7 @@ async function sitemapLocs(origin: string, robotsTxt: string | null): Promise<{ 
   return { found: true, locs: children.flatMap((xml) => (xml ? locsOf(xml) : [])).slice(0, 500) };
 }
 
-function pickSubpages(home: URL, links: string[], sitemap: string[], disallowed: string[]): URL[] {
+export function pickSubpages(home: URL, links: string[], sitemap: string[], disallowed: string[]): URL[] {
   const chosen: URL[] = [];
   const seen = new Set([pathKey(home)]);
   const perSection = new Map<string, number>();

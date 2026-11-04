@@ -1,4 +1,4 @@
-import { ChartGantt, ListChecks, Megaphone, SearchCheck, Smartphone, type LucideIcon } from "lucide-react";
+import { Accessibility, ChartGantt, ListChecks, Megaphone, SearchCheck, Smartphone, type LucideIcon } from "lucide-react";
 
 export interface ToolLink {
   href: string;
@@ -12,6 +12,7 @@ export const TOOLS: ToolLink[] = [
   { href: "/kampanj", label: "Kampanjer", Icon: Megaphone },
   { href: "/formatkoll", label: "Formatkoll", Icon: Smartphone },
   { href: "/audit", label: "SEO/GEO-audit", Icon: SearchCheck },
+  { href: "/tillganglighet", label: "Tillgänglighet", Icon: Accessibility },
   { href: "/todo", label: "Uppgifter", Icon: ListChecks },
 ];
 
