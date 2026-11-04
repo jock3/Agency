@@ -1,3 +1,4 @@
+import { cleanContrast, type Contrast } from "./contrast";
 import { criteriaOf, levelOf } from "./wcag";
 
 /**
@@ -19,7 +20,7 @@ export interface RawViolation {
   helpUrl: string;
   /** Antal element som bryter mot regeln. */
   count: number;
-  examples: { target: string; html: string; summary: string }[];
+  examples: { target: string; html: string; summary: string; contrast?: Contrast }[];
 }
 
 export interface PageScan {
@@ -44,7 +45,7 @@ export interface Finding {
   /** Antal element totalt, över alla sidor. */
   count: number;
   pages: { url: string; count: number }[];
-  examples: { url: string; target: string; html: string; summary: string }[];
+  examples: { url: string; target: string; html: string; summary: string; contrast?: Contrast }[];
 }
 
 export interface ManualCheck {
@@ -130,7 +131,7 @@ export function aggregate(pages: PageScan[]): {
       }
       f.count += v.count;
       f.pages.push({ url: page.url, count: v.count });
-      for (const e of v.examples) if (f.examples.length < MAX_EXAMPLES) f.examples.push({ url: page.url, ...e });
+      for (const e of v.examples) if (f.examples.length < MAX_EXAMPLES) f.examples.push({ url: page.url, ...e, contrast: cleanContrast(e.contrast) });
     }
   }
 

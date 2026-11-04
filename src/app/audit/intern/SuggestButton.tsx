@@ -19,22 +19,41 @@ const pathOf = (url: string) => {
  * sidan, annars de sidor i den senaste auditen som drabbas. Förslagen sparas
  * inte: de finns kvar tills sidan laddas om.
  */
-export default function SuggestButton({ projectId, checkId, url, enabled }: { projectId: string; checkId: string; url?: string; enabled: boolean }) {
+export default function SuggestButton({
+  projectId,
+  checkId,
+  url,
+  enabled,
+  endpoint = "/api/audit/intern/suggest",
+  runId,
+  suggestable,
+}: {
+  projectId: string;
+  checkId: string;
+  url?: string;
+  enabled: boolean;
+  /** Annan route, till exempel tillgänglighetsverktygets. */
+  endpoint?: string;
+  /** Vilken körning kortet tillhör, när routen behöver veta det. */
+  runId?: string;
+  /** Åsidosätter listan över SEO-kontroller som kan få förslag. */
+  suggestable?: boolean;
+}) {
   const [results, setResults] = useState<PageSuggestions[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!SUGGESTABLE.has(checkId) || !enabled) return null;
+  if (!(suggestable ?? SUGGESTABLE.has(checkId)) || !enabled) return null;
 
   async function run() {
     if (loading) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/audit/intern/suggest", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, checkId, url }),
+        body: JSON.stringify({ projectId, checkId, url, runId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setError(AUDIT_ERRORS[data.error] ?? fallbackError);

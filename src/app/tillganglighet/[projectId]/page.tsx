@@ -5,6 +5,8 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import ScoreMeter from "@/components/audit/ScoreMeter";
 import AuditButton from "@/app/audit/intern/AuditButton";
 import ProjectActions from "@/app/audit/intern/ProjectActions";
+import SuggestButton from "@/app/audit/intern/SuggestButton";
+import { aiEnabled } from "@/lib/audit/ai";
 import { domainOf } from "@/lib/audit/projects";
 import type { Finding, ManualCheck, PageSummary, Priority } from "@/lib/a11y/score";
 import { criterionLabel, criterionUrl } from "@/lib/a11y/wcag";
@@ -24,6 +26,7 @@ interface RunRow extends HistoryRow {
   manual: ManualCheck[];
   pages: PageSummary[];
   passes: number;
+  ai_summary: string | null;
 }
 
 const PRIORITIES: { key: Priority; label: string; hint: string; accent: string }[] = [
@@ -85,7 +88,7 @@ export default async function A11yProjectPage({
   const { data: runData } = selectedId
     ? await sb
         .from("a11y_runs")
-        .select("id, final_url, host, score, created_by, created_at, findings, manual, pages, passes")
+        .select("id, final_url, host, score, created_by, created_at, findings, manual, pages, passes, ai_summary")
         .eq("id", selectedId)
         .eq("project_id", project.id)
         .maybeSingle()
@@ -187,6 +190,14 @@ export default async function A11yProjectPage({
             </ul>
           </div>
 
+          {run?.ai_summary && (
+            <div className="mb-4 bg-white border-l-4 border-plum px-5 py-4">
+              <h3 className="font-bold mb-2">Sammanfattning</h3>
+              <p className="whitespace-pre-line max-w-[80ch]">{run.ai_summary}</p>
+              <p className="mt-2 text-xs text-gray-500">Skriven av AI utifrån fynden nedan. Betyget sätts av automatiska kontroller.</p>
+            </div>
+          )}
+
           {!run ? (
             <p className="bg-white px-5 py-6 text-gray-600">Kör en granskning för att få betyg och åtgärder för {project.domain}.</p>
           ) : (
@@ -211,7 +222,7 @@ export default async function A11yProjectPage({
                     </div>
                     <ul>
                       {items.map((f) => (
-                        <FindingItem key={f.id} finding={f} pageCount={run.pages.length} />
+                        <FindingItem key={f.id} finding={f} pageCount={run.pages.length} projectId={project.id} runId={run.id} aiOn={aiEnabled()} />
                       ))}
                     </ul>
                   </div>
@@ -330,7 +341,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function FindingItem({ finding: f, pageCount }: { finding: Finding; pageCount: number }) {
+function FindingItem({ finding: f, pageCount, projectId, runId, aiOn }: { finding: Finding; pageCount: number; projectId: string; runId: string; aiOn: boolean }) {
   return (
     <li className="px-5 py-4 border-b border-gray-100 last:border-b-0">
       <div className="flex flex-wrap items-center gap-2.5">
@@ -367,6 +378,7 @@ function FindingItem({ finding: f, pageCount }: { finding: Finding; pageCount: n
           </a>
         )}
       </details>
+      <SuggestButton projectId={projectId} checkId={f.id} runId={runId} enabled={aiOn} suggestable endpoint="/api/tillganglighet/suggest" />
     </li>
   );
 }

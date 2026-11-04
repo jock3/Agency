@@ -72,11 +72,18 @@ const IN_PAGE = `async (locale, tags) => {
       description: v.description,
       helpUrl: v.helpUrl,
       count: v.nodes.length,
-      examples: v.nodes.slice(0, 3).map((n) => ({
-        target: clip(Array.isArray(n.target) ? n.target.join(" ") : String(n.target), 200),
-        html: clip(n.html, 300),
-        summary: clip(n.failureSummary, 500),
-      })),
+      examples: v.nodes.slice(0, 3).map((n) => {
+        // Färgerna som axe mätte, för att kunna räkna fram en godkänd färg.
+        const d = v.id === "color-contrast" && n.any && n.any[0] ? n.any[0].data : null;
+        return {
+          target: clip(Array.isArray(n.target) ? n.target.join(" ") : String(n.target), 200),
+          html: clip(n.html, 300),
+          summary: clip(n.failureSummary, 500),
+          contrast: d && d.fgColor && d.bgColor
+            ? { fg: String(d.fgColor), bg: String(d.bgColor), ratio: parseFloat(d.contrastRatio), expected: parseFloat(d.expectedContrastRatio) }
+            : undefined,
+        };
+      }),
     })),
     incomplete: r.incomplete.map((v) => ({ id: v.id, help: v.help, count: v.nodes.length })),
   };

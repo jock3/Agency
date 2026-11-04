@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { aggregate } from "@/lib/a11y/score";
+import { summarizeA11y } from "@/lib/a11y/ai";
+import { aggregate, type Finding } from "@/lib/a11y/score";
 import { scanSite } from "@/lib/a11y/scan";
 import { SiteError } from "@/lib/audit/crawl";
 import { FetchError } from "@/lib/audit/fetch";
@@ -35,6 +36,22 @@ export async function POST(request: NextRequest) {
   const result = aggregate(scan.pages);
   console.log(`a11y run project=${project.id} pages=${scan.pages.length} score=${result.score} ms=${Date.now() - began}`);
 
+  // Förra körningen, för att kunna återanvända sammanfattningen när fynden är oförändrade.
+  const { data: last } = await sb
+    .from("a11y_runs")
+    .select("findings, ai_summary")
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const aiSummary = await summarizeA11y({
+    domain: project.url,
+    score: result.score,
+    pageCount: scan.pages.length,
+    findings: result.findings,
+    previous: last ? { findings: last.findings as Finding[], summary: last.ai_summary } : null,
+  });
+
   const token = getSessionToken(request);
   const user = token ? await validateSession(token).catch(() => null) : null;
 
@@ -50,6 +67,7 @@ export async function POST(request: NextRequest) {
       manual: result.manual,
       pages: result.pages,
       passes: result.passes,
+      ai_summary: aiSummary,
       created_by: user?.name ?? null,
     })
     .select("id")
