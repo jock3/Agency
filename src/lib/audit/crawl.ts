@@ -34,7 +34,11 @@ async function fetchSteady(url: URL, timeout?: number): Promise<FetchResult> {
 }
 
 export class SiteError extends Error {
-  constructor(public code: string) {
+  /** httpStatus: sajtens felkod, när felet är ett svar från sajten. */
+  constructor(
+    public code: string,
+    public httpStatus?: number,
+  ) {
     super(code);
   }
 }
@@ -112,7 +116,7 @@ export async function auditSite(start: URL): Promise<SiteAudit> {
   const began = Date.now();
 
   const home = await fetchSteady(start);
-  if (home.status >= 400) throw new SiteError("SITE_ERROR");
+  if (home.status >= 400) throw new SiteError("SITE_ERROR", home.status);
   if (!isHtml(home)) throw new SiteError("NOT_HTML");
   const homeUrl = new URL(home.url);
   const origin = homeUrl.origin;

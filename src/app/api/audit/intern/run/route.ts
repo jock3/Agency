@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
   try {
     audit = await auditSite(new URL(project.url));
   } catch (err) {
-    if (err instanceof FetchError || err instanceof SiteError) return auditError(err.code, 422);
+    if (err instanceof SiteError) return NextResponse.json({ error: err.code, httpStatus: err.httpStatus }, { status: 422 });
+    if (err instanceof FetchError) return auditError(err.code, 422);
     throw err;
   }
 

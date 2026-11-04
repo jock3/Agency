@@ -6,6 +6,7 @@ export const AUDIT_ERRORS: Record<string, string> = {
   TOO_LARGE: "Sidan är för stor för att granskas.",
   TOO_MANY_REDIRECTS: "Sajten omdirigerar för många gånger.",
   SITE_ERROR: "Sajten svarade med ett fel.",
+  BOT_BLOCKED: "Sajtens skydd mot robotar stoppade granskningen. Prova igen om en stund, eller be kundens webbhotell släppa igenom granskningen.",
   NOT_HTML: "Adressen pekar inte på en webbsida.",
   AI_DISABLED: "AI är avstängt. Lägg in ANTHROPIC_API_KEY i miljövariablerna.",
   WRONG_DOMAIN: "Adressen hör inte till projektets domän.",

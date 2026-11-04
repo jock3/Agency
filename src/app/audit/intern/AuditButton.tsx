@@ -35,7 +35,7 @@ export default function AuditButton({
         body: JSON.stringify({ projectId }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) setError(AUDIT_ERRORS[data.error] ?? fallbackError);
+      if (!res.ok) setError((AUDIT_ERRORS[data.error] ?? fallbackError) + (typeof data.httpStatus === "number" ? ` (felkod ${data.httpStatus})` : ""));
       else router.push(`${pageBase}/${projectId}?run=${data.id}`);
     } catch {
       setError(fallbackError);

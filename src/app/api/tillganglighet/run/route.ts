@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
   try {
     scan = await scanSite(new URL(project.url));
   } catch (err) {
-    if (err instanceof SiteError) return auditError(err.code, err.code === "BROWSER_ERROR" ? 500 : 422);
+    if (err instanceof SiteError) {
+      return NextResponse.json({ error: err.code, httpStatus: err.httpStatus }, { status: err.code === "BROWSER_ERROR" ? 500 : 422 });
+    }
     if (err instanceof FetchError) return auditError(err.code, 422);
     throw err;
   }

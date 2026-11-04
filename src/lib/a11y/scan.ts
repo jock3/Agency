@@ -19,6 +19,9 @@ const CONCURRENCY = 2;
 const NAV_TIMEOUT_MS = 25_000;
 /** Efter så här lång tid påbörjas inga nya sidor. */
 const BUDGET_MS = 150_000;
+/** Felkoder som skydd mot robotar brukar svara med, före sin kontroll. */
+const CHALLENGE_STATUS = new Set([403, 429, 454, 503]);
+
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 MilouAudit/1.0 (+https://milou.se)";
 
@@ -121,7 +124,19 @@ async function scanPage(browser: Browser, url: URL): Promise<ScanResult> {
       const ready = await page.evaluate(() => document.readyState).catch(() => "loading");
       if (ready === "loading") throw new SiteError("TIMEOUT");
     }
-    const status = response?.status() ?? 200;
+    let status = response?.status() ?? 200;
+    // Skydd mot robotar (Simply.com, Cloudflare med flera) svarar först med en
+    // felkod och en kontrollsida som kör ett skript och sedan laddar om till
+    // riktiga sidan. Vänta på omladdningen; kom den inte, försök en gång till
+    // eftersom kontrollen ofta har satt sin kaka då.
+    if (CHALLENGE_STATUS.has(status)) {
+      const reloaded = await page.waitForNavigation({ waitUntil: "load", timeout: 15_000 }).catch(() => null);
+      const retry = reloaded ?? (await page.goto(url.toString(), { waitUntil: "load", timeout: NAV_TIMEOUT_MS }).catch(() => null));
+      if (retry) status = retry.status();
+      if (CHALLENGE_STATUS.has(status)) {
+        console.warn("a11y blocked", url.toString(), status, await page.title().catch(() => ""));
+      }
+    }
     // Ge skript som bygger sidan en stund att bli klara.
     await new Promise((r) => setTimeout(r, 1200));
 
@@ -169,7 +184,7 @@ export async function scanSite(start: URL): Promise<SiteScan> {
       console.warn("a11y home failed", msg);
       throw new SiteError(/ERR_TUNNEL|ERR_PROXY|ERR_EMPTY_RESPONSE/.test(msg) ? "BLOCKED_HOST" : /timeout/i.test(msg) ? "TIMEOUT" : "NETWORK");
     }
-    if (home.status >= 400) throw new SiteError("SITE_ERROR");
+    if (home.status >= 400) throw new SiteError(CHALLENGE_STATUS.has(home.status) ? "BOT_BLOCKED" : "SITE_ERROR", home.status);
 
     const homeUrl = new URL(home.finalUrl);
     const targets = pickSubpages(homeUrl, home.links, [], []).slice(0, MAX_PAGES - 1);
