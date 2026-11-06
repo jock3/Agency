@@ -31,6 +31,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ compan
 
   const photos = assets.filter((a) => a.kind === "photo");
   const overlays = assets.filter((a) => a.kind === "overlay");
+  const examplesOf = (templateId: string) => assets.filter((a) => a.kind === "example" && a.parent_id === templateId);
   const used = assets.reduce((s, a) => s + a.bytes, 0);
 
   const sections = [
@@ -44,7 +45,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ compan
     {
       kind: "overlay" as const,
       title: `Mallar (${overlays.length})`,
-      intro: "PNG-splashar och banderoller som läggs ovanpå bilden. Textytan markeras i nästa steg.",
+      intro: "PNG-splashar och banderoller som läggs ovanpå bilden. Lägg gärna till exempelposter på varje mall, så finns det kontext om hur den används. Textytan markeras i nästa steg.",
       items: overlays,
       empty: "Inga mallar än.",
     },
@@ -72,7 +73,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ compan
           ) : (
             <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {s.items.map((a) => (
-                <AssetCard key={a.id} companyId={company.id} asset={a} />
+                <AssetCard key={a.id} companyId={company.id} asset={a} examples={a.kind === "overlay" ? examplesOf(a.id) : undefined} />
               ))}
             </ul>
           )}

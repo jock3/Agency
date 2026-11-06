@@ -45,9 +45,12 @@ export async function DELETE(request: NextRequest, { params }: Context) {
   if (!isUuid(assetId)) return adsError("ASSET_NOT_FOUND", 404);
 
   const sb = getSupabaseAdminClient();
+  // Exempelposter försvinner med mallen i databasen, så deras filer hämtas först.
+  const { data: children } = await sb.from("ad_assets").select("storage_path").eq("company_id", id).eq("parent_id", assetId);
   const { data, error } = await sb.from("ad_assets").delete().eq("company_id", id).eq("id", assetId).select("storage_path");
   if (error) return adsError("SERVER_ERROR", 500);
   if (!data?.length) return adsError("ASSET_NOT_FOUND", 404);
-  await sb.storage.from(ASSET_BUCKET).remove([data[0].storage_path as string]);
+  const paths = [data[0].storage_path as string, ...(children ?? []).map((c) => c.storage_path as string)];
+  await sb.storage.from(ASSET_BUCKET).remove(paths);
   return NextResponse.json({ ok: true });
 }

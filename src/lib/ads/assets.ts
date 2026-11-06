@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ValidatedUser } from "@/lib/auth/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { adsError, memberCompany, userFromRequest, type Company } from "./access";
-import { ASSET_BUCKET, COMPANY_QUOTA_BYTES, MAX_ASSET_BYTES, type AssetExt, type AssetKind, type AssetSource } from "./asset-types";
+import { adsError, isUuid, memberCompany, userFromRequest, type Company } from "./access";
+import { ASSET_BUCKET, COMPANY_QUOTA_BYTES, MAX_ASSET_BYTES, MAX_EXAMPLES_PER_TEMPLATE, type AssetExt, type AssetKind, type AssetSource } from "./asset-types";
 
 /**
  * Tillgångar i annonsverktyget (steg 2): bilder och PNG-mallar per företag.
@@ -21,6 +21,8 @@ export interface AssetRow {
   description: string;
   tags: string[];
   source: AssetSource;
+  /** För exempelposter: mallen de hör till. */
+  parent_id: string | null;
   created_at: string;
 }
 
@@ -55,6 +57,27 @@ export function sniffExt(head: Uint8Array): AssetExt | null {
   return null;
 }
 
+/**
+ * Kontrollerar att en exempelpost får läggas på mallen: mallen finns, tillhör
+ * företaget och är en mall, och har plats för fler exempel. Returnerar felkod
+ * eller null.
+ */
+export async function checkParent(
+  companyId: string,
+  parentId: unknown,
+  /** Efter att exemplet lagts in: då räknas det själv med, och taket är passerat först när det blivit för många. */
+  inserted = false,
+): Promise<"PARENT_NOT_FOUND" | "TOO_MANY_EXAMPLES" | null> {
+  if (!isUuid(parentId)) return "PARENT_NOT_FOUND";
+  const sb = getSupabaseAdminClient();
+  const { data: parent, error } = await sb.from("ad_assets").select("id").eq("id", parentId).eq("company_id", companyId).eq("kind", "overlay").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!parent) return "PARENT_NOT_FOUND";
+  const { count, error: countError } = await sb.from("ad_assets").select("id", { count: "exact", head: true }).eq("parent_id", parentId);
+  if (countError) throw new Error(countError.message);
+  return (count ?? 0) >= MAX_EXAMPLES_PER_TEMPLATE + (inserted ? 1 : 0) ? "TOO_MANY_EXAMPLES" : null;
+}
+
 /** Hur många byte företaget redan använder. */
 export async function usedBytes(companyId: string): Promise<number> {
   const { data, error } = await getSupabaseAdminClient().from("ad_assets").select("bytes").eq("company_id", companyId);
@@ -69,7 +92,7 @@ export async function listAssets(companyId: string): Promise<AssetView[]> {
   const sb = getSupabaseAdminClient();
   const { data, error } = await sb
     .from("ad_assets")
-    .select("id, kind, storage_path, filename, mime, bytes, width, height, description, tags, source, created_at")
+    .select("id, kind, storage_path, filename, mime, bytes, width, height, description, tags, source, parent_id, created_at")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);

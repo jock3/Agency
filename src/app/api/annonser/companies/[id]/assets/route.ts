@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adsError, isUuid } from "@/lib/ads/access";
-import { listAssets, mimeOf, quotaLeft, requireMember, sniffExt, storagePath } from "@/lib/ads/assets";
+import { checkParent, listAssets, mimeOf, quotaLeft, requireMember, sniffExt, storagePath } from "@/lib/ads/assets";
 import { ASSET_BUCKET, MAX_ASSET_BYTES, isAssetExt, isAssetKind, isAssetSource } from "@/lib/ads/asset-types";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest, { params }: Context) {
   const body = await request.json().catch(() => null);
   const { assetId, kind, ext } = body ?? {};
   if (!isUuid(assetId) || !isAssetKind(kind) || !isAssetExt(ext)) return adsError("INVALID_FILE");
+  const parentId = kind === "example" ? body?.parentId : null;
   const source = isAssetSource(body?.source) ? body.source : "uploaded_own";
   const filename = typeof body?.filename === "string" ? body.filename.slice(0, 200) : "";
 
@@ -42,6 +43,10 @@ export async function POST(request: NextRequest, { params }: Context) {
   };
 
   try {
+    if (kind === "example") {
+      const problem = await checkParent(id, parentId);
+      if (problem) return reject(problem, problem === "TOO_MANY_EXAMPLES" ? 409 : 404);
+    }
     const { data: blob, error } = await bucket.download(path);
     if (error || !blob) return adsError("UPLOAD_MISSING", 404);
     if (blob.size > MAX_ASSET_BYTES) return reject("TOO_LARGE");
@@ -61,10 +66,18 @@ export async function POST(request: NextRequest, { params }: Context) {
       width: dim(body?.width),
       height: dim(body?.height),
       source,
+      parent_id: parentId,
       created_by: auth.user.user_id,
     });
     // Samma fil registrerad två gånger: raden finns redan, inget fel.
     if (insertError && insertError.code !== "23505") throw new Error(insertError.message);
+
+    // Flera filer registreras samtidigt och förhandskontrollen ovan ser då inte
+    // varandra. Räkna därför igen när raden finns, och backa om taket passerats.
+    if (kind === "example" && !insertError && (await checkParent(id, parentId, true))) {
+      await sb.from("ad_assets").delete().eq("company_id", id).eq("id", assetId);
+      return reject("TOO_MANY_EXAMPLES", 409);
+    }
     return NextResponse.json({ ok: true, id: assetId });
   } catch (err) {
     console.error("ads asset register", err);

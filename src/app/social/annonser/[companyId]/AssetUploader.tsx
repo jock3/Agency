@@ -33,7 +33,7 @@ function dimensions(file: File): Promise<{ width: number | null; height: number 
 }
 
 /** Tre steg per fil: signerad URL, uppladdning direkt till storage, registrering (där servern kontrollerar filen). */
-async function uploadOne(companyId: string, kind: AssetKind, file: File) {
+async function uploadOne(companyId: string, kind: AssetKind, file: File, parentId?: string) {
   const ext = extForFile(file);
   if (!ext) throw new UploadError(ADS_ERRORS.INVALID_FILE);
   if (kind === "overlay" && ext !== "png") throw new UploadError(ADS_ERRORS.OVERLAY_NOT_PNG);
@@ -44,15 +44,27 @@ async function uploadOne(companyId: string, kind: AssetKind, file: File) {
     kind,
     ext,
     bytes: file.size,
+    parentId,
   });
   const { error } = await getSupabaseClient().storage.from(ASSET_BUCKET).uploadToSignedUrl(path, token, file, { contentType: file.type });
   if (error) throw new UploadError(ADS_ERRORS.UPLOAD_MISSING);
   const dims = await dimensions(file);
-  await postJson(base, { assetId, kind, ext, filename: file.name, ...dims });
+  await postJson(base, { assetId, kind, ext, filename: file.name, parentId, ...dims });
 }
 
 /** Välj eller dra in flera filer. Tre laddas upp åt gången. */
-export default function AssetUploader({ companyId, kind }: { companyId: string; kind: AssetKind }) {
+export default function AssetUploader({
+  companyId,
+  kind,
+  parentId,
+  compact = false,
+}: {
+  companyId: string;
+  kind: AssetKind;
+  /** För exempelposter: mallen de läggs på. */
+  parentId?: string;
+  compact?: boolean;
+}) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [statuses, setStatuses] = useState<Status[]>([]);
@@ -68,7 +80,7 @@ export default function AssetUploader({ companyId, kind }: { companyId: string; 
       while (next < files.length) {
         const i = next++;
         try {
-          await uploadOne(companyId, kind, files[i]);
+          await uploadOne(companyId, kind, files[i], parentId);
           set(i, { state: "done" });
         } catch (err) {
           set(i, { state: "error", message: err instanceof UploadError ? err.message : FALLBACK });
@@ -79,8 +91,8 @@ export default function AssetUploader({ companyId, kind }: { companyId: string; 
     router.refresh();
   }
 
-  const label = kind === "photo" ? "Ladda upp bilder" : "Ladda upp PNG-mallar";
-  const accept = kind === "photo" ? "image/png,image/jpeg,image/webp" : "image/png";
+  const label = kind === "photo" ? "Ladda upp bilder" : kind === "overlay" ? "Ladda upp PNG-mallar" : "Lägg till exempel";
+  const accept = kind === "overlay" ? "image/png" : "image/png,image/jpeg,image/webp";
 
   return (
     <div>
@@ -95,7 +107,7 @@ export default function AssetUploader({ companyId, kind }: { companyId: string; 
           setDragging(false);
           void handle(Array.from(e.dataTransfer.files));
         }}
-        className={`border-2 border-dashed px-5 py-6 flex flex-wrap items-center gap-4 ${dragging ? "border-milou-500 bg-peach/30" : "border-gray-300 bg-white"}`}
+        className={`border-2 border-dashed flex flex-wrap items-center gap-x-4 gap-y-2 ${compact ? "px-3 py-3" : "px-5 py-6"} ${dragging ? "border-milou-500 bg-peach/30" : "border-gray-300 bg-white"}`}
       >
         <button
           type="button"
@@ -106,9 +118,11 @@ export default function AssetUploader({ companyId, kind }: { companyId: string; 
           {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Upload className="w-4 h-4" aria-hidden />}
           {label}
         </button>
-        <p className="text-sm text-gray-600">
-          eller dra in filer hit. {kind === "photo" ? "PNG, JPG eller WebP" : "PNG med genomskinlighet"}, högst 15 MB per fil.
-        </p>
+        {!compact && (
+          <p className="text-sm text-gray-600">
+            eller dra in filer hit. {kind === "overlay" ? "PNG med genomskinlighet" : "PNG, JPG eller WebP"}, högst 15 MB per fil.
+          </p>
+        )}
         <input
           ref={input}
           type="file"

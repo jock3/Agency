@@ -5,11 +5,13 @@ export const MAX_ASSET_BYTES = 15 * 1024 * 1024;
 /** Lagringstak per företag tills frågan om lagring är avgjord (handoffens öppna fråga 4). */
 export const COMPANY_QUOTA_BYTES = 500 * 1024 * 1024;
 
-export type AssetKind = "photo" | "overlay";
+export type AssetKind = "photo" | "overlay" | "example";
+/** Högst så många exempelposter per mall. */
+export const MAX_EXAMPLES_PER_TEMPLATE = 8;
 export type AssetExt = "png" | "jpg" | "webp";
 export type AssetSource = "generated" | "uploaded_own" | "uploaded_other";
 
-export const isAssetKind = (v: unknown): v is AssetKind => v === "photo" || v === "overlay";
+export const isAssetKind = (v: unknown): v is AssetKind => v === "photo" || v === "overlay" || v === "example";
 export const isAssetExt = (v: unknown): v is AssetExt => v === "png" || v === "jpg" || v === "webp";
 export const isAssetSource = (v: unknown): v is AssetSource => v === "generated" || v === "uploaded_own" || v === "uploaded_other";
 

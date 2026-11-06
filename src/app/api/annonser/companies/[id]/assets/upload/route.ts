@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { adsError } from "@/lib/ads/access";
-import { quotaLeft, requireMember, storagePath } from "@/lib/ads/assets";
+import { checkParent, quotaLeft, requireMember, storagePath } from "@/lib/ads/assets";
 import { ASSET_BUCKET, MAX_ASSET_BYTES, isAssetExt, isAssetKind } from "@/lib/ads/asset-types";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -23,9 +23,14 @@ export async function POST(request: NextRequest, { params }: Context) {
   const bytes = body?.bytes;
   if (!isAssetKind(kind) || !isAssetExt(ext)) return adsError("INVALID_FILE");
   if (kind === "overlay" && ext !== "png") return adsError("OVERLAY_NOT_PNG");
+  const parentId = body?.parentId;
   if (typeof bytes !== "number" || bytes <= 0 || bytes > MAX_ASSET_BYTES) return adsError("TOO_LARGE");
 
   try {
+    if (kind === "example") {
+      const problem = await checkParent(id, parentId);
+      if (problem) return adsError(problem, problem === "TOO_MANY_EXAMPLES" ? 409 : 404);
+    }
     if ((await quotaLeft(id)) < bytes) return adsError("QUOTA_FULL", 409);
     const assetId = randomUUID();
     const path = storagePath(id, kind, assetId, ext);

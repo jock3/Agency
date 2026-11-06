@@ -6,12 +6,13 @@ import { Loader2, Trash2 } from "lucide-react";
 import { SOURCE_NAMES, formatBytes, type AssetSource } from "@/lib/ads/asset-types";
 import type { AssetView } from "@/lib/ads/assets";
 import { ADS_ERRORS, FALLBACK } from "../errors";
+import ExampleStrip from "./ExampleStrip";
 
 const field =
   "w-full border border-gray-300 bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:border-milou-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500";
 
 /** En bild eller mall: förhandsvisning, beskrivning, taggar, källa och borttagning. */
-export default function AssetCard({ companyId, asset }: { companyId: string; asset: AssetView }) {
+export default function AssetCard({ companyId, asset, examples }: { companyId: string; asset: AssetView; examples?: AssetView[] }) {
   const router = useRouter();
   const [description, setDescription] = useState(asset.description);
   const [tags, setTags] = useState(asset.tags.join(", "));
@@ -129,6 +130,7 @@ export default function AssetCard({ companyId, asset }: { companyId: string; ass
           {error}
         </p>
       </form>
+      {asset.kind === "overlay" && <ExampleStrip companyId={companyId} templateId={asset.id} examples={examples ?? []} />}
     </li>
   );
 }
