@@ -88,23 +88,39 @@ export async function membersOf(companyId: string): Promise<Member[]> {
   return ((users ?? []) as Member[]).sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
-/** Alla företag med medlemmar, för administrationen. Bara för admin. */
-export async function adminOverview(): Promise<{ company: Company; members: Member[] }[]> {
+export interface UserRow extends Member {
+  is_admin: boolean;
+}
+
+/** Alla företag med medlemmar, och alla användare, för administrationen. Bara för admin. */
+export async function adminOverview(): Promise<{ companies: { company: Company; members: Member[] }[]; users: UserRow[] }> {
   const sb = getSupabaseAdminClient();
   const [{ data: companies, error }, { data: links, error: linkError }, { data: users, error: userError }] = await Promise.all([
     sb.from("ad_companies").select("id, name").order("name"),
     sb.from("ad_company_members").select("company_id, user_id"),
-    sb.from("app_users").select("id, name"),
+    sb.from("app_users").select("id, name, is_admin"),
   ]);
   if (error || linkError || userError) throw new Error((error ?? linkError ?? userError)!.message);
-  const nameOf = new Map(((users ?? []) as Member[]).map((u) => [u.id, u.name]));
-  return ((companies ?? []) as Company[]).map((company) => ({
-    company,
-    members: (links ?? [])
-      .filter((l) => l.company_id === company.id)
-      .map((l) => ({ id: l.user_id as string, name: nameOf.get(l.user_id as string) ?? "okänd" }))
-      .sort((a, b) => a.name.localeCompare(b.name, "sv")),
-  }));
+  const userRows = ((users ?? []) as UserRow[]).sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  const nameOf = new Map(userRows.map((u) => [u.id, u.name]));
+  return {
+    users: userRows,
+    companies: ((companies ?? []) as Company[]).map((company) => ({
+      company,
+      members: (links ?? [])
+        .filter((l) => l.company_id === company.id)
+        .map((l) => ({ id: l.user_id as string, name: nameOf.get(l.user_id as string) ?? "okänd" }))
+        .sort((a, b) => a.name.localeCompare(b.name, "sv")),
+    })),
+  };
+}
+
+/** Användaren med det id:t, om hon finns. */
+export async function findUserById(id: string): Promise<Member | null> {
+  if (!isUuid(id)) return null;
+  const { data, error } = await getSupabaseAdminClient().from("app_users").select("id, name").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Member | null) ?? null;
 }
 
 /** Användare vars namn matchar, utan hänsyn till versaler (som inloggningen). */
