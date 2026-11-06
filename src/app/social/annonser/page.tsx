@@ -64,30 +64,6 @@ export default async function AdsHomePage() {
               ))}
             </ul>
           )}
-
-          <h4 className="font-bold mt-10 mb-2">Användare ({overview.users.length})</h4>
-          <table className="w-full text-sm bg-white">
-            <thead className="text-left text-gray-600 border-b border-gray-200">
-              <tr>
-                <th className="py-2 px-4 font-normal">Namn</th>
-                <th className="py-2 px-4 font-normal">Roll</th>
-                <th className="py-2 px-4 font-normal">Företag</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.users.map((u) => {
-                const companies = overview.companies.filter((c) => c.members.some((m) => m.id === u.id)).map((c) => c.company.name);
-                return (
-                  <tr key={u.id} className="border-b border-gray-100 last:border-b-0">
-                    <td className="py-2 px-4 font-bold">{u.name}</td>
-                    <td className="py-2 px-4">{u.is_admin ? "Admin" : "Användare"}</td>
-                    <td className="py-2 px-4 text-gray-700">{companies.join(", ") || <span className="text-gray-600">Inget företag</span>}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="mt-2 text-xs text-gray-600">Nya användare skapas på Admin.</p>
         </section>
       )}
     </main>
