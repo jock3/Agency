@@ -5,6 +5,15 @@ export const ADS_ERRORS: Record<string, string> = {
   DUPLICATE: "Det finns redan ett företag med det namnet.",
   USER_NOT_FOUND: "Användaren finns inte längre. Ladda om sidan.",
   NOT_FOUND: "Företaget finns inte längre.",
+  INVALID_FILE: "Filen är ingen PNG-, JPG- eller WebP-bild.",
+  OVERLAY_NOT_PNG: "Mallar måste vara PNG, så att genomskinligheten följer med.",
+  TOO_LARGE: "Filen är större än 15 MB.",
+  QUOTA_FULL: "Företagets lagring (500 MB) är full. Ta bort något först.",
+  UPLOAD_MISSING: "Uppladdningen kom inte fram. Försök igen.",
+  ASSET_NOT_FOUND: "Bilden finns inte längre. Ladda om sidan.",
+  INVALID_DESCRIPTION: "Beskrivningen får vara högst 1000 tecken.",
+  INVALID_TAGS: "Taggarna gick inte att spara.",
+  INVALID_SOURCE: "Ogiltig källa.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
 export const FALLBACK = "Något gick fel. Försök igen.";

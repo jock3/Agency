@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from "next/server";
+import { adsError, isUuid } from "@/lib/ads/access";
+import { listAssets, mimeOf, quotaLeft, requireMember, sniffExt, storagePath } from "@/lib/ads/assets";
+import { ASSET_BUCKET, MAX_ASSET_BYTES, isAssetExt, isAssetKind, isAssetSource } from "@/lib/ads/asset-types";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
+
+type Context = { params: Promise<{ id: string }> };
+
+/** Företagets tillgångar. Bara medlemmar. */
+export async function GET(request: NextRequest, { params }: Context) {
+  const { id } = await params;
+  const auth = await requireMember(request, id);
+  if ("response" in auth) return auth.response;
+  return NextResponse.json({ assets: await listAssets(id) });
+}
+
+const dim = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v > 0 && v < 100_000 ? v : null);
+
+/**
+ * Registrerar en uppladdad fil. Sökvägen räknas fram här ur företaget och
+ * id:t, så att ingen kan registrera en fil i ett annat företags mapp. Filen
+ * hämtas och kontrolleras: storlek, verklig filtyp och lagringstak. Klarar den
+ * inte kontrollen tas den bort ur storage.
+ */
+export async function POST(request: NextRequest, { params }: Context) {
+  const { id } = await params;
+  const auth = await requireMember(request, id);
+  if ("response" in auth) return auth.response;
+
+  const body = await request.json().catch(() => null);
+  const { assetId, kind, ext } = body ?? {};
+  if (!isUuid(assetId) || !isAssetKind(kind) || !isAssetExt(ext)) return adsError("INVALID_FILE");
+  const source = isAssetSource(body?.source) ? body.source : "uploaded_own";
+  const filename = typeof body?.filename === "string" ? body.filename.slice(0, 200) : "";
+
+  const sb = getSupabaseAdminClient();
+  const bucket = sb.storage.from(ASSET_BUCKET);
+  const path = storagePath(id, kind, assetId, ext);
+  const reject = async (code: string, status = 400) => {
+    await bucket.remove([path]);
+    return adsError(code, status);
+  };
+
+  try {
+    const { data: blob, error } = await bucket.download(path);
+    if (error || !blob) return adsError("UPLOAD_MISSING", 404);
+    if (blob.size > MAX_ASSET_BYTES) return reject("TOO_LARGE");
+    const real = sniffExt(new Uint8Array(await blob.slice(0, 16).arrayBuffer()));
+    if (real !== ext) return reject("INVALID_FILE");
+    if (kind === "overlay" && real !== "png") return reject("OVERLAY_NOT_PNG");
+    if ((await quotaLeft(id)) < blob.size) return reject("QUOTA_FULL", 409);
+
+    const { error: insertError } = await sb.from("ad_assets").insert({
+      id: assetId,
+      company_id: id,
+      kind,
+      storage_path: path,
+      filename,
+      mime: mimeOf(real),
+      bytes: blob.size,
+      width: dim(body?.width),
+      height: dim(body?.height),
+      source,
+      created_by: auth.user.user_id,
+    });
+    // Samma fil registrerad två gånger: raden finns redan, inget fel.
+    if (insertError && insertError.code !== "23505") throw new Error(insertError.message);
+    return NextResponse.json({ ok: true, id: assetId });
+  } catch (err) {
+    console.error("ads asset register", err);
+    return adsError("SERVER_ERROR", 500);
+  }
+}
