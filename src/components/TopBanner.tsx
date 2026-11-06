@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SlidersHorizontal } from "lucide-react";
+import type { AppUser } from "@/lib/types";
 import MilouLogo from "./MilouLogo";
 import { TOOLS, type ToolLink } from "./tools";
 
@@ -26,7 +29,25 @@ function NavLink({ href, label, Icon, active }: ToolLink & { active: boolean }) 
 export default function TopBanner() {
   const pathname = usePathname();
   const hidden = pathname.startsWith("/login") || pathname.startsWith("/share");
+  const [user, setUser] = useState<AppUser | null>(null);
+
+  // Hämtas om vid inloggning och efter ändringar i kontrollcentret (sidbyte).
+  useEffect(() => {
+    if (hidden) return;
+    let live = true;
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => live && setUser(data.user ?? null))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [hidden, pathname]);
+
   if (hidden) return null;
+
+  // Menyn visas först när åtkomsten är känd, så att ingen ser verktyg hon inte får öppna.
+  const tools = user?.tools ? TOOLS.filter((t) => user.tools!.includes(t.href.slice(1))) : [];
 
   return (
     <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">
@@ -38,10 +59,24 @@ export default function TopBanner() {
         <MilouLogo className="h-[18px] w-auto text-white" />
       </Link>
       <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
-        {TOOLS.map((t) => (
+        {tools.map((t) => (
           <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
         ))}
       </nav>
+      {user?.isAdmin && (
+        <Link
+          href="/admin"
+          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
+          aria-label="Kontrollcenter"
+          title="Kontrollcenter"
+          className={`shrink-0 h-8 px-2.5 flex items-center gap-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach ${
+            pathname.startsWith("/admin") ? "bg-peach text-gray-800" : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" aria-hidden />
+          <span className="hidden lg:inline">Kontrollcenter</span>
+        </Link>
+      )}
       <a href="/api/auth/logout" className="hidden md:block shrink-0 px-3 text-sm text-gray-400 hover:text-white transition-colors">
         Logga ut
       </a>

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { toolByHref } from "@/components/tools";
+import { currentUserWithTools } from "@/lib/access/current";
+import { TOOL_NAMES, isToolKey } from "@/lib/access/tools";
 
 interface Tool {
   href: string;
@@ -69,7 +71,11 @@ const CAPSULES: Tool[] = [
   },
 ];
 
-export default function HubPage() {
+export default async function HubPage({ searchParams }: { searchParams: Promise<{ nekad?: string }> }) {
+  const [user, { nekad }] = await Promise.all([currentUserWithTools(), searchParams]);
+  const capsules = user ? CAPSULES.filter((c) => (user.tools as string[]).includes(c.href.slice(1))) : CAPSULES;
+  const denied = isToolKey(nekad) ? TOOL_NAMES[nekad] : null;
+
   return (
     <main className="flex-1 bg-gray-50">
       <section className="bg-gray-900 text-white">
@@ -92,8 +98,16 @@ export default function HubPage() {
       </section>
 
       <section className="max-w-[1240px] mx-auto px-6 md:px-8 -mt-8 md:-mt-[160px] pb-24">
+        {denied && (
+          <p role="status" className="relative mb-6 bg-white px-5 py-4 max-w-[70ch] text-gray-800">
+            Du har inte tillgång till {denied}. Be en admin om åtkomst.
+          </p>
+        )}
+        {capsules.length === 0 && (
+          <p className="relative bg-white px-5 py-6 max-w-[70ch] text-gray-800">Du har inga verktyg än. Be en admin om åtkomst.</p>
+        )}
         <ul className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-start">
-          {CAPSULES.map((t, i) => {
+          {capsules.map((t, i) => {
             const { Icon } = toolByHref(t.href);
             return (
             <li key={t.href} className={`hub-capsule ${t.offset}`} style={{ "--i": i } as React.CSSProperties}>

@@ -154,6 +154,8 @@ export interface AppUser {
   id: string;
   name: string;
   isAdmin: boolean;
+  /** Verktygen användaren får använda (nycklar ur lib/access/tools). */
+  tools?: string[];
 }
 
 export interface TodoSubtask {
