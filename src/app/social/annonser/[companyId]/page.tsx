@@ -10,7 +10,8 @@ import AssetUploader from "./AssetUploader";
 export const dynamic = "force-dynamic";
 
 const NEXT_STEPS = [
-  { name: "AI-val och text", does: "Skriv ett budskap, så väljer AI bild och mall och skriver texten." },
+  { name: "Bildgenerering", does: "Skapa en ny bild med ArtCraft när ingen i banken passar." },
+  { name: "Autotaggning och sökning", does: "AI beskriver och taggar bilder vid uppladdning, med sök i banken." },
 ];
 
 /**

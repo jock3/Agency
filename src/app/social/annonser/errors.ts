@@ -18,6 +18,12 @@ export const ADS_ERRORS: Record<string, string> = {
   TOO_MANY_EXAMPLES: "Högst 8 exempel per mall. Ta bort något först.",
   INVALID_LAYOUT: "Layouten gick inte att spara. Kontrollera textytorna och ladda om sidan.",
   NOT_A_TEMPLATE: "Bara mallar har en layout.",
+  INVALID_MESSAGE: "Skriv ett budskap (högst 500 tecken).",
+  INVALID_FORMAT: "Välj ett format.",
+  NO_PHOTOS: "Det finns inga bilder i bildbanken.",
+  NO_TEMPLATES: "Det finns ingen färdig mall med placering i det formatet.",
+  AI_DISABLED: "AI är inte påslaget i den här miljön.",
+  AI_FAILED: "AI:n gav inget användbart förslag. Försök igen, eller välj bild, mall och text själv.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
 export const FALLBACK = "Något gick fel. Försök igen.";

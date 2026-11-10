@@ -32,7 +32,7 @@ export default async function ComposePage({ params }: { params: Promise<{ compan
       </Link>
       <h2 className="text-2xl font-bold mt-3">Skapa annons</h2>
       <p className="text-sm text-gray-600 mt-1 max-w-[70ch]">
-        Välj bild och mall, skriv texten och ladda ner annonsen som PNG. Texten krymps automatiskt så att den ryms i mallens textyta.
+        Skriv ett budskap så föreslår AI bild, mall och text, eller välj och skriv själv. Allt går att ändra innan du laddar ner annonsen som PNG. Texten krymps automatiskt så att den ryms i mallens textyta.
       </p>
       {photos.length === 0 || templates.length === 0 ? (
         <p className="mt-6 bg-white p-5 text-sm max-w-[70ch]">
@@ -44,7 +44,7 @@ export default async function ComposePage({ params }: { params: Promise<{ compan
           </Link>
         </p>
       ) : (
-        <Composer photos={photos} templates={templates} />
+        <Composer companyId={company.id} photos={photos} templates={templates} />
       )}
     </main>
   );

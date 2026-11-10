@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Download, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2, Sparkles } from "lucide-react";
 import { composeAd, ensureFont, loadImage, remFontFamily, type ZoneReport } from "@/lib/ads/compose";
+import { ADS_ERRORS, FALLBACK } from "../../errors";
 import { FORMATS, FORMAT_SIZE, ROLE_NAMES, type AdFormat, type TemplateLayout } from "@/lib/ads/layout";
 
 const field =
@@ -21,7 +22,7 @@ interface Template {
 }
 
 /** Komponering för hand (steg 4). Samma renderare används senare när AI:n väljer och skriver (steg 5). */
-export default function Composer({ photos, templates }: { photos: Photo[]; templates: Template[] }) {
+export default function Composer({ companyId, photos, templates }: { companyId: string; photos: Photo[]; templates: Template[] }) {
   const [photoId, setPhotoId] = useState(photos[0].id);
   const [templateId, setTemplateId] = useState(templates[0].id);
   const [format, setFormat] = useState<AdFormat>("1:1");
@@ -29,8 +30,14 @@ export default function Composer({ photos, templates }: { photos: Photo[]; templ
   const [reports, setReports] = useState<ZoneReport[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [aiFormat, setAiFormat] = useState<AdFormat>(FORMATS.find((f) => templates.some((t) => t.layout.placements[f])) ?? "1:1");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const run = useRef(0);
+  const aiFormats = FORMATS.filter((f) => templates.some((t) => t.layout.placements[f]));
 
   const photo = photos.find((p) => p.id === photoId)!;
   const template = templates.find((t) => t.id === templateId)!;
@@ -58,6 +65,32 @@ export default function Composer({ photos, templates }: { photos: Photo[]; templ
 
   const reportOf = useMemo(() => new Map(reports.map((r) => [r.id, r])), [reports]);
 
+  /** Claude väljer bild och mall och skriver texten. Förslaget laddas in i samma väljare som man använder för hand. */
+  async function suggest() {
+    setAiBusy(true);
+    setAiError(null);
+    setReason(null);
+    try {
+      const res = await fetch(`/api/annonser/companies/${companyId}/pick`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, format: aiFormat }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setAiError(ADS_ERRORS[data.error] ?? FALLBACK);
+      if (!photos.some((p) => p.id === data.photoId) || !templates.some((t) => t.id === data.templateId)) return setAiError(ADS_ERRORS.AI_FAILED);
+      setPhotoId(data.photoId);
+      setTemplateId(data.templateId);
+      setFormat(aiFormat);
+      setTexts(data.texts ?? {});
+      setReason(typeof data.reason === "string" ? data.reason : null);
+    } catch {
+      setAiError(FALLBACK);
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   function download() {
     canvas.current?.toBlob((blob) => {
       if (!blob) return setError("Annonsen gick inte att spara som bild.");
@@ -73,6 +106,44 @@ export default function Composer({ photos, templates }: { photos: Photo[]; templ
   const size = FORMAT_SIZE[activeFormat];
 
   return (
+    <>
+    <section className="mt-6 bg-white p-4" aria-label="AI-förslag">
+      <h3 className="font-bold text-sm flex items-center gap-1.5">
+        <Sparkles className="w-4 h-4" aria-hidden /> Låt AI föreslå annonsen
+      </h3>
+      <label htmlFor="msg" className="text-sm block mt-2 mb-1">
+        Budskap <span className="text-gray-600">– till exempel &quot;20 % på alla vinterdäck, gäller till söndag&quot;</span>
+      </label>
+      <textarea id="msg" rows={2} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} className={field} />
+      <div className="flex flex-wrap items-center gap-3 mt-2">
+        <div role="group" aria-label="Format för förslaget" className="flex border border-gray-300 bg-white">
+          {aiFormats.map((f) => (
+            <button
+              key={f}
+              aria-pressed={aiFormat === f}
+              onClick={() => setAiFormat(f)}
+              className={`px-3 py-2 text-sm font-bold ${aiFormat === f ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100"}`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => void suggest()}
+          disabled={aiBusy || !message.trim()}
+          className="flex items-center gap-1.5 text-sm font-bold bg-gray-900 hover:bg-gray-700 disabled:opacity-40 text-white px-4 py-2"
+        >
+          {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Sparkles className="w-4 h-4" aria-hidden />}
+          {aiBusy ? "AI väljer…" : "Föreslå annons"}
+        </button>
+      </div>
+      <p role="alert" className="text-sm text-milou-600 mt-2 empty:hidden">
+        {aiError}
+      </p>
+      <p role="status" className="text-sm text-gray-700 mt-2 empty:hidden">
+        {reason && `Varför: ${reason}`}
+      </p>
+    </section>
     <div className="mt-6 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
       <div className="flex flex-col gap-5">
         <section className="bg-white p-4" aria-label="Bild">
@@ -195,5 +266,6 @@ export default function Composer({ photos, templates }: { photos: Photo[]; templ
         />
       </div>
     </div>
+    </>
   );
 }
