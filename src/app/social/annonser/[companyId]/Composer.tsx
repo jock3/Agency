@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Circle, Download, ImagePlus, Loader2, Minus, Sparkles, Wand2, X } from "lucide-react";
 import { composeAd, ensureFont, loadImage, remFontFamily, type ZoneReport } from "@/lib/ads/compose";
-import { ADS_ERRORS, FALLBACK } from "../../errors";
+import { ADS_ERRORS, FALLBACK } from "../errors";
 import { FORMATS, FORMAT_SIZE, ROLE_NAMES, type AdFormat, type TemplateLayout } from "@/lib/ads/layout";
 import type { QaResult } from "@/lib/ads/qa";
 

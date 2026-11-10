@@ -20,11 +20,11 @@ export default async function TemplatePage({ params }: { params: Promise<{ compa
   if (!template || !template.url) notFound();
 
   return (
-    <main className="max-w-7xl w-full mx-auto px-6 py-8">
-      <Link href={`/social/annonser/${company.id}`} className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-milou-500">
-        <ArrowLeft className="w-4 h-4" aria-hidden /> {company.name}
+    <>
+      <Link href={`/social/annonser/${company.id}/mallar`} className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-milou-500">
+        <ArrowLeft className="w-4 h-4" aria-hidden /> Alla mallar
       </Link>
-      <h2 className="text-2xl font-bold mt-3">Mallredigerare</h2>
+      <h3 className="text-xl font-bold mt-2">Mallredigerare</h3>
       <p className="text-sm text-gray-600 mt-1 max-w-[70ch]">
         Markera var texten ska ligga på mallen och var mallen ska sitta i varje format. AI:n kan bara välja mallar som har minst en textyta och en placering.
       </p>
@@ -36,6 +36,6 @@ export default async function TemplatePage({ params }: { params: Promise<{ compa
         initialAspect={template.width && template.height ? template.width / template.height : null}
         initial={template.layout ?? emptyLayout()}
       />
-    </main>
+    </>
   );
 }

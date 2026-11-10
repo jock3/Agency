@@ -1,100 +1,60 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { currentUser, membersOf, memberCompany } from "@/lib/ads/access";
+import { currentUser, memberCompany } from "@/lib/ads/access";
 import { listAssets } from "@/lib/ads/assets";
-import { COMPANY_QUOTA_BYTES, formatBytes } from "@/lib/ads/asset-types";
-import AssetCard from "./AssetCard";
-import AssetUploader from "./AssetUploader";
+import { readiness } from "@/lib/ads/layout";
+import Composer from "./Composer";
 
 export const dynamic = "force-dynamic";
 
-const NEXT_STEPS = [
-  { name: "Bildgenerering", does: "Skapa en ny bild med ArtCraft när ingen i banken passar." },
-  { name: "Autotaggning och sökning", does: "AI beskriver och taggar bilder vid uppladdning, med sök i banken." },
-];
-
-/**
- * Ett företags sida med bildbanken. Bara medlemmar kommer in: för alla andra,
- * och för id:n som inte finns, är svaret samma 404, så sidan avslöjar inte
- * vilka företag som finns.
- */
+/** Företagets startsida: annonsskaparen. Bara medlemmar (annars 404). */
 export default async function CompanyPage({ params }: { params: Promise<{ companyId: string }> }) {
   const user = await currentUser();
   if (!user) redirect("/login");
   const { companyId } = await params;
-
   const company = await memberCompany(user.user_id, companyId);
   if (!company) notFound();
-  const [members, assets] = await Promise.all([membersOf(company.id), listAssets(company.id)]);
 
-  const photos = assets.filter((a) => a.kind === "photo");
-  const overlays = assets.filter((a) => a.kind === "overlay");
-  const examplesOf = (templateId: string) => assets.filter((a) => a.kind === "example" && a.parent_id === templateId);
-  const used = assets.reduce((s, a) => s + a.bytes, 0);
+  const assets = await listAssets(company.id);
+  const photos = assets
+    .filter((a) => a.kind === "photo" && a.url)
+    .map((a) => ({ id: a.id, url: a.url!, label: a.description || a.filename || "Bild" }));
+  const templates = assets
+    .filter((a) => a.kind === "overlay" && a.url && a.layout && readiness(a.layout).ready)
+    .map((a) => ({ id: a.id, url: a.url!, label: a.description || a.filename || "Mall", layout: a.layout! }));
+  const unfinished = assets.filter((a) => a.kind === "overlay" && !readiness(a.layout).ready).length;
+  const base = `/social/annonser/${company.id}`;
 
-  const sections = [
-    {
-      kind: "photo" as const,
-      title: `Bilder (${photos.length})`,
-      intro: "Bildbanken som AI:n väljer ur. En bra beskrivning gör att rätt bild väljs.",
-      items: photos,
-      empty: "Inga bilder än.",
-    },
-    {
-      kind: "overlay" as const,
-      title: `Mallar (${overlays.length})`,
-      intro: "PNG-splashar och banderoller som läggs ovanpå bilden. Lägg gärna till exempelposter på varje mall, så finns det kontext om hur den används. Markera textytorna och var mallen ligger i varje format under Markera textytor.",
-      items: overlays,
-      empty: "Inga mallar än.",
-    },
-  ];
+  if (photos.length === 0 || templates.length === 0)
+    return (
+      <div className="bg-white p-5 text-sm max-w-[70ch] flex flex-col gap-2">
+        <p className="font-bold">Annonsskaparen behöver minst en bild och en färdig mall.</p>
+        {photos.length === 0 && (
+          <p>
+            Det finns inga bilder i bildbanken än.{" "}
+            <Link href={`${base}/bilder`} className="font-bold underline hover:text-milou-500">
+              Ladda upp bilder
+            </Link>
+          </p>
+        )}
+        {templates.length === 0 && (
+          <p>
+            Det finns ingen färdig mall än: en mall behöver minst en textyta och en placering i något format.
+            {unfinished > 0 && ` ${unfinished} mall${unfinished === 1 ? "" : "ar"} saknar layout.`}{" "}
+            <Link href={`${base}/mallar`} className="font-bold underline hover:text-milou-500">
+              Till mallarna
+            </Link>
+          </p>
+        )}
+      </div>
+    );
 
   return (
-    <main className="max-w-7xl w-full mx-auto px-6 py-8">
-      <Link href="/social/annonser" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-milou-500">
-        <ArrowLeft className="w-4 h-4" aria-hidden /> Alla företag
-      </Link>
-      <h2 className="text-2xl font-bold mt-3">{company.name}</h2>
-      <Link
-        href={`/social/annonser/${company.id}/komponera`}
-        className="inline-block mt-4 font-bold bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 text-sm"
-      >
-        Skapa annons
-      </Link>
-      <p className="text-sm text-gray-600 mt-3">
-        Medlemmar: {members.map((m) => m.name).join(", ") || "inga"} · Lagring: {formatBytes(used)} av {formatBytes(COMPANY_QUOTA_BYTES)}
+    <>
+      <p className="text-sm text-gray-600 max-w-[70ch]">
+        Skriv ett budskap så skapar AI:n annonsen, eller välj bild, mall och text själv. Allt går att ändra innan du laddar ner annonsen som PNG.
       </p>
-
-      {sections.map((s) => (
-        <section key={s.kind} className="mt-10" aria-labelledby={`h-${s.kind}`}>
-          <h3 id={`h-${s.kind}`} className="text-lg font-bold">
-            {s.title}
-          </h3>
-          <p className="text-sm text-gray-600 mb-3 max-w-[70ch]">{s.intro}</p>
-          <AssetUploader companyId={company.id} kind={s.kind} />
-          {s.items.length === 0 ? (
-            <p className="mt-4 text-sm text-gray-600">{s.empty}</p>
-          ) : (
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {s.items.map((a) => (
-                <AssetCard key={a.id} companyId={company.id} asset={a} examples={a.kind === "overlay" ? examplesOf(a.id) : undefined} />
-              ))}
-            </ul>
-          )}
-        </section>
-      ))}
-
-      <section className="mt-12">
-        <h3 className="font-bold mb-2">Det här kommer härnäst</h3>
-        <ol className="bg-white divide-y divide-gray-100 list-decimal list-inside">
-          {NEXT_STEPS.map((s) => (
-            <li key={s.name} className="px-5 py-3">
-              <b>{s.name}</b> <span className="text-gray-700">{s.does}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </main>
+      <Composer companyId={company.id} photos={photos} templates={templates} />
+    </>
   );
 }
