@@ -10,7 +10,6 @@ import AssetUploader from "./AssetUploader";
 export const dynamic = "force-dynamic";
 
 const NEXT_STEPS = [
-  { name: "Komponering", does: "Bild, mall och text blir en färdig annons i 1:1, 4:5 och 9:16." },
   { name: "AI-val och text", does: "Skriv ett budskap, så väljer AI bild och mall och skriver texten." },
 ];
 
@@ -56,7 +55,13 @@ export default async function CompanyPage({ params }: { params: Promise<{ compan
         <ArrowLeft className="w-4 h-4" aria-hidden /> Alla företag
       </Link>
       <h2 className="text-2xl font-bold mt-3">{company.name}</h2>
-      <p className="text-sm text-gray-600 mt-1">
+      <Link
+        href={`/social/annonser/${company.id}/komponera`}
+        className="inline-block mt-4 font-bold bg-milou-500 hover:bg-milou-600 text-white px-4 py-2 text-sm"
+      >
+        Skapa annons
+      </Link>
+      <p className="text-sm text-gray-600 mt-3">
         Medlemmar: {members.map((m) => m.name).join(", ") || "inga"} · Lagring: {formatBytes(used)} av {formatBytes(COMPANY_QUOTA_BYTES)}
       </p>
 
