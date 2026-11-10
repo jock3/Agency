@@ -69,6 +69,7 @@ export default function LayoutEditor({
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const drag = useRef<Drag>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
 
   const dirty = useMemo(() => JSON.stringify(layout) !== JSON.stringify(saved), [layout, saved]);
@@ -76,6 +77,11 @@ export default function LayoutEditor({
   const zone = layout.zones.find((z) => z.id === selected) ?? null;
   const placement = layout.placements[format];
   const warnings = useMemo(() => placementWarnings(layout, format, aspect), [layout, format, aspect]);
+
+  // Välj en yta: formuläret för den scrollas fram om det ligger utanför bild.
+  useEffect(() => {
+    if (selected) formRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selected]);
 
   // Varna innan man lämnar sidan med osparade ändringar.
   useEffect(() => {
@@ -200,7 +206,7 @@ export default function LayoutEditor({
         tabIndex={interactive ? 0 : -1}
         aria-label={`${ROLE_NAMES[z.role]}, yta ${i + 1}. Piltangenter flyttar.`}
         aria-pressed={interactive ? active : undefined}
-        onClick={interactive ? () => setSelected(z.id) : undefined}
+        onClick={interactive ? (e) => { e.stopPropagation(); setSelected(z.id); } : undefined}
         onKeyDown={interactive ? (e) => onKey(e, (dx, dy) => updateZone(z.id, { x: clamp(z.x + dx, 0, 1 - z.w), y: clamp(z.y + dy, 0, 1 - z.h) })) : undefined}
         onPointerDown={interactive ? (e) => { setSelected(z.id); begin(e, { kind: "zone-move", id: z.id, startX: e.clientX, startY: e.clientY, orig: z }); } : undefined}
         style={zoneStyle(z)}
@@ -382,7 +388,11 @@ export default function LayoutEditor({
                 </div>
               </section>
 
-              {zone && <ZoneForm zone={zone} onChange={(patch) => updateZone(zone.id, patch)} />}
+              {zone && (
+                <div ref={formRef}>
+                  <ZoneForm zone={zone} onChange={(patch) => updateZone(zone.id, patch)} />
+                </div>
+              )}
             </>
           ) : (
             <section aria-label={`Placering i ${format}`} className="bg-white p-4 flex flex-col gap-3">
