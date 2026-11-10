@@ -1,5 +1,6 @@
 import { aiEnabled, ask, type AskImage } from "@/lib/audit/ai";
 import type { AssetView } from "./assets";
+import { BRAND_RULE, brandBlock, type Brand } from "./brand";
 import { ROLE_NAMES, type AdFormat, type TemplateLayout } from "./layout";
 
 /**
@@ -190,7 +191,7 @@ const schemaFor = (ctx: Context, allowNew: boolean) => ({
 export type Asker = typeof ask;
 
 export async function pickAd(
-  input: { message: string; format: AdFormat; photos: AssetView[]; templates: PickTemplate[]; allowNew?: boolean; feedback?: PickFeedback },
+  input: { message: string; format: AdFormat; photos: AssetView[]; templates: PickTemplate[]; allowNew?: boolean; feedback?: PickFeedback; brand?: Brand },
   askFn: Asker = ask,
 ): Promise<{ result: PickResult } | { error: PickError }> {
   const allowNew = input.allowNew === true;
@@ -203,9 +204,10 @@ export async function pickAd(
     ...[...ctx.templates].flatMap(([label, t]) => (t.asset.url ? [{ label: `Mall ${label}:`, url: t.asset.url }] : [])),
     ...[...ctx.photos].flatMap(([label, p]) => (p.url ? [{ label: `Bild ${label}:`, url: p.url }] : [])),
   ];
-  const base = userPrompt(input.message, input.format, ctx, allowNew) + (input.feedback ? feedbackPrompt(input.feedback, ctx, allowNew) : "");
+  const base = userPrompt(input.message, input.format, ctx, allowNew) + brandBlock(input.brand) + (input.feedback ? feedbackPrompt(input.feedback, ctx, allowNew) : "");
   const schema = schemaFor(ctx, allowNew);
-  const system = allowNew ? SYSTEM + NEW_RULES : SYSTEM;
+  const hasBrand = brandBlock(input.brand) !== "";
+  const system = (allowNew ? SYSTEM + NEW_RULES : SYSTEM) + (hasBrand ? `\n\n${BRAND_RULE}` : "");
 
   let user = base;
   for (let attempt = 0; attempt < 2; attempt++) {

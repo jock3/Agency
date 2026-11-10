@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adsError } from "@/lib/ads/access";
+import { getBrand } from "@/lib/ads/brand";
 import { requireMember } from "@/lib/ads/assets";
 import { MAX_MESSAGE } from "@/lib/ads/pick";
 import { MAX_QA_IMAGE_B64, qaAd } from "@/lib/ads/qa";
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     .slice(0, 10)
     .map((t: string) => t.slice(0, 300));
 
-  const out = await qaAd({ message, imageB64: image, texts, generatedImage: body?.generatedImage === true });
+  const out = await qaAd({ message, imageB64: image, texts, generatedImage: body?.generatedImage === true, brand: await getBrand(id) });
   if ("error" in out) return adsError(out.error, out.error === "AI_DISABLED" ? 503 : 502);
   return NextResponse.json({ ok: true, ...out.result });
 }

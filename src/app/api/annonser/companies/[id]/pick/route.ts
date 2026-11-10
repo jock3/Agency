@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adsError } from "@/lib/ads/access";
 import { listAssets, requireMember } from "@/lib/ads/assets";
+import { getBrand } from "@/lib/ads/brand";
 import { artcraftEnabled } from "@/lib/ads/artcraft";
 import { isFormat, readiness } from "@/lib/ads/layout";
 import { MAX_MESSAGE, MAX_PICK_PHOTOS, pickAd, type PickFeedback, type PickTemplate } from "@/lib/ads/pick";
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     }));
 
   const allowNew = body?.allowNew === true && artcraftEnabled();
-  const out = await pickAd({ message, format, photos, templates, allowNew, feedback: readFeedback(body?.feedback) });
+  const out = await pickAd({ message, format, photos, templates, allowNew, feedback: readFeedback(body?.feedback), brand: await getBrand(id) });
   if ("error" in out) return adsError(out.error, out.error === "AI_FAILED" ? 502 : out.error === "AI_DISABLED" ? 503 : 422);
   return NextResponse.json({ ok: true, ...out.result });
 }

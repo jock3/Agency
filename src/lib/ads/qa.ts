@@ -1,4 +1,5 @@
 import { aiEnabled, ask } from "@/lib/audit/ai";
+import { BRAND_RULE, brandBlock, type Brand } from "./brand";
 
 /**
  * QA-granskning av en färdig annons (automatiskt flöde). Claude tittar på den
@@ -84,7 +85,7 @@ export function parseQa(raw: string): QaResult | null {
 }
 
 export async function qaAd(
-  input: { message: string; imageB64: string; texts: string[]; generatedImage: boolean },
+  input: { message: string; imageB64: string; texts: string[]; generatedImage: boolean; brand?: Brand },
   askFn: typeof ask = ask,
 ): Promise<{ result: QaResult } | { error: "AI_DISABLED" | "AI_FAILED" }> {
   if (askFn === ask && !aiEnabled()) return { error: "AI_DISABLED" };
@@ -99,11 +100,12 @@ ${
     ? "\nFotot är AI-genererat: granska extra noga efter förvrängningar och text i bilden.\n"
     : "\nFotot är företagets eget. Kontrollen bildtext underkänns bara om texten i fotot konkurrerar med annonsens text eller visar ett annat varumärke; egna skyltar och produkter är godkända.\n"
 }
-Granska den bifogade annonsen.`;
+Granska den bifogade annonsen.${brandBlock(input.brand)}`;
+  const system = brandBlock(input.brand) ? `${SYSTEM}\n\n${BRAND_RULE} Kontrollen tilltal underkänns när texten bryter mot skrivguiden; kontrollen bild när fotot går emot bildspråket.` : SYSTEM;
   for (let attempt = 0; attempt < 2; attempt++) {
     const raw = await askFn({
       label: "ads-qa",
-      system: SYSTEM,
+      system,
       user,
       maxTokens: 1500,
       timeout: 60_000,

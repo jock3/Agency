@@ -33,6 +33,7 @@ export const ADS_ERRORS: Record<string, string> = {
   ARTCRAFT_FAILED: "ArtCraft svarade inte. Försök igen om en stund.",
   GEN_NOT_FOUND: "Jobbet hittades inte.",
   GEN_IMPORT_FAILED: "Bilden blev klar men gick inte att hämta. Försök igen.",
+  INVALID_BRAND: "Materialet gick inte att spara: kontrollera att texterna inte är för långa.",
   INVALID_IMAGE: "Annonsbilden gick inte att skicka till granskningen.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
