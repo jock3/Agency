@@ -10,7 +10,6 @@ import AssetUploader from "./AssetUploader";
 export const dynamic = "force-dynamic";
 
 const NEXT_STEPS = [
-  { name: "Mallredigerare", does: "Markera var texten ska ligga på en mall, per format." },
   { name: "Komponering", does: "Bild, mall och text blir en färdig annons i 1:1, 4:5 och 9:16." },
   { name: "AI-val och text", does: "Skriv ett budskap, så väljer AI bild och mall och skriver texten." },
 ];
@@ -45,7 +44,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ compan
     {
       kind: "overlay" as const,
       title: `Mallar (${overlays.length})`,
-      intro: "PNG-splashar och banderoller som läggs ovanpå bilden. Lägg gärna till exempelposter på varje mall, så finns det kontext om hur den används. Textytan markeras i nästa steg.",
+      intro: "PNG-splashar och banderoller som läggs ovanpå bilden. Lägg gärna till exempelposter på varje mall, så finns det kontext om hur den används. Markera textytorna och var mallen ligger i varje format under Markera textytor.",
       items: overlays,
       empty: "Inga mallar än.",
     },

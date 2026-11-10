@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Type } from "lucide-react";
 import { SOURCE_NAMES, formatBytes, type AssetSource } from "@/lib/ads/asset-types";
 import type { AssetView } from "@/lib/ads/assets";
+import { readiness } from "@/lib/ads/layout";
 import { ADS_ERRORS, FALLBACK } from "../errors";
 import ExampleStrip from "./ExampleStrip";
 
@@ -51,6 +53,7 @@ export default function AssetCard({ companyId, asset, examples }: { companyId: s
   }
 
   const label = asset.description || asset.filename || "Bild utan beskrivning";
+  const status = readiness(asset.layout);
 
   return (
     <li className="bg-white flex flex-col">
@@ -130,6 +133,19 @@ export default function AssetCard({ companyId, asset, examples }: { companyId: s
           {error}
         </p>
       </form>
+      {asset.kind === "overlay" && (
+        <div className="px-4 pb-4 -mt-1 flex items-center gap-2 text-sm">
+          <Link
+            href={`/social/annonser/${companyId}/mall/${asset.id}`}
+            className="flex items-center gap-1.5 font-bold border border-gray-300 bg-white hover:bg-gray-100 px-3 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500"
+          >
+            <Type className="w-4 h-4" aria-hidden /> {status.zones ? "Redigera layout" : "Markera textytor"}
+          </Link>
+          <span className={status.ready ? "text-gray-700" : "text-gray-600"}>
+            {status.ready ? `Klar i ${status.formats.join(", ")}` : status.zones ? "Saknar placering" : "Ej klar"}
+          </span>
+        </div>
+      )}
       {asset.kind === "overlay" && <ExampleStrip companyId={companyId} templateId={asset.id} examples={examples ?? []} />}
     </li>
   );

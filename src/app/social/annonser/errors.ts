@@ -16,6 +16,8 @@ export const ADS_ERRORS: Record<string, string> = {
   INVALID_SOURCE: "Ogiltig källa.",
   PARENT_NOT_FOUND: "Mallen finns inte längre. Ladda om sidan.",
   TOO_MANY_EXAMPLES: "Högst 8 exempel per mall. Ta bort något först.",
+  INVALID_LAYOUT: "Layouten gick inte att spara. Kontrollera textytorna och ladda om sidan.",
+  NOT_A_TEMPLATE: "Bara mallar har en layout.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
 export const FALLBACK = "Något gick fel. Försök igen.";

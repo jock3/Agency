@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { ValidatedUser } from "@/lib/auth/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { adsError, isUuid, memberCompany, userFromRequest, type Company } from "./access";
+import type { TemplateLayout } from "./layout";
 import { ASSET_BUCKET, COMPANY_QUOTA_BYTES, MAX_ASSET_BYTES, MAX_EXAMPLES_PER_TEMPLATE, type AssetExt, type AssetKind, type AssetSource } from "./asset-types";
 
 /**
@@ -23,6 +24,8 @@ export interface AssetRow {
   source: AssetSource;
   /** För exempelposter: mallen de hör till. */
   parent_id: string | null;
+  /** Mallens textytor och placering per format (steg 3). Bara mallar har en. */
+  layout: TemplateLayout | null;
   created_at: string;
 }
 
@@ -92,7 +95,7 @@ export async function listAssets(companyId: string): Promise<AssetView[]> {
   const sb = getSupabaseAdminClient();
   const { data, error } = await sb
     .from("ad_assets")
-    .select("id, kind, storage_path, filename, mime, bytes, width, height, description, tags, source, parent_id, created_at")
+    .select("id, kind, storage_path, filename, mime, bytes, width, height, description, tags, source, parent_id, layout, created_at")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
