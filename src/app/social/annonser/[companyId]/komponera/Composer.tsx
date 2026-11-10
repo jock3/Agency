@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Download, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Download, ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { composeAd, ensureFont, loadImage, remFontFamily, type ZoneReport } from "@/lib/ads/compose";
 import { ADS_ERRORS, FALLBACK } from "../../errors";
 import { FORMATS, FORMAT_SIZE, ROLE_NAMES, type AdFormat, type TemplateLayout } from "@/lib/ads/layout";
@@ -21,9 +21,18 @@ interface Template {
   layout: TemplateLayout;
 }
 
-/** Komponering för hand (steg 4). Samma renderare används senare när AI:n väljer och skriver (steg 5). */
-export default function Composer({ companyId, photos, templates }: { companyId: string; photos: Photo[]; templates: Template[] }) {
-  const [photoId, setPhotoId] = useState(photos[0].id);
+const saveBlob = (blob: Blob, name: string) => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+/** Komponering: för hand (steg 4), med AI-förslag (steg 5), byte och nedladdning (steg 6) och nya bilder från ArtCraft (steg 7). */
+export default function Composer({ companyId, photos: initialPhotos, templates }: { companyId: string; photos: Photo[]; templates: Template[] }) {
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [photoId, setPhotoId] = useState(initialPhotos[0].id);
   const [templateId, setTemplateId] = useState(templates[0].id);
   const [format, setFormat] = useState<AdFormat>("1:1");
   const [texts, setTexts] = useState<Record<string, string>>({});
@@ -35,8 +44,21 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [reason, setReason] = useState<string | null>(null);
+  const [dlBusy, setDlBusy] = useState(false);
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genBusy, setGenBusy] = useState(false);
+  const [genProgress, setGenProgress] = useState<number | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [genNote, setGenNote] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const run = useRef(0);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const aiFormats = FORMATS.filter((f) => templates.some((t) => t.layout.placements[f]));
 
   const photo = photos.find((p) => p.id === photoId)!;
@@ -64,6 +86,24 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
   }, [photo.url, template, activeFormat, texts]);
 
   const reportOf = useMemo(() => new Map(reports.map((r) => [r.id, r])), [reports]);
+
+  /** Byter mall och tar med texterna: rubrik blir rubrik, undertext blir undertext, men bara där den nya ytan är tom. */
+  function changeTemplate(newId: string) {
+    const to = templates.find((t) => t.id === newId);
+    if (!to) return;
+    setTexts((t) => {
+      const next = { ...t };
+      const seen = new Map<string, number>();
+      to.layout.zones.forEach((z) => {
+        const n = seen.get(z.role) ?? 0;
+        seen.set(z.role, n + 1);
+        const src = template.layout.zones.filter((f) => f.role === z.role)[n];
+        if (src && !(next[z.id] ?? "").trim() && (t[src.id] ?? "").trim()) next[z.id] = t[src.id];
+      });
+      return next;
+    });
+    setTemplateId(newId);
+  }
 
   /** Claude väljer bild och mall och skriver texten. Förslaget laddas in i samma väljare som man använder för hand. */
   async function suggest() {
@@ -94,12 +134,80 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
   function download() {
     canvas.current?.toBlob((blob) => {
       if (!blob) return setError("Annonsen gick inte att spara som bild.");
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `annons-${activeFormat.replace(":", "x")}.png`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      saveBlob(blob, `annons-${activeFormat.replace(":", "x")}.png`);
     }, "image/png");
+  }
+
+  /** Alla format som mallen har en placering i, med samma bild och text. */
+  async function downloadAll() {
+    setDlBusy(true);
+    try {
+      const fontFamily = remFontFamily();
+      const [img, tpl] = await Promise.all([loadImage(photo.url), loadImage(template.url), ensureFont(fontFamily)]);
+      for (const f of formats) {
+        const c = document.createElement("canvas");
+        composeAd(c, { format: f, photo: img, template: tpl, layout: template.layout, texts, fontFamily });
+        const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+        if (blob) saveBlob(blob, `annons-${f.replace(":", "x")}.png`);
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    } catch {
+      setError("Annonserna gick inte att spara som bilder.");
+    } finally {
+      setDlBusy(false);
+    }
+  }
+
+  /** Beställer en ny bild hos ArtCraft, väntar ut jobbet och lägger den färdiga bilden i bildbanken (servern sparar den). */
+  async function generate() {
+    setGenBusy(true);
+    setGenError(null);
+    setGenNote(null);
+    setGenProgress(0);
+    const base = `/api/annonser/companies/${companyId}/generate`;
+    try {
+      const start = await fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: genPrompt, format: aiFormat }) });
+      const s = await start.json().catch(() => ({}));
+      if (!start.ok) return setGenError(ADS_ERRORS[s.error] ?? FALLBACK);
+      const deadline = Date.now() + 5 * 60_000;
+      let failures = 0;
+      while (alive.current && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let d: { state?: string; progress?: number; error?: string; asset?: { id: string; url: string | null; label: string } };
+        let ok: boolean;
+        try {
+          const res = await fetch(`${base}/${s.token}?prompt=${encodeURIComponent(genPrompt)}`, { cache: "no-store" });
+          ok = res.ok;
+          d = await res.json().catch(() => ({}));
+          failures = 0;
+        } catch {
+          if (++failures >= 3) return setGenError(FALLBACK);
+          continue;
+        }
+        if (!ok) return setGenError((d.error && ADS_ERRORS[d.error]) || FALLBACK);
+        if (d.state === "running") {
+          setGenProgress(d.progress ?? 0);
+          continue;
+        }
+        if (d.state === "failed") return setGenError("ArtCraft kunde inte skapa bilden. Försök igen med en annan beskrivning.");
+        if (d.state === "done" && d.asset?.url) {
+          const asset = { id: d.asset.id, url: d.asset.url, label: d.asset.label };
+          setPhotos((list) => (list.some((p) => p.id === asset.id) ? list : [asset, ...list]));
+          setPhotoId(asset.id);
+          setGenNote("Bilden sparades i bildbanken och är vald.");
+          return;
+        }
+        return setGenError(FALLBACK);
+      }
+      if (alive.current) setGenError("Det tog för lång tid. Försök igen om en stund.");
+    } catch {
+      setGenError(FALLBACK);
+    } finally {
+      if (alive.current) {
+        setGenBusy(false);
+        setGenProgress(null);
+      }
+    }
   }
 
   const overflow = template.layout.zones.filter((z) => reportOf.get(z.id)?.fits === false);
@@ -144,6 +252,32 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
         {reason && `Varför: ${reason}`}
       </p>
     </section>
+    <section className="mt-4 bg-white p-4" aria-label="Ny bild">
+      <h3 className="font-bold text-sm flex items-center gap-1.5">
+        <ImagePlus className="w-4 h-4" aria-hidden /> Ingen bild som passar? Skapa en ny
+      </h3>
+      <label htmlFor="gen" className="text-sm block mt-2 mb-1">
+        Beskriv bilden <span className="text-gray-600">– till exempel &quot;kvinna i vinterjacka på en snöig gata, dagsljus&quot;. Bilden får aldrig någon text.</span>
+      </label>
+      <textarea id="gen" rows={2} maxLength={500} value={genPrompt} onChange={(e) => setGenPrompt(e.target.value)} className={field} />
+      <div className="flex flex-wrap items-center gap-3 mt-2">
+        <button
+          onClick={() => void generate()}
+          disabled={genBusy || !genPrompt.trim()}
+          className="flex items-center gap-1.5 text-sm font-bold bg-gray-900 hover:bg-gray-700 disabled:opacity-40 text-white px-4 py-2"
+        >
+          {genBusy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ImagePlus className="w-4 h-4" aria-hidden />}
+          {genBusy ? `Skapar bilden${genProgress ? ` (${genProgress} %)` : "…"}` : `Skapa bild i ${aiFormat}`}
+        </button>
+        <span className="text-xs text-gray-600">Använder formatet ovan. Kostar ArtCraft-krediter (cirka 8 US cent per bild) och sparas i bildbanken.</span>
+      </div>
+      <p role="alert" className="text-sm text-milou-600 mt-2 empty:hidden">
+        {genError}
+      </p>
+      <p role="status" className="text-sm text-gray-700 mt-2 empty:hidden">
+        {genNote}
+      </p>
+    </section>
     <div className="mt-6 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
       <div className="flex flex-col gap-5">
         <section className="bg-white p-4" aria-label="Bild">
@@ -170,7 +304,7 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
           <label htmlFor="tpl" className="font-bold text-sm block mb-1">
             Mall
           </label>
-          <select id="tpl" value={templateId} onChange={(e) => setTemplateId(e.target.value)} className={field}>
+          <select id="tpl" value={templateId} onChange={(e) => changeTemplate(e.target.value)} className={field}>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
@@ -214,8 +348,8 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
                   className={field}
                 />
                 <p className="text-xs text-gray-600 flex justify-between">
-                  <span>
-                    {text.length} av {z.maxChars} tecken
+                  <span className={text.length > z.maxChars ? "text-milou-600 font-bold" : undefined}>
+                    {text.length} av {z.maxChars} tecken{text.length > z.maxChars ? ": för långt för den här ytan, korta ner" : ""}
                   </span>
                   {r && <span>Textstorlek {Math.round(r.fontSize)} px</span>}
                 </p>
@@ -234,6 +368,16 @@ export default function Composer({ companyId, photos, templates }: { companyId: 
           >
             <Download className="w-4 h-4" aria-hidden /> Ladda ner PNG ({size.w}×{size.h})
           </button>
+          {formats.length > 1 && (
+            <button
+              onClick={() => void downloadAll()}
+              disabled={busy || dlBusy || !!error}
+              className="flex items-center gap-1.5 text-sm font-bold border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 px-4 py-2"
+            >
+              {dlBusy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Download className="w-4 h-4" aria-hidden />}
+              Alla format ({formats.join(", ")})
+            </button>
+          )}
           {busy && <Loader2 className="w-4 h-4 animate-spin text-gray-600" aria-label="Ritar annonsen" />}
         </div>
         <p role="alert" className="text-sm text-milou-600 mb-2 empty:hidden">

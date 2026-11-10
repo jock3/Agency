@@ -24,6 +24,15 @@ export const ADS_ERRORS: Record<string, string> = {
   NO_TEMPLATES: "Det finns ingen färdig mall med placering i det formatet.",
   AI_DISABLED: "AI är inte påslaget i den här miljön.",
   AI_FAILED: "AI:n gav inget användbart förslag. Försök igen, eller välj bild, mall och text själv.",
+  INVALID_PROMPT: "Beskriv bilden (högst 500 tecken).",
+  DAILY_CAP: "Högst 10 genererade bilder per företag och dygn. Försök igen i morgon.",
+  ARTCRAFT_DISABLED: "Bildgenerering är inte påslagen i den här miljön.",
+  ARTCRAFT_AUTH: "ArtCraft godkänner inte nyckeln. Kontrollera ARTCRAFT_API_KEY i Vercel.",
+  ARTCRAFT_PAYMENT: "ArtCraft-kontot har inte krediter för bilden.",
+  ARTCRAFT_REJECTED: "ArtCraft tog inte emot beställningen. Prova en annan beskrivning.",
+  ARTCRAFT_FAILED: "ArtCraft svarade inte. Försök igen om en stund.",
+  GEN_NOT_FOUND: "Jobbet hittades inte.",
+  GEN_IMPORT_FAILED: "Bilden blev klar men gick inte att hämta. Försök igen.",
   SERVER_ERROR: "Något gick fel på servern. Försök igen.",
 };
 export const FALLBACK = "Något gick fel. Försök igen.";
