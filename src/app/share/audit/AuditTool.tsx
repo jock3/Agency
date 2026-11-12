@@ -1,13 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import MilouLogo from "@/components/MilouLogo";
-import type { AuditedPage, PublicAuditResult } from "@/lib/audit/types";
-
-/** Dit "Kontakta oss" leder. milou.se saknar en egen kontaktsida
- *  (/kontakt ger 404), så knappen går till kontorssidan med kontaktuppgifter. */
-const CONTACT_URL = "https://milou.se/vara-kontor/";
+import type { PublicAuditResult } from "@/lib/audit/types";
 
 const ERRORS: Record<string, string> = {
   INVALID_URL: "Det ser inte ut som en giltig webbadress. Prova till exempel milou.se.",
@@ -44,6 +40,12 @@ function useReportHeight() {
     post();
     return () => observer.disconnect();
   }, []);
+}
+
+function scoreColor(score: number) {
+  if (score >= 8) return "text-emerald-700";
+  if (score >= 5) return "text-amber-600";
+  return "text-milou-500";
 }
 
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
@@ -210,48 +212,59 @@ function Result({ result }: { result: PublicAuditResult }) {
         </div>
       </div>
 
-      <ContactCta />
+      <Details groups={groups} result={result} />
 
-      <PageList pages={result.pages} />
     </section>
   );
 }
 
-function PageList({ pages }: { pages: AuditedPage[] }) {
+function Details({ groups, result }: { groups: { key: "seo" | "geo"; label: string; score: number }[]; result: PublicAuditResult }) {
+  const [open, setOpen] = useState(false);
   return (
-    <details open className="mt-10 border-y border-gray-100 group">
-      <summary className="py-3 cursor-pointer font-bold text-sm list-none flex items-center justify-between">
-        Granskade sidor ({pages.length})
-        <span className="text-gray-400 font-normal group-open:hidden">Visa</span>
-        <span className="text-gray-400 font-normal hidden group-open:inline">Dölj</span>
-      </summary>
-      <ul className="pb-3 divide-y divide-gray-100 text-sm">
-        {pages.map((p) => {
-          const u = new URL(p.url);
-          return (
-            <li key={p.url} className="py-2 flex items-baseline justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate">{p.title || "(ingen titel)"}</p>
-                <p className="text-gray-400 truncate">{u.pathname === "/" ? "Startsida" : u.pathname}</p>
-              </div>
-              <span className={`shrink-0 tabular-nums text-xs ${p.issues ? "text-amber-600" : "text-emerald-700"}`}>
-                {p.issues ? `${p.issues} brister` : "Inga brister"}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </details>
-  );
-}
+    <>
+      <div className="mt-12 bg-red-fade text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <p className="font-bold text-lg">Vill du se vad som måste göras?</p>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="audit-details"
+          className="bg-white text-gray-900 font-bold px-5 py-2.5 hover:bg-peach transition-colors text-center"
+        >
+          {open ? "Dölj brister" : "Se brister"}
+        </button>
+      </div>
 
-function ContactCta() {
-  return (
-    <div className="mt-12 bg-red-fade text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <p className="font-bold text-lg">Vill du veta hur ni blir mer synliga?</p>
-      <a href={CONTACT_URL} target="_top" className="bg-white text-gray-900 font-bold px-5 py-2.5 hover:bg-peach transition-colors text-center">
-        Kontakta oss
-      </a>
-    </div>
+      {open && (
+        <div id="audit-details" className="mt-14 grid sm:grid-cols-2 gap-10">
+          {groups.map((g) => (
+            <div key={g.key}>
+              <h2 className="font-bold text-lg mb-3">
+                {g.label} <span className={`tabular-nums ${scoreColor(g.score)}`}>{g.score}/10</span>
+              </h2>
+              <ul className="divide-y divide-gray-100 border-y border-gray-100">
+                {result.checks
+                  .filter((c) => c.group === g.key)
+                  .map((c) => (
+                    <li key={c.id} className="py-2.5 flex gap-2.5 text-sm">
+                      {c.status === "pass" ? (
+                        <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" aria-label="Godkänd" />
+                      ) : c.status === "warn" ? (
+                        <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" aria-label="Brist" />
+                      ) : (
+                        <X className="w-4 h-4 shrink-0 mt-0.5 text-milou-500" aria-label="Fel" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-bold">{c.label}</p>
+                        <p className="text-gray-500 break-words">{c.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

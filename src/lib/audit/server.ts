@@ -27,7 +27,7 @@ interface RunRow {
   pages: AuditedPage[] | null;
 }
 
-/** Betygen och de granskade sidorna lämnar servern. Kontrollerna med vad som är fel stannar kvar. */
+/** Fix-texterna och vikterna stannar på servern. */
 export function toPublic(row: RunRow): PublicAuditResult {
   return {
     id: row.id,
@@ -36,6 +36,7 @@ export function toPublic(row: RunRow): PublicAuditResult {
     score: row.score,
     seoScore: row.seo_score,
     geoScore: row.geo_score,
+    checks: row.checks.map(({ id, group, label, status, detail }) => ({ id, group, label, status, detail })),
     pages: (row.pages ?? []).map(({ url, title, status, issues }) => ({ url, title, status, issues })),
   };
 }
