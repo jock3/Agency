@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, TriangleAlert, X } from "lucide-react";
+import { Check, Loader2, TriangleAlert } from "lucide-react";
 import MilouLogo from "@/components/MilouLogo";
 import type { AuditedPage, PublicAuditResult } from "@/lib/audit/types";
 
@@ -44,12 +44,6 @@ function useReportHeight() {
     post();
     return () => observer.disconnect();
   }, []);
-}
-
-function scoreColor(score: number) {
-  if (score >= 8) return "text-emerald-700";
-  if (score >= 5) return "text-amber-600";
-  return "text-milou-500";
 }
 
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
@@ -218,43 +212,14 @@ function Result({ result }: { result: PublicAuditResult }) {
 
       <ContactCta />
 
-      <div className="mt-14 grid sm:grid-cols-2 gap-10">
-        {groups.map((g) => (
-          <div key={g.key}>
-            <h2 className="font-bold text-lg mb-3">
-              {g.label} <span className={`tabular-nums ${scoreColor(g.score)}`}>{g.score}/10</span>
-            </h2>
-            <ul className="divide-y divide-gray-100 border-y border-gray-100">
-              {result.checks
-                .filter((c) => c.group === g.key)
-                .map((c) => (
-                  <li key={c.id} className="py-2.5 flex gap-2.5 text-sm">
-                    {c.status === "pass" ? (
-                      <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" aria-label="Godkänd" />
-                    ) : c.status === "warn" ? (
-                      <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" aria-label="Brist" />
-                    ) : (
-                      <X className="w-4 h-4 shrink-0 mt-0.5 text-milou-500" aria-label="Fel" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-bold">{c.label}</p>
-                      <p className="text-gray-500 break-words">{c.detail}</p>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      {result.pages.length > 1 && <PageList pages={result.pages} />}
+      <PageList pages={result.pages} />
     </section>
   );
 }
 
 function PageList({ pages }: { pages: AuditedPage[] }) {
   return (
-    <details className="mt-10 border-y border-gray-100 group">
+    <details open className="mt-10 border-y border-gray-100 group">
       <summary className="py-3 cursor-pointer font-bold text-sm list-none flex items-center justify-between">
         Granskade sidor ({pages.length})
         <span className="text-gray-400 font-normal group-open:hidden">Visa</span>

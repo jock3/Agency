@@ -32,6 +32,5 @@ export interface PublicAuditResult {
   score: number;
   seoScore: number;
   geoScore: number;
-  checks: Omit<Check, "fix" | "weight">[];
   pages: AuditedPage[];
 }
