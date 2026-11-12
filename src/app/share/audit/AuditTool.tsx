@@ -18,6 +18,8 @@ const ERRORS: Record<string, string> = {
   TOO_MANY_REDIRECTS: "Sajten omdirigerar för många gånger.",
   SITE_ERROR: "Sajten svarade med ett fel.",
   NOT_HTML: "Adressen pekar inte på en webbsida.",
+  INVALID_EMAIL: "Det ser inte ut som en giltig e-postadress.",
+  CONSENT_REQUIRED: "Du behöver godkänna att vi får kontakta dig.",
   RATE_LIMITED: "Du har gjort många granskningar på kort tid. Vänta en stund och försök igen.",
 };
 const fallbackError = "Något gick fel. Försök igen.";
@@ -53,6 +55,8 @@ function scoreColor(score: number) {
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
   useReportHeight();
   const [url, setUrl] = useState("");
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
   const [running, setRunning] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -61,7 +65,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
 
   async function run(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim() || running) return;
+    if (!url.trim() || !email.trim() || !consent || running) return;
     setRunning(true);
     setError("");
     setResult(null);
@@ -71,7 +75,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
       const res = await fetch("/api/public/audit/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, email, consent }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setError(ERRORS[data.error] ?? fallbackError);
@@ -104,28 +108,55 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           synlighet i ChatGPT, Claude, Perplexity och Googles AI-svar.
         </p>
 
-        <form onSubmit={run} className="mt-8 flex flex-col sm:flex-row gap-3">
-          <label htmlFor="audit-url" className="sr-only">
-            Webbadress
+        <form onSubmit={run} className="mt-8 space-y-3">
+          <div>
+            <label htmlFor="audit-url" className="sr-only">
+              Webbadress
+            </label>
+            <input
+              id="audit-url"
+              type="text"
+              inputMode="url"
+              autoComplete="url"
+              placeholder="dinsajt.se"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={running}
+              className="w-full border-2 border-gray-900 px-4 py-3 text-lg outline-none focus:border-milou-500 disabled:bg-gray-50"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <label htmlFor="audit-email" className="sr-only">
+              E-postadress
+            </label>
+            <input
+              id="audit-email"
+              type="email"
+              autoComplete="email"
+              placeholder="din@epost.se"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={running}
+              className="flex-1 border-2 border-gray-900 px-4 py-3 text-lg outline-none focus:border-milou-500 disabled:bg-gray-50"
+            />
+            <button
+              type="submit"
+              disabled={running || !url.trim() || !email.trim() || !consent}
+              className="bg-milou-500 hover:bg-milou-600 text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
+            >
+              {running ? "Granskar…" : "Granska"}
+            </button>
+          </div>
+          <label className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              disabled={running}
+              className="mt-1 accent-milou-500"
+            />
+            <span>Jag godkänner att Milou kontaktar mig om resultatet och hur vi kan hjälpa till.</span>
           </label>
-          <input
-            id="audit-url"
-            type="text"
-            inputMode="url"
-            autoComplete="url"
-            placeholder="dinsajt.se"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={running}
-            className="flex-1 border-2 border-gray-900 px-4 py-3 text-lg outline-none focus:border-milou-500 disabled:bg-gray-50"
-          />
-          <button
-            type="submit"
-            disabled={running || !url.trim()}
-            className="bg-milou-500 hover:bg-milou-600 text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
-          >
-            {running ? "Granskar…" : "Granska"}
-          </button>
         </form>
 
         {running && (

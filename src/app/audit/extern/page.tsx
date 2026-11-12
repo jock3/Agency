@@ -12,6 +12,7 @@ interface Row {
   geo_score: number;
   created_at: string;
   pages: unknown[] | null;
+  audit_leads: { email: string }[] | null;
 }
 
 const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Stockholm" });
@@ -25,7 +26,7 @@ export default async function AuditExternPage() {
   const sb = getSupabaseAdminClient();
   const { data, error } = await sb
     .from("audit_runs")
-    .select("id, final_url, host, score, seo_score, geo_score, created_at, pages")
+    .select("id, final_url, host, score, seo_score, geo_score, created_at, pages, audit_leads(email)")
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as Row[];
@@ -35,7 +36,7 @@ export default async function AuditExternPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Externt verktyg</h2>
-          <p className="text-sm text-gray-500 mt-1">Granskningar från det publika verktyget. Senaste 200 körningarna.</p>
+          <p className="text-sm text-gray-500 mt-1">Granskningar från det publika verktyget, med besökarens e-post. Senaste 200 körningarna.</p>
         </div>
         <Link href="/share/audit" target="_blank" className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 text-white px-4 py-2">
           Öppna verktyget <ExternalLink className="w-4 h-4" />
@@ -51,6 +52,7 @@ export default async function AuditExternPage() {
             <tr>
               <th className="py-2 px-3 font-normal">Tid</th>
               <th className="py-2 px-3 font-normal">URL</th>
+              <th className="py-2 px-3 font-normal">E-post</th>
               <th className="py-2 px-3 font-normal text-right">Totalt</th>
               <th className="py-2 px-3 font-normal text-right">SEO</th>
               <th className="py-2 px-3 font-normal text-right">GEO</th>
@@ -65,6 +67,9 @@ export default async function AuditExternPage() {
                   <a href={r.final_url} target="_blank" rel="noreferrer" className="hover:text-milou-500">
                     {r.final_url}
                   </a>
+                </td>
+                <td className="py-2 px-3 max-w-xs truncate">
+                  {r.audit_leads?.length ? [...new Set(r.audit_leads.map((l) => l.email))].join(", ") : <span className="text-gray-300">–</span>}
                 </td>
                 <td className="py-2 px-3 text-right tabular-nums font-bold">{r.score}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{r.seo_score}</td>

@@ -15,8 +15,17 @@ const RUNS_PER_HOUR = 10;
  *  skonsamt mot sajten som granskas. */
 const CACHE_MS = 24 * HOUR;
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Sparar besökarens e-post som lead. Samma adress på samma körning ger ingen dubblett. */
+async function saveLead(sb: ReturnType<typeof getSupabaseAdminClient>, runId: string, email: string) {
+  const existing = await sb.from("audit_leads").select("id").eq("run_id", runId).eq("email", email).limit(1).maybeSingle();
+  if (existing.data) return;
+  await sb.from("audit_leads").insert({ run_id: runId, email, consent: true });
+}
+
 /**
- * Publik: ingen session. Startsidan och ett urval undersidor hämtas,
+ * Publik: ingen session. E-post och samtycke krävs innan granskningen körs. Startsidan och ett urval undersidor hämtas,
  * kontrolleras och betygssätts. Svaret innehåller betyget och kontrollerna.
  */
 export async function POST(request: NextRequest) {
@@ -29,6 +38,10 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     return auditError(err instanceof FetchError ? err.code : "INVALID_URL");
   }
+
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!EMAIL_RE.test(email) || email.length > 254) return auditError("INVALID_EMAIL");
+  if (body.consent !== true) return auditError("CONSENT_REQUIRED");
 
   const demo = isDemo();
   const sb = demo ? null : getSupabaseAdminClient();
@@ -44,7 +57,10 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (cached.data) return NextResponse.json(toPublic(cached.data));
+    if (cached.data) {
+      await saveLead(sb, cached.data.id, email);
+      return NextResponse.json(toPublic(cached.data));
+    }
 
     const recent = await sb
       .from("audit_runs")
@@ -86,5 +102,6 @@ export async function POST(request: NextRequest) {
     .single();
   if (error || !data) return auditError("SERVER_ERROR", 500);
 
+  await saveLead(sb, data.id, email);
   return NextResponse.json(toPublic(data));
 }
