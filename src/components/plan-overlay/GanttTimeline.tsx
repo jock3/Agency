@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { Fragment, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { format, differenceInWeeks } from "date-fns";
 import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
@@ -13,6 +13,9 @@ import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadli
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
 import { AddButton, DeleteButton, LANE, isLight, laneStyle, lineShade } from "@/components/shared/timeline";
+import { PLATFORMS, findPlatform, type Platform } from "@/lib/platforms";
+import { Plus } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const INFO_COLS_FULL = "232px 96px 112px 64px 116px 100px";
 const INFO_COLS_COMPACT = "232px 116px 100px";
@@ -48,6 +51,10 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   const weeks = useMemo(() => getPlanWeeks(plan.period_start, plan.period_end), [plan.period_start, plan.period_end]);
   const months = useMemo(() => getMonthGroups(weeks), [weeks]);
   const weekCount = weeks.length;
+  const socialCats = useMemo(() => plan.categories.filter((c) => c.section === "social"), [plan.categories]);
+  // Kategorier utan sektion är äldre rader; de hör till extern media.
+  const externCats = useMemo(() => plan.categories.filter((c) => c.section !== "social"), [plan.categories]);
+  const socialLines = socialCats.flatMap((c) => c.lines);
 
   const INFO_COLS = compact ? INFO_COLS_COMPACT : INFO_COLS_FULL;
   const INFO_COL_COUNT = compact ? INFO_COL_COUNT_COMPACT : INFO_COL_COUNT_FULL;
@@ -140,9 +147,28 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     }
   };
 
+  const [addingPlatform, setAddingPlatform] = useState(false);
+
+  const handleAddPlatform = async (platform: Platform) => {
+    if (addingPlatform) return;
+    setAddingPlatform(true);
+    try {
+      const existing = plan.categories.find((c) => c.section === "social");
+      const cat = existing ?? await createCategory(plan.id, "Sociala medier", plan.categories.length, "social");
+      const count = existing ? existing.lines.length : 0;
+      const line = await createLine(cat.id, plan.period_start, plan.period_end, count);
+      await updateLine(line.id, { platform_name: platform.name, color: platform.color });
+      onPlanChanged();
+    } catch {
+      showError("Kunde inte lägga till plattformen. Försök igen.");
+    } finally {
+      setAddingPlatform(false);
+    }
+  };
+
   const handleAddCategory = async () => {
     try {
-      await createCategory(plan.id, "Ny kategori", plan.categories.length);
+      await createCategory(plan.id, "Ny kategori", plan.categories.length, "extern");
       onPlanChanged();
     } catch {
       showError("Kunde inte lägga till kategori. Försök igen.");
@@ -358,8 +384,62 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
           </>
         )}
 
-        {/* ── Category rows ── */}
-        {plan.categories.map((cat) => (
+        {/* ── Sociala medier ── */}
+        {(!readOnly || socialLines.length > 0) && (
+          <>
+            <SectionBand title="Sociala medier" action={!readOnly && <PlatformPicker onPick={handleAddPlatform} busy={addingPlatform} />} />
+            {socialCats.map((cat) =>
+              cat.lines.map((line, idx) => {
+                const platform = findPlatform(line.platform_name);
+                const brandColor = platform?.color ?? lineShade(cat.color, idx);
+                const fg = isLight(brandColor) ? "#1C1C1C" : "#FFFFFF";
+                return (
+                  <Fragment key={line.id}>
+                    <div className={`${stickyClass} h-2`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
+                    <div style={laneStyle(weekCount)} className="relative h-2 bg-white" />
+                    <GanttLineRow
+                      line={line}
+                      plan={plan}
+                      weeks={weeks}
+                      weekCount={weekCount}
+                      infoColCount={INFO_COL_COUNT}
+                      readOnly={readOnly}
+                      compact={compact}
+                      deadlines={plan.deadlines}
+                      span={getSpan(line.start_date, line.end_date)}
+                      onUpdate={(updates) => handleLineUpdate(line.id, updates)}
+                      onDelete={() => handleDeleteLine(line.id)}
+                      lineIndex={idx}
+                      lineCount={cat.lines.length}
+                      barColor={fg === "#FFFFFF" ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.25)"}
+                      accentColor={brandColor}
+                      brand={{ color: brandColor, fg, path: platform?.path ?? null, name: line.platform_name }}
+                      onReorder={!readOnly ? (dir) => handleReorderLine(cat.id, line.id, dir) : undefined}
+                      cellClass={cellClass}
+                      stickyClass={stickyClass}
+                    />
+                  </Fragment>
+                );
+              })
+            )}
+            {socialLines.length === 0 && (
+              <>
+                <div className={`${cellClass} ${stickyClass} min-h-[72px] text-gray-500`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
+                  Inga plattformar än. Tryck på plusset för att välja en.
+                </div>
+                <div style={laneStyle(weekCount)} className={`${LANE} min-h-[72px]`} />
+              </>
+            )}
+            <div className={`${stickyClass} h-6`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
+            <div style={laneStyle(weekCount)} className="relative h-6 bg-white" />
+          </>
+        )}
+
+        {/* ── Extern media ── */}
+        {(!readOnly || externCats.length > 0) && (
+          <>
+            <SectionBand title="Extern media" />
+        {externCats.map((cat) => (
           <GanttCategorySection
             key={cat.id}
             category={cat}
@@ -392,6 +472,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
               <AddButton onClick={handleAddCategory}>Kategori</AddButton>
             </div>
             <div style={laneStyle(weekCount)} className={LANE} />
+          </>
+        )}
           </>
         )}
 
@@ -617,7 +699,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, barColor, accentColor, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, barColor, accentColor, brand, cellClass, stickyClass,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -636,9 +718,13 @@ function GanttLineRow({
   onReorder?: (direction: "up" | "down") => void;
   barColor: string;
   accentColor: string;
+  /** Plattformsrad: hela raden fylls med varumärkets färg och logotyp. */
+  brand?: { color: string; fg: string; path: string | null; name: string };
   cellClass: string;
   stickyClass: string;
 }) {
+  if (brand) cellClass = `${cellClass} brand-row !min-h-[68px] !border-b-0`;
+  const cellStyle: React.CSSProperties | undefined = brand ? { backgroundColor: brand.color, color: brand.fg } : undefined;
   const total = calcLineTotal(line);
   const containerRef = useRef<HTMLDivElement>(null);
   const onUpdateRef = useRef(onUpdate);
@@ -770,7 +856,7 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset 4px 0 0 ${accentColor}` }}>
+      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={brand ? cellStyle : { boxShadow: `inset 4px 0 0 ${accentColor}` }}>
         {!readOnly && onReorder ? (
           <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -791,8 +877,25 @@ function GanttLineRow({
         ) : (
           <span className="w-2 shrink-0" />
         )}
-        <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: barColor }} aria-hidden />
-        {readOnly ? (
+        {brand ? (
+          brand.path ? (
+            <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="currentColor" aria-hidden><path d={brand.path} /></svg>
+          ) : (
+            <span className="w-6 h-6 shrink-0" aria-hidden />
+          )
+        ) : (
+          <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: barColor }} aria-hidden />
+        )}
+        {brand ? (
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <span className="font-display font-bold text-base truncate">{line.platform_name}</span>
+            {!readOnly && (
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                <button onClick={onDelete} title="Ta bort plattform" aria-label="Ta bort plattform" className="opacity-70 hover:opacity-100">✕</button>
+              </span>
+            )}
+          </div>
+        ) : readOnly ? (
           <span className="text-gray-900 truncate">{line.platform_name}</span>
         ) : (
           <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -810,7 +913,7 @@ function GanttLineRow({
 
       {/* Cost per unit — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-end`}>
+        <div className={`${cellClass} justify-end`} style={cellStyle}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
           ) : (
@@ -826,7 +929,7 @@ function GanttLineRow({
 
       {/* Unit type — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass}`}>
+        <div className={`${cellClass}`} style={cellStyle}>
           {readOnly ? (
             <span className="truncate text-gray-700">{line.unit_type}</span>
           ) : (
@@ -845,7 +948,7 @@ function GanttLineRow({
 
       {/* Quantity — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-center`}>
+        <div className={`${cellClass} justify-center`} style={cellStyle}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.quantity}</span>
           ) : (
@@ -860,12 +963,12 @@ function GanttLineRow({
       )}
 
       {/* Total */}
-      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`}>
+      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`} style={cellStyle}>
         {formatSEK(total)}
       </div>
 
       {/* Estimated reach */}
-      <div className={`${cellClass} justify-end`}>
+      <div className={`${cellClass} justify-end`} style={cellStyle}>
         {readOnly ? (
           <span className="text-gray-700 tabular-nums">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
         ) : (
@@ -883,8 +986,10 @@ function GanttLineRow({
       {/* Gantt bar cell */}
       <div
         ref={containerRef}
-        style={laneStyle(weekCount)}
-        className={`${LANE} group/bar`}
+        style={brand
+          ? { ...laneStyle(weekCount), backgroundColor: brand.color, backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.16) 1px, transparent 1px)" }
+          : laneStyle(weekCount)}
+        className={`${LANE} group/bar ${brand ? "!border-b-0 !border-l-0 min-h-[68px]" : ""}`}
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
 
@@ -946,7 +1051,7 @@ function GanttLineRow({
               width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
               backgroundColor: barColor,
               top: "50%",
-              height: "20px",
+              height: brand ? "28px" : "20px",
               transform: "translateY(-50%)",
               zIndex: 5,
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
@@ -1094,3 +1199,78 @@ function BudgetSummaryRow({
   );
 }
 
+
+/* ─── Sektionsband och plattformsväljare ─────────────────── */
+function SectionBand({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="bg-gray-900 text-white" style={{ gridColumn: "1 / -1" }}>
+      <div className="sticky left-0 flex items-center gap-4 px-4 min-h-[56px] w-max">
+        <span className="font-display font-bold text-lg">{title}</span>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open]);
+
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 8, left: Math.min(r.left, window.innerWidth - 336) });
+    }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        disabled={busy}
+        title="Lägg till plattform"
+        aria-label="Lägg till plattform"
+        aria-expanded={open}
+        className="w-8 h-8 flex items-center justify-center bg-white text-gray-900 hover:bg-milou-500 hover:text-white transition-colors disabled:opacity-50"
+      >
+        <Plus className="w-5 h-5" strokeWidth={2.5} aria-hidden />
+      </button>
+      {open && pos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-[61] w-80 bg-white text-gray-900 shadow-2xl border border-gray-200 p-2 grid grid-cols-2 gap-1.5"
+            style={{ top: pos.top, left: pos.left }}
+            role="menu"
+          >
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.key}
+                role="menuitem"
+                onClick={() => { setOpen(false); onPick(p); }}
+                className="flex items-center gap-2.5 px-2.5 py-2 text-left text-sm font-bold hover:bg-gray-100 transition-colors"
+              >
+                <span className="w-8 h-8 shrink-0 flex items-center justify-center" style={{ backgroundColor: p.color, color: isLight(p.color) ? "#1C1C1C" : "#fff" }}>
+                  <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" width={18} height={18} fill="currentColor" aria-hidden><path d={p.path} /></svg>
+                </span>
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </>,
+        document.body,
+      )}
+    </>
+  );
+}

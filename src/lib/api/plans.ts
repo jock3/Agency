@@ -127,7 +127,7 @@ export async function duplicatePlan(id: string): Promise<MediaPlan> {
   for (const cat of original.categories) {
     const { data: newCat, error: catErr } = await sb
       .from("media_categories")
-      .insert({ plan_id: newPlan.id, name: cat.name, color: cat.color, budget: cat.budget, sort_order: cat.sort_order })
+      .insert({ plan_id: newPlan.id, name: cat.name, color: cat.color, budget: cat.budget, sort_order: cat.sort_order, section: cat.section ?? null })
       .select()
       .single();
     if (catErr) throw new Error(catErr.message);

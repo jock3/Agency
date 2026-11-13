@@ -25,9 +25,10 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
 
   const loadPlan = useCallback(async () => {
     const data = await getFullPlan(planId);
-    setPlan(data);
+    // Äldre kategorier utan sektion ligger kvar i databasen men visas inte i redigeraren.
+    setPlan(data && !readOnly ? { ...data, categories: data.categories.filter((c) => c.section) } : data);
     setLoading(false);
-  }, [planId]);
+  }, [planId, readOnly]);
 
   useEffect(() => { loadPlan(); }, [loadPlan]);
 

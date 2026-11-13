@@ -30,6 +30,8 @@ export interface MediaCategory {
   budget: number | null;
   color: string;
   sort_order: number;
+  /** Delen av planen: sociala medier eller extern media. Null = äldre rad utan sektion. */
+  section?: 'social' | 'extern' | null;
 }
 
 export interface MediaLine {

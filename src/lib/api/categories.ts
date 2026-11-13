@@ -16,12 +16,17 @@ const CATEGORY_COLORS = [
   "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#14b8a6",
 ];
 
-export async function createCategory(planId: string, name: string, sortOrder = 0): Promise<MediaCategory> {
+export async function createCategory(
+  planId: string,
+  name: string,
+  sortOrder = 0,
+  section: "social" | "extern" = "extern",
+): Promise<MediaCategory> {
   const sb = await authedDb();
   const color = CATEGORY_COLORS[sortOrder % CATEGORY_COLORS.length];
   const { data, error } = await sb
     .from("media_categories")
-    .insert({ plan_id: planId, name, color, sort_order: sortOrder })
+    .insert({ plan_id: planId, name, color, sort_order: sortOrder, section })
     .select()
     .single();
   if (error) throw new Error(error.message);
