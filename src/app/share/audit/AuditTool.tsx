@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, TriangleAlert, X } from "lucide-react";
-import MilouLogo from "@/components/MilouLogo";
 import type { PublicAuditResult } from "@/lib/audit/types";
 
 const ERRORS: Record<string, string> = {
@@ -92,8 +91,6 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         </p>
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        <MilouLogo className="h-5 w-auto text-milou-500 mb-10" />
-
         <h1 className="text-3xl sm:text-5xl font-bold leading-tight">
           <span className="milou-band bg-peach">Hur synlig är din sajt</span>
           <br />
