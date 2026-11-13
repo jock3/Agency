@@ -78,7 +78,7 @@ export default function CampaignOverlay({ planId, onClose, readOnly }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+    <div className="fixed inset-x-0 bottom-0 top-14 z-50 flex flex-col" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative flex flex-col bg-white w-full h-full overflow-hidden">
