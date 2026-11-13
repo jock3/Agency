@@ -392,7 +392,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
               cat.lines.map((line, idx) => {
                 const platform = findPlatform(line.platform_name);
                 const brandColor = platform?.color ?? lineShade(cat.color, idx);
-                const fg = isLight(brandColor) ? "#1C1C1C" : "#FFFFFF";
+                // Logotypen i varumärkets färg, men mörk när färgen är för ljus för vit bakgrund.
+                const logoColor = isLight(brandColor) ? "#1C1C1C" : brandColor;
                 return (
                   <Fragment key={line.id}>
                     <div className={`${stickyClass} h-2`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
@@ -411,9 +412,9 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
                       onDelete={() => handleDeleteLine(line.id)}
                       lineIndex={idx}
                       lineCount={cat.lines.length}
-                      barColor={fg === "#FFFFFF" ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.25)"}
+                      barColor={brandColor}
                       accentColor={brandColor}
-                      brand={{ color: brandColor, fg, path: platform?.path ?? null, name: line.platform_name }}
+                      brand={{ color: brandColor, fg: logoColor, path: platform?.path ?? null, name: line.platform_name }}
                       onReorder={!readOnly ? (dir) => handleReorderLine(cat.id, line.id, dir) : undefined}
                       cellClass={cellClass}
                       stickyClass={stickyClass}
@@ -723,8 +724,7 @@ function GanttLineRow({
   cellClass: string;
   stickyClass: string;
 }) {
-  if (brand) cellClass = `${cellClass} brand-row !min-h-[68px] !border-b-0`;
-  const cellStyle: React.CSSProperties | undefined = brand ? { backgroundColor: brand.color, color: brand.fg } : undefined;
+  if (brand) cellClass = `${cellClass} !min-h-[60px]`;
   const total = calcLineTotal(line);
   const containerRef = useRef<HTMLDivElement>(null);
   const onUpdateRef = useRef(onUpdate);
@@ -856,7 +856,7 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={brand ? cellStyle : { boxShadow: `inset 4px 0 0 ${accentColor}` }}>
+      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset 4px 0 0 ${accentColor}` }}>
         {!readOnly && onReorder ? (
           <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -879,7 +879,7 @@ function GanttLineRow({
         )}
         {brand ? (
           brand.path ? (
-            <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="currentColor" aria-hidden><path d={brand.path} /></svg>
+            <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="currentColor" style={{ color: brand.fg }} aria-hidden><path d={brand.path} /></svg>
           ) : (
             <span className="w-6 h-6 shrink-0" aria-hidden />
           )
@@ -891,7 +891,7 @@ function GanttLineRow({
             <span className="font-display font-bold text-base truncate">{line.platform_name}</span>
             {!readOnly && (
               <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                <button onClick={onDelete} title="Ta bort plattform" aria-label="Ta bort plattform" className="opacity-70 hover:opacity-100">✕</button>
+                <button onClick={onDelete} title="Ta bort plattform" aria-label="Ta bort plattform" className="text-gray-300 hover:text-milou-500 transition-colors">✕</button>
               </span>
             )}
           </div>
@@ -913,7 +913,7 @@ function GanttLineRow({
 
       {/* Cost per unit — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-end`} style={cellStyle}>
+        <div className={`${cellClass} justify-end`}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
           ) : (
@@ -929,7 +929,7 @@ function GanttLineRow({
 
       {/* Unit type — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass}`} style={cellStyle}>
+        <div className={`${cellClass}`}>
           {readOnly ? (
             <span className="truncate text-gray-700">{line.unit_type}</span>
           ) : (
@@ -948,7 +948,7 @@ function GanttLineRow({
 
       {/* Quantity — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-center`} style={cellStyle}>
+        <div className={`${cellClass} justify-center`}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.quantity}</span>
           ) : (
@@ -963,12 +963,12 @@ function GanttLineRow({
       )}
 
       {/* Total */}
-      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`} style={cellStyle}>
+      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`}>
         {formatSEK(total)}
       </div>
 
       {/* Estimated reach */}
-      <div className={`${cellClass} justify-end`} style={cellStyle}>
+      <div className={`${cellClass} justify-end`}>
         {readOnly ? (
           <span className="text-gray-700 tabular-nums">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
         ) : (
@@ -986,10 +986,8 @@ function GanttLineRow({
       {/* Gantt bar cell */}
       <div
         ref={containerRef}
-        style={brand
-          ? { ...laneStyle(weekCount), backgroundColor: brand.color, backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.16) 1px, transparent 1px)" }
-          : laneStyle(weekCount)}
-        className={`${LANE} group/bar ${brand ? "!border-b-0 !border-l-0 min-h-[68px]" : ""}`}
+        style={laneStyle(weekCount)}
+        className={`${LANE} group/bar ${brand ? "min-h-[60px]" : ""}`}
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
 

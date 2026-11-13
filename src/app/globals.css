@@ -261,11 +261,3 @@
   background-image: conic-gradient(#e5e5e5 25%, transparent 0 50%, #e5e5e5 0 75%, transparent 0);
   background-size: 16px 16px;
 }
-
-/* Plattformsrader i mediaplanen: hela raden har varumärkets färg, så texten
-   i cellerna ärver radens textfärg i stället för de vanliga grå. */
-.brand-row,
-.brand-row :is(span, input, select, button, option) {
-  color: inherit;
-}
-.brand-row select { background-color: transparent; }
