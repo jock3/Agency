@@ -13,7 +13,8 @@ import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadli
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
 import { AddButton, DeleteButton, LANE, isLight, laneStyle, lineShade } from "@/components/shared/timeline";
-import { PLATFORMS, findPlatform, type Platform } from "@/lib/platforms";
+import { PLATFORMS, EXTERN_CHANNELS, findPlatform, type Platform } from "@/lib/platforms";
+import PlatformLogo from "@/components/shared/PlatformLogo";
 import { Plus } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -52,9 +53,11 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   const months = useMemo(() => getMonthGroups(weeks), [weeks]);
   const weekCount = weeks.length;
   const socialCats = useMemo(() => plan.categories.filter((c) => c.section === "social"), [plan.categories]);
-  // Kategorier utan sektion är äldre rader; de hör till extern media.
-  const externCats = useMemo(() => plan.categories.filter((c) => c.section !== "social"), [plan.categories]);
+  const externCats = useMemo(() => plan.categories.filter((c) => c.section === "extern"), [plan.categories]);
+  // Äldre kategorier utan sektion visas bara i kundlänken, med den gamla vyn.
+  const legacyCats = useMemo(() => plan.categories.filter((c) => !c.section), [plan.categories]);
   const socialLines = socialCats.flatMap((c) => c.lines);
+  const externLines = externCats.flatMap((c) => c.lines);
 
   const INFO_COLS = compact ? INFO_COLS_COMPACT : INFO_COLS_FULL;
   const INFO_COL_COUNT = compact ? INFO_COL_COUNT_COMPACT : INFO_COL_COUNT_FULL;
@@ -149,29 +152,20 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
 
   const [addingPlatform, setAddingPlatform] = useState(false);
 
-  const handleAddPlatform = async (platform: Platform) => {
+  const handleAddChannel = async (platform: Platform, section: "social" | "extern") => {
     if (addingPlatform) return;
     setAddingPlatform(true);
     try {
-      const existing = plan.categories.find((c) => c.section === "social");
-      const cat = existing ?? await createCategory(plan.id, "Sociala medier", plan.categories.length, "social");
+      const existing = plan.categories.find((c) => c.section === section);
+      const cat = existing ?? await createCategory(plan.id, section === "social" ? "Sociala medier" : "Extern media", plan.categories.length, section);
       const count = existing ? existing.lines.length : 0;
       const line = await createLine(cat.id, plan.period_start, plan.period_end, count);
       await updateLine(line.id, { platform_name: platform.name, color: platform.color });
       onPlanChanged();
     } catch {
-      showError("Kunde inte lägga till plattformen. Försök igen.");
+      showError("Kunde inte lägga till raden. Försök igen.");
     } finally {
       setAddingPlatform(false);
-    }
-  };
-
-  const handleAddCategory = async () => {
-    try {
-      await createCategory(plan.id, "Ny kategori", plan.categories.length, "extern");
-      onPlanChanged();
-    } catch {
-      showError("Kunde inte lägga till kategori. Försök igen.");
     }
   };
 
@@ -201,6 +195,43 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     await deleteDeadline(id);
     onPlanChanged();
   };
+
+  const renderBrandRows = (cats: typeof plan.categories) =>
+    cats.map((cat) =>
+              cat.lines.map((line, idx) => {
+                const platform = findPlatform(line.platform_name);
+                const brandColor = platform?.color ?? lineShade(cat.color, idx);
+                // Logotypen i varumärkets färg, men mörk när färgen är för ljus för vit bakgrund.
+                const logoColor = isLight(brandColor) ? "#1C1C1C" : brandColor;
+                return (
+                  <Fragment key={line.id}>
+                    <div className={`${stickyClass} h-5`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
+                    <div style={laneStyle(weekCount)} className="relative h-5 bg-white" />
+                    <GanttLineRow
+                      line={line}
+                      plan={plan}
+                      weeks={weeks}
+                      weekCount={weekCount}
+                      infoColCount={INFO_COL_COUNT}
+                      readOnly={readOnly}
+                      compact={compact}
+                      deadlines={plan.deadlines}
+                      span={getSpan(line.start_date, line.end_date)}
+                      onUpdate={(updates) => handleLineUpdate(line.id, updates)}
+                      onDelete={() => handleDeleteLine(line.id)}
+                      lineIndex={idx}
+                      lineCount={cat.lines.length}
+                      barColor={brandColor}
+                      accentColor={brandColor}
+                      brand={{ color: brandColor, fg: logoColor, platform }}
+                      onReorder={!readOnly ? (dir) => handleReorderLine(cat.id, line.id, dir) : undefined}
+                      cellClass={cellClass}
+                      stickyClass={stickyClass}
+                    />
+                  </Fragment>
+                );
+              })
+            );
 
   return (
     <>
@@ -370,42 +401,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {/* ── Sociala medier ── */}
         {(!readOnly || socialLines.length > 0) && (
           <>
-            <SectionBand title="Sociala medier" action={!readOnly && <PlatformPicker onPick={handleAddPlatform} busy={addingPlatform} />} />
-            {socialCats.map((cat) =>
-              cat.lines.map((line, idx) => {
-                const platform = findPlatform(line.platform_name);
-                const brandColor = platform?.color ?? lineShade(cat.color, idx);
-                // Logotypen i varumärkets färg, men mörk när färgen är för ljus för vit bakgrund.
-                const logoColor = isLight(brandColor) ? "#1C1C1C" : brandColor;
-                return (
-                  <Fragment key={line.id}>
-                    <div className={`${stickyClass} h-5`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
-                    <div style={laneStyle(weekCount)} className="relative h-5 bg-white" />
-                    <GanttLineRow
-                      line={line}
-                      plan={plan}
-                      weeks={weeks}
-                      weekCount={weekCount}
-                      infoColCount={INFO_COL_COUNT}
-                      readOnly={readOnly}
-                      compact={compact}
-                      deadlines={plan.deadlines}
-                      span={getSpan(line.start_date, line.end_date)}
-                      onUpdate={(updates) => handleLineUpdate(line.id, updates)}
-                      onDelete={() => handleDeleteLine(line.id)}
-                      lineIndex={idx}
-                      lineCount={cat.lines.length}
-                      barColor={brandColor}
-                      accentColor={brandColor}
-                      brand={{ color: brandColor, fg: logoColor, path: platform?.path ?? null, name: line.platform_name }}
-                      onReorder={!readOnly ? (dir) => handleReorderLine(cat.id, line.id, dir) : undefined}
-                      cellClass={cellClass}
-                      stickyClass={stickyClass}
-                    />
-                  </Fragment>
-                );
-              })
-            )}
+            <SectionBand title="Sociala medier" action={!readOnly && <PlatformPicker items={PLATFORMS} label="Lägg till plattform" onPick={(p) => handleAddChannel(p, "social")} busy={addingPlatform} />} />
+            {renderBrandRows(socialCats)}
             {socialLines.length === 0 && (
               <>
                 <div className={`${cellClass} ${stickyClass} min-h-[72px] text-gray-500`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
@@ -420,44 +417,46 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         )}
 
         {/* ── Extern media ── */}
-        {(!readOnly || externCats.length > 0) && (
+        {(!readOnly || externLines.length > 0) && (
           <>
-            <SectionBand title="Extern media" />
-        {externCats.map((cat) => (
-          <GanttCategorySection
-            key={cat.id}
-            category={cat}
-            plan={plan}
-            weeks={weeks}
-            weekCount={weekCount}
-            infoColCount={INFO_COL_COUNT}
-            readOnly={readOnly}
-            compact={compact}
-            deadlines={plan.deadlines}
-            getSpan={getSpan}
-            onLineUpdate={handleLineUpdate}
-            onDeleteLine={handleDeleteLine}
-            onAddLine={() => handleAddLine(cat.id, cat.lines.length)}
-            onReorderLine={(lineId, dir) => handleReorderLine(cat.id, lineId, dir)}
-            onCategoryUpdate={(updates) => updateCategory(cat.id, updates).then(onPlanChanged)}
-            onDeleteCategory={() => handleDeleteCategory(cat.id)}
-            cellClass={cellClass}
-            stickyClass={stickyClass}
-          />
-        ))}
-
-        {/* ── Add category ── */}
-        {!readOnly && (
-          <>
-            <div
-              className={`${cellClass} ${stickyClass} min-h-[56px]`}
-              style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
-            >
-              <AddButton onClick={handleAddCategory}>Kategori</AddButton>
-            </div>
-            <div style={laneStyle(weekCount)} className={LANE} />
+            <SectionBand title="Extern media" action={!readOnly && <PlatformPicker items={EXTERN_CHANNELS} label="Lägg till kanal" onPick={(p) => handleAddChannel(p, "extern")} busy={addingPlatform} />} />
+            {renderBrandRows(externCats)}
+            {externLines.length === 0 && (
+              <>
+                <div className={`${cellClass} ${stickyClass} min-h-[72px] text-gray-500`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
+                  Inga kanaler än. Tryck på plusset för att välja en.
+                </div>
+                <div style={laneStyle(weekCount)} className={`${LANE} min-h-[72px]`} />
+              </>
+            )}
           </>
         )}
+
+        {/* Äldre kategorier: bara i kundlänken, utan sektionsrubrik. */}
+        {legacyCats.length > 0 && (
+          <>
+            {legacyCats.map((cat) => (
+              <GanttCategorySection
+                key={cat.id}
+                category={cat}
+                plan={plan}
+                weeks={weeks}
+                weekCount={weekCount}
+                infoColCount={INFO_COL_COUNT}
+                readOnly={readOnly}
+                compact={compact}
+                deadlines={plan.deadlines}
+                getSpan={getSpan}
+                onLineUpdate={handleLineUpdate}
+                onDeleteLine={handleDeleteLine}
+                onAddLine={() => handleAddLine(cat.id, cat.lines.length)}
+                onReorderLine={(lineId, dir) => handleReorderLine(cat.id, lineId, dir)}
+                onCategoryUpdate={(updates) => updateCategory(cat.id, updates).then(onPlanChanged)}
+                onDeleteCategory={() => handleDeleteCategory(cat.id)}
+                cellClass={cellClass}
+                stickyClass={stickyClass}
+              />
+            ))}
           </>
         )}
 
@@ -703,7 +702,7 @@ function GanttLineRow({
   barColor: string;
   accentColor: string;
   /** Plattformsrad: hela raden fylls med varumärkets färg och logotyp. */
-  brand?: { color: string; fg: string; path: string | null; name: string };
+  brand?: { color: string; fg: string; platform?: Platform };
   cellClass: string;
   stickyClass: string;
 }) {
@@ -861,11 +860,9 @@ function GanttLineRow({
           <span className="w-2 shrink-0" />
         )}
         {brand ? (
-          brand.path ? (
-            <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="currentColor" style={{ color: brand.fg }} aria-hidden><path d={brand.path} /></svg>
-          ) : (
-            <span className="w-6 h-6 shrink-0" aria-hidden />
-          )
+          <span className="shrink-0 flex" style={{ color: brand.fg }}>
+            {brand.platform ? <PlatformLogo platform={brand.platform} size={24} /> : <span className="w-6 h-6" aria-hidden />}
+          </span>
         ) : (
           <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: barColor }} aria-hidden />
         )}
@@ -1193,7 +1190,7 @@ function SectionBand({ title, action }: { title: string; action?: React.ReactNod
   );
 }
 
-function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy: boolean }) {
+function PlatformPicker({ items, label, onPick, busy }: { items: Platform[]; label: string; onPick: (p: Platform) => void; busy: boolean }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -1220,8 +1217,8 @@ function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy:
         ref={btnRef}
         onClick={toggle}
         disabled={busy}
-        title="Lägg till plattform"
-        aria-label="Lägg till plattform"
+        title={label}
+        aria-label={label}
         aria-expanded={open}
         className="w-8 h-8 flex items-center justify-center bg-gray-900 text-white hover:bg-milou-500 transition-colors disabled:opacity-50"
       >
@@ -1235,7 +1232,7 @@ function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy:
             style={{ top: pos.top, left: pos.left }}
             role="menu"
           >
-            {PLATFORMS.map((p) => (
+            {items.map((p) => (
               <button
                 key={p.key}
                 role="menuitem"
@@ -1243,7 +1240,7 @@ function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy:
                 className="flex items-center gap-2.5 px-2.5 py-2 text-left text-sm font-bold hover:bg-gray-100 transition-colors"
               >
                 <span className="w-8 h-8 shrink-0 flex items-center justify-center" style={{ backgroundColor: p.color, color: isLight(p.color) ? "#1C1C1C" : "#fff" }}>
-                  <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" width={18} height={18} fill="currentColor" aria-hidden><path d={p.path} /></svg>
+                  <PlatformLogo platform={p} size={18} />
                 </span>
                 {p.name}
               </button>

@@ -2,6 +2,7 @@ import {
   siMeta, siTiktok, siYoutube, siSnapchat, siPinterest,
   siX, siThreads, siReddit, siSpotify, siTwitch,
 } from "simple-icons";
+import { Newspaper, MonitorPlay, Radio, Clapperboard, type LucideIcon } from "lucide-react";
 
 /* Plattformar för mediaplanens sociala medier: varumärkets egen färg och logotyp.
    simple-icons saknar LinkedIn, så den ritas här (24 × 24, samma format). */
@@ -11,7 +12,9 @@ export interface Platform {
   /** Varumärkets färg. */
   color: string;
   /** SVG-bana i ett 24 × 24-rutnät. */
-  path: string;
+  path?: string;
+  /** Ikon för kanaler som saknar eget varumärke. */
+  icon?: LucideIcon;
   /** Äldre radnamn som också hör till plattformen. */
   aliases?: string[];
 }
@@ -33,8 +36,17 @@ export const PLATFORMS: Platform[] = [
   { key: "twitch", name: "Twitch", color: `#${siTwitch.hex}`, path: siTwitch.path },
 ];
 
+/** Kanaler i extern media. Färgerna kommer från Milous palett. */
+export const EXTERN_CHANNELS: Platform[] = [
+  { key: "tidning", name: "Tidning", color: "#5B173C", icon: Newspaper },
+  { key: "display", name: "Display", color: "#E60330", icon: MonitorPlay },
+  { key: "radio", name: "Radio", color: "#F59E0B", icon: Radio },
+  { key: "bio", name: "Bio", color: "#931644", icon: Clapperboard },
+];
+
 /** Raden hör till en plattform om namnet är plattformens namn (versaler spelar ingen roll). */
+// om namnet är plattformens namn (versaler spelar ingen roll). */
 export function findPlatform(name: string): Platform | undefined {
   const n = name.trim().toLowerCase();
-  return PLATFORMS.find((p) => p.name.toLowerCase() === n || p.key === n || p.aliases?.includes(n));
+  return [...PLATFORMS, ...EXTERN_CHANNELS].find((p) => p.name.toLowerCase() === n || p.key === n || p.aliases?.includes(n));
 }
