@@ -396,8 +396,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
                 const logoColor = isLight(brandColor) ? "#1C1C1C" : brandColor;
                 return (
                   <Fragment key={line.id}>
-                    <div className={`${stickyClass} h-2`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
-                    <div style={laneStyle(weekCount)} className="relative h-2 bg-white" />
+                    <div className={`${stickyClass} h-5`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
+                    <div style={laneStyle(weekCount)} className="relative h-5 bg-white" />
                     <GanttLineRow
                       line={line}
                       plan={plan}
@@ -1048,9 +1048,9 @@ function GanttLineRow({
               left: `${((displaySpan.colStart - 1) / weekCount) * 100}%`,
               width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
               backgroundColor: barColor,
-              top: "50%",
-              height: brand ? "28px" : "20px",
-              transform: "translateY(-50%)",
+              top: brand ? 0 : "50%",
+              height: brand ? "100%" : "20px",
+              transform: brand ? "none" : "translateY(-50%)",
               zIndex: 5,
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
               userSelect: "none",
@@ -1201,9 +1201,9 @@ function BudgetSummaryRow({
 /* ─── Sektionsband och plattformsväljare ─────────────────── */
 function SectionBand({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="bg-gray-900 text-white" style={{ gridColumn: "1 / -1" }}>
+    <div className="bg-white border-t-[3px] border-gray-900" style={{ gridColumn: "1 / -1" }}>
       <div className="sticky left-0 flex items-center gap-4 px-4 min-h-[56px] w-max">
-        <span className="font-display font-bold text-lg">{title}</span>
+        <span className="font-display font-bold text-lg text-gray-900">{title}</span>
         {action}
       </div>
     </div>
@@ -1240,7 +1240,7 @@ function PlatformPicker({ onPick, busy }: { onPick: (p: Platform) => void; busy:
         title="Lägg till plattform"
         aria-label="Lägg till plattform"
         aria-expanded={open}
-        className="w-8 h-8 flex items-center justify-center bg-white text-gray-900 hover:bg-milou-500 hover:text-white transition-colors disabled:opacity-50"
+        className="w-8 h-8 flex items-center justify-center bg-gray-900 text-white hover:bg-milou-500 transition-colors disabled:opacity-50"
       >
         <Plus className="w-5 h-5" strokeWidth={2.5} aria-hidden />
       </button>
