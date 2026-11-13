@@ -90,7 +90,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
         </p>
       )}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <h1 className="text-3xl sm:text-5xl font-bold leading-tight">
           Hur synlig är din sajt
           <br />
