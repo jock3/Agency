@@ -104,19 +104,19 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className="text-white">
+    <div className="min-h-screen flex flex-col justify-center text-white">
       {demo && (
         <p className="bg-gray-900 text-peach text-xs font-bold text-center px-4 py-2">
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
         </p>
       )}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <h1 className="text-3xl sm:text-5xl font-bold leading-tight">
+      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <h1 className="text-center text-3xl sm:text-5xl font-bold leading-tight">
           Hur synlig är din sajt
           <br />
           i Google och i AI-sök?
         </h1>
-        <p className="mt-8 text-white/90 text-base sm:text-lg max-w-xl">
+        <p className="mt-8 mx-auto text-center text-white/90 text-base sm:text-lg max-w-xl">
           Ange en webbadress så granskar vi sidan och ger den ett betyg från 1 till 10 — både för klassisk SEO och för
           synlighet i ChatGPT, Claude, Perplexity och Googles AI-svar.
         </p>
@@ -160,7 +160,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               {running ? "Granskar…" : "Granska"}
             </button>
           </div>
-          <label className="flex items-start gap-2 text-sm text-white/90 cursor-pointer">
+          <label className="flex items-start justify-center gap-2 text-sm text-white/90 cursor-pointer">
             <input
               type="checkbox"
               checked={consent}
@@ -175,7 +175,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         {running && (
           <ol className="mt-8 space-y-2 text-sm" aria-live="polite">
             {STEPS.map((label, i) => (
-              <li key={label} className={`flex items-center gap-2 ${i > step ? "text-white/50" : "text-white"}`}>
+              <li key={label} className={`flex items-center justify-center gap-2 ${i > step ? "text-white/50" : "text-white"}`}>
                 {i < step ? <Check className="w-4 h-4" /> : i === step ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="w-4 h-4" />}
                 {label}
               </li>
@@ -184,7 +184,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         )}
 
         {error && (
-          <p role="alert" className="mt-6 flex items-start gap-2 bg-white text-milou-600 p-3 font-bold">
+          <p role="alert" className="mt-6 flex items-start justify-center gap-2 bg-white text-milou-600 p-3 font-bold">
             <TriangleAlert className="w-5 h-5 shrink-0 mt-0.5" />
             {error}
           </p>
