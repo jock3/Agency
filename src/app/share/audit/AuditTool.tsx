@@ -84,7 +84,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-red-fade text-white">
       {demo && (
         <p className="bg-gray-900 text-peach text-xs font-bold text-center px-4 py-2">
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
@@ -96,7 +96,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           <br />
           i Google och i AI-sök?
         </h1>
-        <p className="mt-8 text-gray-600 text-base sm:text-lg max-w-xl">
+        <p className="mt-8 text-white/90 text-base sm:text-lg max-w-xl">
           Ange en webbadress så granskar vi sidan och ger den ett betyg från 1 till 10 — både för klassisk SEO och för
           synlighet i ChatGPT, Claude, Perplexity och Googles AI-svar.
         </p>
@@ -115,7 +115,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={running}
-              className="w-full border-2 border-gray-900 px-4 py-3 text-lg outline-none focus:border-milou-500 disabled:bg-gray-50"
+              className="w-full bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg outline-none focus:border-gray-900 disabled:bg-gray-100"
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -130,17 +130,17 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={running}
-              className="flex-1 border-2 border-gray-900 px-4 py-3 text-lg outline-none focus:border-milou-500 disabled:bg-gray-50"
+              className="flex-1 bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg outline-none focus:border-gray-900 disabled:bg-gray-100"
             />
             <button
               type="submit"
               disabled={running || !url.trim() || !email.trim() || !consent}
-              className="bg-milou-500 hover:bg-milou-600 text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
+              className="bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
             >
               {running ? "Granskar…" : "Granska"}
             </button>
           </div>
-          <label className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer">
+          <label className="flex items-start gap-2 text-sm text-white/90 cursor-pointer">
             <input
               type="checkbox"
               checked={consent}
@@ -155,8 +155,8 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         {running && (
           <ol className="mt-8 space-y-2 text-sm" aria-live="polite">
             {STEPS.map((label, i) => (
-              <li key={label} className={`flex items-center gap-2 ${i > step ? "text-gray-300" : "text-gray-700"}`}>
-                {i < step ? <Check className="w-4 h-4 text-emerald-700" /> : i === step ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="w-4 h-4" />}
+              <li key={label} className={`flex items-center gap-2 ${i > step ? "text-white/50" : "text-white"}`}>
+                {i < step ? <Check className="w-4 h-4" /> : i === step ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="w-4 h-4" />}
                 {label}
               </li>
             ))}
@@ -164,7 +164,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         )}
 
         {error && (
-          <p role="alert" className="mt-6 flex items-start gap-2 text-milou-600">
+          <p role="alert" className="mt-6 flex items-start gap-2 bg-white text-milou-600 p-3 font-bold">
             <TriangleAlert className="w-5 h-5 shrink-0 mt-0.5" />
             {error}
           </p>
@@ -219,7 +219,7 @@ function Details({ groups, result }: { groups: { key: "seo" | "geo"; label: stri
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="mt-12 bg-red-fade text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mt-12 bg-gray-900 text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <p className="font-bold text-lg">Vill du se vad som måste göras?</p>
         <button
           type="button"
@@ -233,7 +233,7 @@ function Details({ groups, result }: { groups: { key: "seo" | "geo"; label: stri
       </div>
 
       {open && (
-        <div id="audit-details" className="mt-14 grid sm:grid-cols-2 gap-10">
+        <div id="audit-details" className="mt-6 grid sm:grid-cols-2 gap-10 bg-white text-gray-900 p-6 sm:p-8">
           {groups.map((g) => (
             <div key={g.key}>
               <h2 className="font-bold text-lg mb-3">
