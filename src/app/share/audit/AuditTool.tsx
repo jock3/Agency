@@ -41,6 +41,25 @@ function useReportHeight() {
   }, []);
 }
 
+/** Gradienten målas på hela dokumentet, så att ytan under verktyget i en iframe
+ *  som är högre än innehållet (min-height på milou.se) inte blir grå. */
+function usePaintPage() {
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("bg-red-fade");
+    root.style.backgroundAttachment = "fixed";
+    root.style.backgroundRepeat = "no-repeat";
+    // Roten har eget bakgrundslager, så bodyns grå färg måste bort.
+    document.body.style.background = "transparent";
+    return () => {
+      root.classList.remove("bg-red-fade");
+      root.style.backgroundAttachment = "";
+      root.style.backgroundRepeat = "";
+      document.body.style.background = "";
+    };
+  }, []);
+}
+
 function scoreColor(score: number) {
   if (score >= 8) return "text-emerald-700";
   if (score >= 5) return "text-amber-600";
@@ -49,6 +68,7 @@ function scoreColor(score: number) {
 
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
   useReportHeight();
+  usePaintPage();
   const [url, setUrl] = useState("");
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
@@ -84,7 +104,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className="bg-red-fade text-white">
+    <div className="text-white">
       {demo && (
         <p className="bg-gray-900 text-peach text-xs font-bold text-center px-4 py-2">
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
