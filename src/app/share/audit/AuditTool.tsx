@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, TriangleAlert, X } from "lucide-react";
+import { Check, Loader2, TriangleAlert } from "lucide-react";
+import CheckGroups from "@/components/audit/CheckGroups";
 import type { PublicAuditResult } from "@/lib/audit/types";
 
 const ERRORS: Record<string, string> = {
@@ -58,12 +59,6 @@ function usePaintPage() {
       document.body.style.background = "";
     };
   }, []);
-}
-
-function scoreColor(score: number) {
-  if (score >= 8) return "text-emerald-700";
-  if (score >= 5) return "text-amber-600";
-  return "text-milou-500";
 }
 
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
@@ -229,13 +224,13 @@ function Result({ result }: { result: PublicAuditResult }) {
         </div>
       </div>
 
-      <Details groups={groups} result={result} />
+      <Details result={result} />
 
     </section>
   );
 }
 
-function Details({ groups, result }: { groups: { key: "seo" | "geo"; label: string; score: number }[]; result: PublicAuditResult }) {
+function Details({ result }: { result: PublicAuditResult }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -253,34 +248,13 @@ function Details({ groups, result }: { groups: { key: "seo" | "geo"; label: stri
       </div>
 
       {open && (
-        <div id="audit-details" className="mt-6 grid sm:grid-cols-2 gap-10 bg-white text-gray-900 p-6 sm:p-8">
-          {groups.map((g) => (
-            <div key={g.key}>
-              <h2 className="font-bold text-lg mb-3">
-                {g.label} <span className={`tabular-nums ${scoreColor(g.score)}`}>{g.score}/10</span>
-              </h2>
-              <ul className="divide-y divide-gray-100 border-y border-gray-100">
-                {result.checks
-                  .filter((c) => c.group === g.key)
-                  .map((c) => (
-                    <li key={c.id} className="py-2.5 flex gap-2.5 text-sm">
-                      {c.status === "pass" ? (
-                        <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" aria-label="Godkänd" />
-                      ) : c.status === "warn" ? (
-                        <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" aria-label="Brist" />
-                      ) : (
-                        <X className="w-4 h-4 shrink-0 mt-0.5 text-milou-500" aria-label="Fel" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-bold">{c.label}</p>
-                        <p className="text-gray-500 break-words">{c.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <CheckGroups
+          id="audit-details"
+          checks={result.checks}
+          seoScore={result.seoScore}
+          geoScore={result.geoScore}
+          className="mt-6 bg-white text-gray-900 p-6 sm:p-8"
+        />
       )}
     </>
   );

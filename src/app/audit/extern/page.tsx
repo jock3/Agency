@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { ExternalLink } from "lucide-react";
+import type { Check } from "@/lib/audit/types";
+import RunRow from "./RunRow";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 interface Row {
@@ -12,6 +14,7 @@ interface Row {
   geo_score: number;
   created_at: string;
   pages: unknown[] | null;
+  checks: Check[] | null;
   audit_leads: { email: string }[] | null;
 }
 
@@ -26,7 +29,7 @@ export default async function AuditExternPage() {
   const sb = getSupabaseAdminClient();
   const { data, error } = await sb
     .from("audit_runs")
-    .select("id, final_url, host, score, seo_score, geo_score, created_at, pages, audit_leads(email)")
+    .select("id, final_url, host, score, seo_score, geo_score, created_at, pages, checks, audit_leads(email)")
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as Row[];
@@ -57,25 +60,25 @@ export default async function AuditExternPage() {
               <th className="py-2 px-3 font-normal text-right">SEO</th>
               <th className="py-2 px-3 font-normal text-right">GEO</th>
               <th className="py-2 px-3 font-normal text-right">Sidor</th>
+              <th className="py-2 px-3 font-normal text-right"><span className="sr-only">Brister</span></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-gray-100">
-                <td className="py-2 px-3 whitespace-nowrap tabular-nums">{fmt.format(new Date(r.created_at))}</td>
-                <td className="py-2 px-3 max-w-xs truncate">
-                  <a href={r.final_url} target="_blank" rel="noreferrer" className="hover:text-milou-500">
-                    {r.final_url}
-                  </a>
-                </td>
-                <td className="py-2 px-3 max-w-xs truncate">
-                  {r.audit_leads?.length ? [...new Set(r.audit_leads.map((l) => l.email))].join(", ") : <span className="text-gray-300">–</span>}
-                </td>
-                <td className="py-2 px-3 text-right tabular-nums font-bold">{r.score}</td>
-                <td className="py-2 px-3 text-right tabular-nums">{r.seo_score}</td>
-                <td className="py-2 px-3 text-right tabular-nums">{r.geo_score}</td>
-                <td className="py-2 px-3 text-right tabular-nums">{r.pages?.length ?? 1}</td>
-              </tr>
+              <RunRow
+                key={r.id}
+                run={{
+                  id: r.id,
+                  final_url: r.final_url,
+                  score: r.score,
+                  seo_score: r.seo_score,
+                  geo_score: r.geo_score,
+                  time: fmt.format(new Date(r.created_at)),
+                  pageCount: r.pages?.length ?? 1,
+                  emails: [...new Set((r.audit_leads ?? []).map((l) => l.email))],
+                  checks: r.checks ?? [],
+                }}
+              />
             ))}
           </tbody>
         </table>
