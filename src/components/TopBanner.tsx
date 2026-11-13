@@ -51,13 +51,15 @@ export default function TopBanner() {
 
   return (
     <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">
-      <Link
-        href="/"
-        aria-label="Till AI-hubben"
-        className="shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-peach"
-      >
-        <MilouLogo className="h-[18px] w-auto text-white" />
-      </Link>
+      {!pathname.startsWith("/audit/intern") && (
+        <Link
+          href="/"
+          aria-label="Till AI-hubben"
+          className="shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-peach"
+        >
+          <MilouLogo className="h-[18px] w-auto text-white" />
+        </Link>
+      )}
       <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
         {tools.map((t) => (
           <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
