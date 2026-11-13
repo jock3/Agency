@@ -112,7 +112,9 @@ export function ToolbarButton({
 
 export interface PlanStat {
   label: string;
-  value: string;
+  value: React.ReactNode;
+  /** Markera värdet, till exempel när planen går över budget. */
+  alert?: boolean;
 }
 
 export function PlanHero({
@@ -140,7 +142,7 @@ export function PlanHero({
         {stats.map((s) => (
           <div key={s.label}>
             <dt className="text-sm text-gray-600">{s.label}</dt>
-            <dd className="font-display font-extrabold text-2xl text-gray-900 tabular-nums">{s.value}</dd>
+            <dd className={`font-display font-extrabold text-2xl tabular-nums ${s.alert ? "text-milou-600" : "text-gray-900"}`}>{s.value}</dd>
           </div>
         ))}
       </dl>

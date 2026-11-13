@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getFullPlan, updatePlan, generateShareToken } from "@/lib/api/plans";
 import type { FullMediaPlan } from "@/lib/types";
 import GanttTimeline from "./GanttTimeline";
+import InlineEdit from "./InlineEdit";
 import { formatSwedishDateFull } from "@/lib/utils/dates";
 import { calcPlanReach, calcPlanTotal, formatReach, formatSEK } from "@/lib/utils/budget";
 import { Check, ImageDown, Link2 } from "lucide-react";
@@ -100,6 +101,13 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
     setPlan((p) => p ? { ...p, [field]: value } : p);
   };
 
+  const handlePlannedBudgetUpdate = async (v: string) => {
+    if (!plan) return;
+    const planned_budget = v.trim() ? Number(v) : null;
+    await updatePlan(plan.id, { planned_budget });
+    setPlan((p) => p ? { ...p, planned_budget } : p);
+  };
+
   const handleTagsUpdate = async (tags: string[]) => {
     if (!plan) return;
     await updatePlan(plan.id, { tags });
@@ -160,12 +168,31 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
                 name={plan.campaign_name}
                 onName={readOnly ? undefined : handleNameUpdate}
                 period={`${formatSwedishDateFull(plan.period_start)} – ${formatSwedishDateFull(plan.period_end)}`}
-                stats={[
-                  { label: "Bokat", value: formatSEK(calcPlanTotal(plan)) },
-                  ...(plan.planned_budget ? [{ label: "Planerad budget", value: formatSEK(plan.planned_budget) }] : []),
-                  { label: "Räckvidd", value: formatReach(calcPlanReach(plan)) },
-                  { label: "Kanaler", value: String(plan.categories.reduce((n, c) => n + c.lines.length, 0)) },
-                ]}
+                stats={(() => {
+                  const booked = calcPlanTotal(plan);
+                  const left = plan.planned_budget != null ? plan.planned_budget - booked : null;
+                  return [
+                    { label: "Bokat", value: formatSEK(booked) },
+                    {
+                      label: "Planerad budget",
+                      value: readOnly ? (plan.planned_budget != null ? formatSEK(plan.planned_budget) : "–") : (
+                        <InlineEdit
+                          value={plan.planned_budget != null ? String(plan.planned_budget) : ""}
+                          onSave={handlePlannedBudgetUpdate}
+                          type="number"
+                          suffix="kr"
+                          placeholder="Ange"
+                        />
+                      ),
+                    },
+                    ...(left != null
+                      ? [left >= 0
+                        ? { label: "Kvar av budget", value: formatSEK(left) }
+                        : { label: "Över budget", value: formatSEK(-left), alert: true }]
+                      : []),
+                    { label: "Räckvidd", value: formatReach(calcPlanReach(plan)) },
+                  ];
+                })()}
               />
               <GanttTimeline
                 plan={plan}

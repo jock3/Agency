@@ -38,12 +38,12 @@ export const PLATFORMS: Platform[] = [
   { key: "twitch", name: "Twitch", color: `#${siTwitch.hex}`, path: siTwitch.path },
 ];
 
-/** Kanaler i extern media. Färgerna kommer från Milous palett. */
+/** Kanaler i extern media. Färgerna kommer från Milous palett, men inte knapp-rött (#E60330). */
 export const EXTERN_CHANNELS: Platform[] = [
-  { key: "tidning", name: "Tidning", color: "#5B173C", icon: Newspaper, units: ["Helsida", "Halvsida", "Kvartsida"] },
-  { key: "display", name: "Display", color: "#E60330", icon: MonitorPlay },
-  { key: "radio", name: "Radio", color: "#F59E0B", icon: Radio },
-  { key: "bio", name: "Bio", color: "#931644", icon: Clapperboard },
+  { key: "tidning", name: "Tidning", color: "#2B2B2B", icon: Newspaper, units: ["Helsida", "Halvsida", "Kvartsida"] },
+  { key: "display", name: "Display", color: "#16917A", icon: MonitorPlay },
+  { key: "radio", name: "Radio", color: "#FF999C", icon: Radio },
+  { key: "bio", name: "Bio", color: "#35132B", icon: Clapperboard },
 ];
 
 /** Raden hör till en plattform om namnet är plattformens namn (versaler spelar ingen roll). */

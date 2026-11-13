@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { format, differenceInWeeks } from "date-fns";
+import { format, differenceInWeeks, differenceInCalendarDays } from "date-fns";
 import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
 import { calcLineTotal, calcCategoryTotal, calcCategoryReach, calcPlanTotal, formatSEK, formatReach } from "@/lib/utils/budget";
@@ -62,6 +62,16 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   const INFO_COLS = compact ? INFO_COLS_COMPACT : INFO_COLS_FULL;
   const INFO_COL_COUNT = compact ? INFO_COL_COUNT_COMPACT : INFO_COL_COUNT_FULL;
   const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
+  // Infokolumnernas bredd i px, för att placera idag-linjen i tidslinjen.
+  const infoPx = INFO_COLS.split(" ").reduce((n, c) => n + parseInt(c, 10), 0);
+  const today = useMemo(() => {
+    const now = new Date();
+    const t = format(now, "yyyy-MM-dd");
+    const idx = weeks.findIndex((w) => t >= format(w.startDate, "yyyy-MM-dd") && t <= format(w.endDate, "yyyy-MM-dd"));
+    if (idx === -1) return null;
+    const day = Math.min(differenceInCalendarDays(now, weeks[idx].startDate), 6);
+    return { weekIdx: idx, frac: (idx + (day + 0.5) / 7) / weeks.length };
+  }, [weeks]);
 
   const cellClass = "border-b border-gray-100 px-3 min-h-[48px] text-sm flex items-center";
   const stickyClass = "sticky left-0 z-10 bg-white";
@@ -281,8 +291,16 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     <div className="overflow-x-auto scrollbar-thin px-4 py-2 hidden md:block">
       <div
         style={{ display: "grid", gridTemplateColumns: gridCols }}
-        className="min-w-max bg-white"
+        className="min-w-max bg-white relative"
       >
+        {/* Idag: linjen börjar under rubrikraderna (månad 40 px + vecka 36 px); veckan markeras i rubriken. */}
+        {today && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 w-0.5 bg-milou-500 z-[7]"
+            style={{ top: 76, left: `calc(${infoPx}px + (100% - ${infoPx}px) * ${today.frac})` }}
+          />
+        )}
         {/* ── Month header row ── */}
         <div
           className={`${cellClass} ${stickyClass} border-b-0 min-h-[40px]`}
@@ -312,7 +330,8 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {weeks.map((w, i) => (
           <div
             key={w.index}
-            className={`min-h-[36px] flex items-center justify-center border-b border-gray-200 text-xs text-gray-500 tabular-nums ${i === 0 ? "border-l border-l-gray-200" : "border-l border-l-[#EFEFEF]"}`}
+            className={`min-h-[36px] flex items-center justify-center border-b border-gray-200 text-xs tabular-nums ${i === 0 ? "border-l border-l-gray-200" : "border-l border-l-[#EFEFEF]"} ${today?.weekIdx === i ? "bg-milou-500 text-white font-bold" : "text-gray-500"}`}
+            title={today?.weekIdx === i ? "Den här veckan" : undefined}
           >
             {w.label}
           </div>
@@ -405,7 +424,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {/* ── Sociala medier ── */}
         {(!readOnly || socialLines.length > 0) && (
           <>
-            <SectionBand title="Sociala medier" action={!readOnly && <PlatformPicker items={PLATFORMS} label="Lägg till plattform" onPick={(p) => handleAddChannel(p, "social")} busy={addingPlatform} />} />
+            <SectionBand title="Sociala medier" infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(socialLines)} reach={calcCategoryReach(socialLines)} action={!readOnly && <PlatformPicker items={PLATFORMS} label="Lägg till plattform" onPick={(p) => handleAddChannel(p, "social")} busy={addingPlatform} />} />
             {renderBrandRows(socialCats)}
             {socialLines.length === 0 && (
               <>
@@ -423,7 +442,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         {/* ── Extern media ── */}
         {(!readOnly || externLines.length > 0) && (
           <>
-            <SectionBand title="Extern media" action={!readOnly && <PlatformPicker items={EXTERN_CHANNELS} label="Lägg till kanal" onPick={(p) => handleAddChannel(p, "extern")} busy={addingPlatform} />} />
+            <SectionBand title="Extern media" infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(externLines)} reach={calcCategoryReach(externLines)} action={!readOnly && <PlatformPicker items={EXTERN_CHANNELS} label="Lägg till kanal" onPick={(p) => handleAddChannel(p, "extern")} busy={addingPlatform} />} />
             {renderBrandRows(externCats)}
             {externLines.length === 0 && (
               <>
@@ -845,7 +864,7 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset 4px 0 0 ${accentColor}` }}>
+      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset ${brand ? 8 : 4}px 0 0 ${accentColor}` }}>
         {!readOnly && onReorder ? (
           <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -1155,23 +1174,9 @@ function BudgetSummaryRow({
         </>
       )}
 
-      {/* Totalt col */}
+      {/* Totalt col: summan av raderna. Planerad budget redigeras i planens rubrik. */}
       <div className={`${cellClass} bg-white ${summaryBorder} justify-end`}>
-        {!readOnly ? (
-          <InlineEdit
-            value={plan.planned_budget ? String(plan.planned_budget) : ""}
-            onSave={(v) => onPlanUpdate({ planned_budget: v ? Number(v) : null })}
-            type="number"
-            placeholder="–"
-            className="font-display font-bold text-base text-gray-900 text-right w-full tabular-nums"
-          />
-        ) : (
-          // The client sees the sum of the lines, same figure as "Total budget" in the header.
-          // planned_budget is an internal frame and is only shown in the editor.
-          <span className="font-display font-bold text-base text-gray-900 tabular-nums">
-            {formatSEK(calcPlanTotal(plan))}
-          </span>
-        )}
+        <span className="font-display font-bold text-base text-gray-900 tabular-nums">{formatSEK(calcPlanTotal(plan))}</span>
       </div>
 
       {/* Räckvidd col */}
@@ -1187,14 +1192,26 @@ function BudgetSummaryRow({
 
 
 /* ─── Sektionsband och plattformsväljare ─────────────────── */
-function SectionBand({ title, action }: { title: string; action?: React.ReactNode }) {
+function SectionBand({ title, action, infoColCount, weekCount, total, reach }: {
+  title: string;
+  action?: React.ReactNode;
+  infoColCount: number;
+  weekCount: number;
+  total: number;
+  reach: number;
+}) {
+  const band = "bg-white border-t-[3px] border-gray-900 min-h-[60px]";
+  const sum = `${band} px-3 flex items-center justify-end font-display font-bold text-base text-gray-900 tabular-nums`;
   return (
-    <div className="bg-white border-t-[3px] border-gray-900" style={{ gridColumn: "1 / -1" }}>
-      <div className="sticky left-0 flex items-center gap-4 px-4 min-h-[56px] w-max">
+    <>
+      <div className={`${band} sticky left-0 z-10 flex items-center gap-4 px-4`} style={{ gridColumn: `1 / span ${infoColCount - 2}` }}>
         <span className="font-display font-bold text-lg text-gray-900">{title}</span>
         {action}
       </div>
-    </div>
+      <div className={sum}>{formatSEK(total)}</div>
+      <div className={sum}>{formatReach(reach)}</div>
+      <div className={band} style={{ gridColumn: `span ${weekCount}` }} />
+    </>
   );
 }
 
@@ -1225,12 +1242,11 @@ function PlatformPicker({ items, label, onPick, busy }: { items: Platform[]; lab
         ref={btnRef}
         onClick={toggle}
         disabled={busy}
-        title={label}
-        aria-label={label}
         aria-expanded={open}
-        className="w-8 h-8 flex items-center justify-center bg-gray-900 text-white hover:bg-milou-500 transition-colors disabled:opacity-50"
+        className="h-8 pl-2 pr-3 flex items-center gap-1.5 bg-gray-900 text-white text-sm font-bold hover:bg-milou-500 transition-colors disabled:opacity-50"
       >
-        <Plus className="w-5 h-5" strokeWidth={2.5} aria-hidden />
+        <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden />
+        {label}
       </button>
       {open && pos && createPortal(
         <>
