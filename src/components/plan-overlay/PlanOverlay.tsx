@@ -26,7 +26,8 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
   const loadPlan = useCallback(async () => {
     const data = await getFullPlan(planId);
     // Äldre kategorier utan sektion ligger kvar i databasen men visas inte i redigeraren.
-    setPlan(data && !readOnly ? { ...data, categories: data.categories.filter((c) => c.section) } : data);
+    // Koncept och deadlines i toppen av planen visas inte i redigeraren längre; de ligger kvar i databasen.
+    setPlan(data && !readOnly ? { ...data, categories: data.categories.filter((c) => c.section), concepts: [], deadlines: [] } : data);
     setLoading(false);
   }, [planId, readOnly]);
 

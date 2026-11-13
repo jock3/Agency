@@ -8,7 +8,7 @@ import { calcLineTotal, calcCategoryTotal, calcCategoryReach, calcPlanTotal, for
 import { updatePlan } from "@/lib/api/plans";
 import { updateLine, createLine, deleteLine, reorderLines } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
-import { updateConcept, createConcept, deleteConcept } from "@/lib/api/concepts";
+import { updateConcept, deleteConcept } from "@/lib/api/concepts";
 import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadlines";
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
@@ -181,11 +181,6 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     onPlanChanged();
   };
 
-  const handleAddConcept = async () => {
-    await createConcept(plan.id, plan.period_start, plan.period_end, plan.concepts.length);
-    onPlanChanged();
-  };
-
   const handleDeleteConcept = async (conceptId: string) => {
     await deleteConcept(conceptId);
     onPlanChanged();
@@ -289,7 +284,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
         ))}
 
         {/* ── Deadline markers row ── */}
-        {(plan.deadlines.length > 0 || !readOnly) && (
+        {plan.deadlines.length > 0 && (
           <>
             <div
               className={`${cellClass} ${stickyClass} py-3 flex-col items-start justify-center gap-1.5`}
@@ -371,18 +366,6 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
             />
           );
         })}
-
-        {!readOnly && (
-          <>
-            <div
-              className={`${cellClass} ${stickyClass} min-h-[40px]`}
-              style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
-            >
-              <AddButton onClick={handleAddConcept}>Koncept</AddButton>
-            </div>
-            <div style={laneStyle(weekCount)} className={LANE} />
-          </>
-        )}
 
         {/* ── Sociala medier ── */}
         {(!readOnly || socialLines.length > 0) && (
