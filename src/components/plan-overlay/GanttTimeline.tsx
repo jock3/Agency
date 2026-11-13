@@ -160,7 +160,11 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
       const cat = existing ?? await createCategory(plan.id, section === "social" ? "Sociala medier" : "Extern media", plan.categories.length, section);
       const count = existing ? existing.lines.length : 0;
       const line = await createLine(cat.id, plan.period_start, plan.period_end, count);
-      await updateLine(line.id, { platform_name: platform.name, color: platform.color });
+      await updateLine(line.id, {
+        platform_name: platform.name,
+        color: platform.color,
+        ...(platform.units ? { unit_type: platform.units[0] } : {}),
+      });
       onPlanChanged();
     } catch {
       showError("Kunde inte lägga till raden. Försök igen.");
@@ -708,6 +712,9 @@ function GanttLineRow({
 }) {
   if (brand) cellClass = `${cellClass} !min-h-[60px]`;
   const total = calcLineTotal(line);
+  // Tidning prissätts per annonsstorlek; övriga rader per tidsenhet. Ett redan sparat värde som inte finns i listan behålls.
+  const channelUnits = brand?.platform?.units;
+  const unitOptions = Array.from(new Set([...(channelUnits ?? ["per månad", "per vecka", "per sida", "per dagar", "fast pris"]), line.unit_type]));
   const containerRef = useRef<HTMLDivElement>(null);
   const onUpdateRef = useRef(onUpdate);
   useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
@@ -895,12 +902,13 @@ function GanttLineRow({
       {!compact && (
         <div className={`${cellClass} justify-end`}>
           {readOnly ? (
-            <span className="text-gray-700 tabular-nums">{line.cost_per_unit?.toLocaleString("sv-SE") ?? "–"}</span>
+            <span className="text-gray-700 tabular-nums">{line.cost_per_unit != null ? `${line.cost_per_unit.toLocaleString("sv-SE")} kr` : "–"}</span>
           ) : (
             <InlineEdit
               value={String(line.cost_per_unit ?? 0)}
               onSave={(v) => onUpdate({ cost_per_unit: Number(v) || 0 })}
               type="number"
+              suffix="kr"
               className="text-sm text-right w-full tabular-nums"
             />
           )}
@@ -918,7 +926,7 @@ function GanttLineRow({
               onChange={(e) => onUpdate({ unit_type: e.target.value })}
               className="text-sm text-gray-700 w-full bg-transparent border-0 focus:outline-none cursor-pointer"
             >
-              {["per månad", "per vecka", "per sida", "per dagar", "fast pris"].map((u) => (
+              {unitOptions.map((u) => (
                 <option key={u}>{u}</option>
               ))}
             </select>

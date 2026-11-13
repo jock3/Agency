@@ -12,9 +12,11 @@ interface Props {
   style?: React.CSSProperties;
   darkMode?: boolean;
   placeholder?: string;
+  /** Visas efter talet när fältet inte redigeras, till exempel "kr". */
+  suffix?: string;
 }
 
-export default function InlineEdit({ value, onSave, onTabOut, type = "text", className, style, darkMode, placeholder }: Props) {
+export default function InlineEdit({ value, onSave, onTabOut, type = "text", className, style, darkMode, placeholder, suffix }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +72,7 @@ export default function InlineEdit({ value, onSave, onTabOut, type = "text", cla
     >
       {/* Tal visas med tusentalsavgränsare, men redigeras som rena siffror. */}
       {type === "number" && value && !Number.isNaN(Number(value))
-        ? Number(value).toLocaleString("sv-SE")
+        ? `${Number(value).toLocaleString("sv-SE")}${suffix ? ` ${suffix}` : ""}`
         : value || placeholder || "–"}
     </span>
   );

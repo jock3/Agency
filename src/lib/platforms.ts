@@ -15,6 +15,8 @@ export interface Platform {
   path?: string;
   /** Ikon för kanaler som saknar eget varumärke. */
   icon?: LucideIcon;
+  /** Valbara enheter för kanalen, första är standard. */
+  units?: string[];
   /** Äldre radnamn som också hör till plattformen. */
   aliases?: string[];
 }
@@ -38,7 +40,7 @@ export const PLATFORMS: Platform[] = [
 
 /** Kanaler i extern media. Färgerna kommer från Milous palett. */
 export const EXTERN_CHANNELS: Platform[] = [
-  { key: "tidning", name: "Tidning", color: "#5B173C", icon: Newspaper },
+  { key: "tidning", name: "Tidning", color: "#5B173C", icon: Newspaper, units: ["Helsida", "Halvsida", "Kvartsida"] },
   { key: "display", name: "Display", color: "#E60330", icon: MonitorPlay },
   { key: "radio", name: "Radio", color: "#F59E0B", icon: Radio },
   { key: "bio", name: "Bio", color: "#931644", icon: Clapperboard },
