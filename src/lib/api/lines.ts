@@ -46,6 +46,66 @@ export async function createLine(
   return data;
 }
 
+/** Lägger till en plattforms- eller kanalrad i ett anrop: hittar eller skapar
+ *  planens kategori för sektionen och skapar raden med namn, färg och enhet. */
+export async function addChannelLine(
+  planId: string,
+  section: "social" | "extern",
+  channel: { name: string; color: string; unit?: string },
+  periodStart: string,
+  periodEnd: string,
+): Promise<void> {
+  const sb = await authedDb();
+  const { data: cats, error: catErr } = await sb
+    .from("media_categories")
+    .select("id, sort_order")
+    .eq("plan_id", planId)
+    .order("sort_order");
+  if (catErr) throw new Error(catErr.message);
+  const { data: sectionCat } = await sb
+    .from("media_categories")
+    .select("id")
+    .eq("plan_id", planId)
+    .eq("section", section)
+    .limit(1)
+    .maybeSingle();
+
+  let categoryId = sectionCat?.id as string | undefined;
+  if (!categoryId) {
+    const { data: created, error } = await sb
+      .from("media_categories")
+      .insert({
+        plan_id: planId,
+        name: section === "social" ? "Sociala medier" : "Extern media",
+        color: "#E60330",
+        sort_order: cats?.length ?? 0,
+        section,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    categoryId = created.id as string;
+  }
+
+  const { count } = await sb
+    .from("media_lines")
+    .select("id", { count: "exact", head: true })
+    .eq("category_id", categoryId);
+
+  const { error } = await sb.from("media_lines").insert({
+    category_id: categoryId,
+    platform_name: channel.name,
+    cost_per_unit: 0,
+    unit_type: channel.unit ?? "per månad",
+    quantity: 1,
+    color: channel.color,
+    start_date: periodStart,
+    end_date: periodEnd,
+    sort_order: count ?? 0,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function updateLine(id: string, updates: Partial<MediaLine>): Promise<void> {
   const sb = await authedDb();
   const { error } = await sb.from("media_lines").update(pick<MediaLine>(updates, FIELDS)).eq("id", id);

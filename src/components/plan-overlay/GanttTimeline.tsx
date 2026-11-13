@@ -6,7 +6,7 @@ import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, 
 import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
 import { calcLineTotal, calcCategoryTotal, calcCategoryReach, calcPlanTotal, formatSEK, formatReach } from "@/lib/utils/budget";
 import { updatePlan } from "@/lib/api/plans";
-import { updateLine, createLine, deleteLine, reorderLines } from "@/lib/api/lines";
+import { updateLine, createLine, deleteLine, reorderLines, addChannelLine } from "@/lib/api/lines";
 import { updateCategory, createCategory, deleteCategory } from "@/lib/api/categories";
 import { updateConcept, deleteConcept } from "@/lib/api/concepts";
 import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadlines";
@@ -46,9 +46,11 @@ interface Props {
   readOnly?: boolean;
   compact?: boolean;
   onPlanChanged: () => void;
+  /** Uppdaterar planen lokalt direkt, så att ändringar syns innan servern svarat. */
+  onPlanLocal?: (update: (p: FullMediaPlan) => FullMediaPlan) => void;
 }
 
-export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }: Props) {
+export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, onPlanLocal }: Props) {
   const weeks = useMemo(() => getPlanWeeks(plan.period_start, plan.period_end), [plan.period_start, plan.period_end]);
   const months = useMemo(() => getMonthGroups(weeks), [weeks]);
   const weekCount = weeks.length;
@@ -106,11 +108,23 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     return dateRangeToGridSpan(startDate, endDate, weeks);
   }, [weeks]);
 
-  const handleLineUpdate = async (lineId: string, updates: Partial<MediaLine>) => {
-    const line = plan.categories.flatMap((c) => c.lines).find((l) => l.id === lineId);
-    if (line) {
-      const prev = Object.fromEntries(Object.keys(updates).map((k) => [k, line[k as keyof MediaLine]])) as Partial<MediaLine>;
-      showUndo(() => updateLine(lineId, prev).then(onPlanChanged));
+  const patchLineLocal = (lineId: string, updates: Partial<MediaLine>) =>
+    onPlanLocal?.((p) => ({
+      ...p,
+      categories: p.categories.map((c) => ({ ...c, lines: c.lines.map((l) => (l.id === lineId ? { ...l, ...updates } : l)) })),
+    }));
+
+  // Ändringen visas direkt och sparas i bakgrunden; planen hämtas om bara om sparningen misslyckas.
+  const saveLine = async (lineId: string, updates: Partial<MediaLine>) => {
+    if (onPlanLocal) {
+      patchLineLocal(lineId, updates);
+      try {
+        await updateLine(lineId, updates);
+      } catch {
+        showError("Kunde inte spara ändringen. Försök igen.");
+        onPlanChanged();
+      }
+      return;
     }
     try {
       await updateLine(lineId, updates);
@@ -118,6 +132,15 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     } catch {
       showError("Kunde inte spara ändringen. Försök igen.");
     }
+  };
+
+  const handleLineUpdate = async (lineId: string, updates: Partial<MediaLine>) => {
+    const line = plan.categories.flatMap((c) => c.lines).find((l) => l.id === lineId);
+    if (line) {
+      const prev = Object.fromEntries(Object.keys(updates).map((k) => [k, line[k as keyof MediaLine]])) as Partial<MediaLine>;
+      showUndo(() => saveLine(lineId, prev));
+    }
+    await saveLine(lineId, updates);
   };
 
   const handleConceptUpdate = async (conceptId: string, updates: Partial<MediaConcept>) => {
@@ -152,11 +175,13 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
   };
 
   const handleDeleteLine = async (lineId: string) => {
+    onPlanLocal?.((p) => ({ ...p, categories: p.categories.map((c) => ({ ...c, lines: c.lines.filter((l) => l.id !== lineId) })) }));
     try {
       await deleteLine(lineId);
-      onPlanChanged();
+      if (!onPlanLocal) onPlanChanged();
     } catch {
       showError("Kunde inte ta bort raden. Försök igen.");
+      onPlanChanged();
     }
   };
 
@@ -166,15 +191,13 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged }
     if (addingPlatform) return;
     setAddingPlatform(true);
     try {
-      const existing = plan.categories.find((c) => c.section === section);
-      const cat = existing ?? await createCategory(plan.id, section === "social" ? "Sociala medier" : "Extern media", plan.categories.length, section);
-      const count = existing ? existing.lines.length : 0;
-      const line = await createLine(cat.id, plan.period_start, plan.period_end, count);
-      await updateLine(line.id, {
-        platform_name: platform.name,
-        color: platform.color,
-        ...(platform.units ? { unit_type: platform.units[0] } : {}),
-      });
+      await addChannelLine(
+        plan.id,
+        section,
+        { name: platform.name, color: platform.color, unit: platform.units?.[0] },
+        plan.period_start,
+        plan.period_end,
+      );
       onPlanChanged();
     } catch {
       showError("Kunde inte lägga till raden. Försök igen.");

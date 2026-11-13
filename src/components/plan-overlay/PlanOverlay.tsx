@@ -198,6 +198,7 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
                 plan={plan}
                 readOnly={readOnly}
                 onPlanChanged={loadPlan}
+                onPlanLocal={(update) => setPlan((p) => (p ? update(p) : p))}
               />
             </div>
           )}
