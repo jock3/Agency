@@ -92,11 +92,11 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         <h1 className="text-3xl sm:text-5xl font-bold leading-tight">
-          <span className="milou-band bg-peach">Hur synlig är din sajt</span>
+          Hur synlig är din sajt
           <br />
-          <span className="milou-band bg-peach">i Google och i AI-sök?</span>
+          i Google och i AI-sök?
         </h1>
-        <p className="mt-5 text-gray-600 text-base sm:text-lg max-w-xl">
+        <p className="mt-8 text-gray-600 text-base sm:text-lg max-w-xl">
           Ange en webbadress så granskar vi sidan och ger den ett betyg från 1 till 10 — både för klassisk SEO och för
           synlighet i ChatGPT, Claude, Perplexity och Googles AI-svar.
         </p>
