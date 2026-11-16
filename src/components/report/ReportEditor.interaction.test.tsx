@@ -54,6 +54,18 @@ describe("editorn i en simulerad webbläsare", () => {
     expect(field.value).toBe("1 234 567");
   });
 
+  it("en lång tabell visas som flera sidor och sidnumren räknas om", () => {
+    const doc = sampleDoc();
+    const s = doc.sections[2];
+    if (s.type !== "stats") throw new Error();
+    s.platforms = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}`, name: `P${i}`, values: {}, ads: Array.from({ length: 8 }, (_, j) => ({ id: `a${i}${j}`, name: `A${j}`, values: { spend: 1 } })) }));
+    open(doc);
+    fireEvent.click(screen.getByRole("button", { name: "Sida 3: Statistik · Kännedomskampanj" }));
+    expect(screen.getByText(/tabellen fortsätter på \d+ sidor/)).toBeTruthy();
+    expect(slideLabels()[3]).toMatch(/^Sida (\d+): Statistik · Bokningskampanj$/);
+    expect(Number(slideLabels()[3]!.match(/\d+/)![0])).toBeGreaterThan(4);
+  });
+
   it("Alt+pil flyttar sidan, pil byter sida", async () => {
     const user = userEvent.setup();
     open();

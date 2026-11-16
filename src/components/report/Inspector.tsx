@@ -386,7 +386,7 @@ function Body({ doc, sec, ops }: { doc: ReportDoc; sec: Section; ops: Ops }) {
   }
 }
 
-export default function Inspector({ doc, sec, index, ops }: { doc: ReportDoc; sec: Section | null; index: number; ops: Ops }) {
+export default function Inspector({ doc, sec, index, pageText, ops }: { doc: ReportDoc; sec: Section | null; index: number; pageText: string; ops: Ops }) {
   if (!sec) return <div className="p-8 text-gray-600">Lägg till en sektion för att börja bygga rapporten.</div>;
   const n = doc.sections.length;
   const tool = "w-8 h-8 grid place-items-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-35 disabled:hover:bg-transparent";
@@ -395,7 +395,7 @@ export default function Inspector({ doc, sec, index, ops }: { doc: ReportDoc; se
       <div className="sticky top-0 z-[2] flex justify-between items-center gap-3 px-[18px] py-3.5 bg-white border-b border-gray-200">
         <div>
           <div className="font-bold text-base">{SECTION_TYPES[sec.type].name}</div>
-          <div className="text-xs text-gray-600">Sida {index + 1} av {n}</div>
+          <div className="text-xs text-gray-600">{pageText}</div>
         </div>
         <div className="flex gap-0.5">
           <button type="button" className={tool} aria-label="Flytta upp" title="Flytta upp" disabled={index === 0} onClick={() => ops.move(-1)}><ArrowUp className="w-4 h-4" aria-hidden /></button>

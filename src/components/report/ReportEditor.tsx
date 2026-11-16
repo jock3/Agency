@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ChevronDown, Download, Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { logoKey, MAX_SECTIONS, newId, SECTION_TYPES, type ReportDoc, type Section, type SectionType } from "@/lib/report/doc";
 import { blankKeepingLogos, fileBase, parseProjectFile, withLogos } from "@/lib/report/project";
 import { sampleDoc } from "@/lib/report/sample";
-import { slideLabel } from "@/lib/report/render";
+import { renderAll, slideLabel } from "@/lib/report/render";
 import { sortKpis, type KpiKey } from "@/lib/report/kpis";
 import Inspector, { type Ops } from "./Inspector";
 import { PageStyles, Stage, Thumb } from "./PageView";
@@ -55,9 +55,15 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
   const { state, retry } = useAutosave(id, doc, initial);
   // Miniatyrerna får hänga efter en aning medan man skriver.
   const railDoc = useDeferredValue(doc);
+  // Sidorna per sektion. En lång tabell kan ge flera sidor, så sidnumren följer inte sektionernas ordning.
+  const pages = useMemo(() => renderAll(doc), [doc]);
+  const railPages = useMemo(() => renderAll(railDoc), [railDoc]);
+  const totalPages = pages.reduce((a, p) => a + p.pages.length, 0);
 
   const index = Math.max(0, doc.sections.findIndex((s) => s.id === selId));
   const sec = doc.sections[index] ?? null;
+  const selPages = pages[index] ?? { first: 0, pages: [] };
+  const pageRange = selPages.pages.length > 1 ? `${selPages.first + 1}–${selPages.first + selPages.pages.length}` : `${selPages.first + 1}`;
 
   const edit = useCallback((fn: (d: ReportDoc) => void) => setDoc((prev) => { const d = clone(prev); fn(d); return d; }), []);
   const say = useCallback((text: string, undo = false) => {
@@ -373,7 +379,7 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
                 onKeyDown={(e) => onSlideKey(e, s.id, i)}
                 onClick={() => setSelId(s.id)}
                 aria-current={selected ? "true" : undefined}
-                aria-label={`Sida ${i + 1}: ${slideLabel(s)}`}
+                aria-label={`Sida ${(railPages[i]?.first ?? i) + 1}: ${slideLabel(s)}`}
                 className={`relative grid grid-cols-[18px_164px] gap-1.5 text-left shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500 ${drag?.id === s.id ? "opacity-40" : ""}`}
               >
                 {drag?.over?.id === s.id && (
@@ -384,10 +390,10 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
                     }`}
                   />
                 )}
-                <span className={`text-xs text-right pt-0.5 tabular-nums ${selected ? "text-milou-600 font-bold" : "text-gray-600"}`}>{i + 1}</span>
+                <span className={`text-xs text-right pt-0.5 tabular-nums ${selected ? "text-milou-600 font-bold" : "text-gray-600"}`}>{(railPages[i]?.first ?? i) + 1}</span>
                 <span>
                   <span className={`block ${selected ? "ring-2 ring-milou-500" : "ring-1 ring-gray-300 hover:ring-gray-400"}`}>
-                    <Thumb doc={railDoc} index={i} />
+                    <Thumb html={railPages[i]?.pages[0] ?? ""} />
                   </span>
                   <span className={`block text-xs mt-1 truncate max-w-[164px] ${selected ? "text-gray-900" : "text-gray-600"}`}>{slideLabel(s)}</span>
                 </span>
@@ -406,8 +412,11 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
         <section aria-label="Förhandsvisning av vald sida" className="min-w-0 min-h-0 flex flex-col items-center justify-center gap-3 p-6 max-[999px]:p-4 overflow-hidden">
           {sec ? (
             <>
-              <Stage doc={doc} index={index} />
-              <p className="text-xs text-gray-600 min-h-[18px]">Sida {index + 1} av {doc.sections.length} · {SECTION_TYPES[sec.type].name} · A4 liggande</p>
+              <Stage pages={selPages.pages} />
+              <p className="text-xs text-gray-600 min-h-[18px]">
+                Sida {pageRange} av {totalPages} · {SECTION_TYPES[sec.type].name}
+                {selPages.pages.length > 1 ? ` · tabellen fortsätter på ${selPages.pages.length} sidor` : ""} · A4 liggande
+              </p>
             </>
           ) : (
             <div className="flex flex-col items-center gap-3.5 text-gray-600 text-center p-10">
@@ -420,7 +429,7 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
         </section>
 
         <aside aria-label="Inställningar för vald sektion" className="bg-white border-t min-[1000px]:border-t-0 min-[1000px]:border-l border-gray-200 min-[1000px]:overflow-y-auto min-h-0">
-          <Inspector doc={doc} sec={sec} index={index} ops={ops} />
+          <Inspector doc={doc} sec={sec} index={index} pageText={`Sida ${pageRange} av ${totalPages}`} ops={ops} />
         </aside>
       </div>
 
