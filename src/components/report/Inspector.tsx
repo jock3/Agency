@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Copy, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, FileUp, ImagePlus, Plus, Trash2 } from "lucide-react";
+import ImportDialog from "./ImportDialog";
 import { logoKey, SECTION_TYPES, type ReportDoc, type Section } from "@/lib/report/doc";
 import { processLogo, type LogoError } from "@/lib/report/logo";
 import { fmtPlain, isNum, KPI_ORDER, KPIS, kpiValue, neededRaw, parseNum, sortKpis, toInput, type KpiKey, type PlatformRow, type RawKey } from "@/lib/report/kpis";
@@ -347,6 +348,7 @@ function Body({ doc, sec, ops }: { doc: ReportDoc; sec: Section; ops: Ops }) {
               ))}
             </div>
           </div>
+          <ImportButton sec={sec} ops={ops} />
           <datalist id="rp-platform-list">{PLATFORM_PRESETS.map((n) => <option key={n} value={n} />)}</datalist>
         </>
       );
@@ -407,6 +409,18 @@ export default function Inspector({ doc, sec, index, pageText, ops }: { doc: Rep
       <div key={sec.id} className="px-[18px] pt-4 pb-12 flex flex-col gap-4">
         <Body doc={doc} sec={sec} ops={ops} />
       </div>
+    </>
+  );
+}
+
+function ImportButton({ sec, ops }: { sec: Stats; ops: Ops }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="self-start inline-flex items-center gap-1.5 h-8 px-3 border border-gray-300 bg-white text-[12.5px] hover:border-gray-500">
+        <FileUp className="w-3.5 h-3.5" aria-hidden /> Importera från CSV…
+      </button>
+      {open && <ImportDialog sec={sec} ops={ops} onClose={() => setOpen(false)} />}
     </>
   );
 }

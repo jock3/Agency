@@ -130,6 +130,46 @@ describe("editorn i en simulerad webbläsare", () => {
   });
 });
 
+describe("CSV-import", () => {
+  const csv = "Ad name,Cost (SEK),Impressions,Reach,Clicks (destination),CTR (destination)\nVideo A,\"1,200.50\",50000,30000,400,0.8%\nVideo B,800,25000,15000,200,0.8%\n";
+  const pick = (name: string) => {
+    const f = new File([csv], name, { type: "text/csv" });
+    fireEvent.change(screen.getByLabelText("Exportfil"), { target: { files: [f] } });
+  };
+
+  it("gissar plattform och kolumner, visar förhandsvisning och lägger till plattformen", async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: "Sida 4: Statistik · Bokningskampanj" }));
+    const before = screen.getByText(/Plattformar/).textContent;
+    await user.click(screen.getByRole("button", { name: /Importera från CSV/ }));
+    const dialog = screen.getByRole("dialog");
+    pick("linkedin_campaign_export.csv");
+    await waitFor(() => expect(within(dialog).getByText("Video A")).toBeTruthy());
+    expect((within(dialog).getByLabelText("Plattform") as HTMLInputElement).value).toBe("LinkedIn");
+    expect(within(dialog).getByText("1 201")).toBeTruthy();
+    await user.click(within(dialog).getByRole("button", { name: "Importera" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText(/Plattformar/).textContent).not.toBe(before);
+    await user.click(screen.getByRole("button", { name: "Ångra" }));
+    expect(screen.getByText(/Plattformar/).textContent).toBe(before);
+  });
+
+  it("en plattform med samma namn ersätts, och fel fil ger ett tydligt meddelande", async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: "Sida 4: Statistik · Bokningskampanj" }));
+    await user.click(screen.getByRole("button", { name: /Importera från CSV/ }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(screen.getByLabelText("Exportfil"), { target: { files: [new File(["bara text"], "x.csv")] } });
+    await waitFor(() => expect(within(dialog).getByRole("alert")).toBeTruthy());
+    pick("meta.csv");
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Ersätt Meta" })).toBeTruthy());
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("PDF", () => {
   it("skickar det som syns i editorn och laddar ner svaret", async () => {
     const calls: { url: string; body: { doc: { meta: { client: string } } } }[] = [];
