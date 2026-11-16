@@ -4,6 +4,7 @@ import SectionTabs from "@/components/SectionTabs";
 const TABS = [
   { href: "/social/utvardering", label: "Utvärdering" },
   { href: "/social/annonser", label: "Annonsverktyg" },
+  { href: "/social/rapport", label: "Rapport" },
 ];
 
 /** Sidhuvud och flikrad för Social media-sektionen. Fler verktyg läggs till i TABS. */
