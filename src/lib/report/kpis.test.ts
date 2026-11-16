@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { budgetByPlatform, insights, largestRemainder, summaryTiles, allRows } from "./summary";
-import { effRaw, fmt, kpiValue, neededRaw, parseNum, sortKpis } from "./kpis";
+import { effRaw, fmt, kpiValue, neededRaw, parseNum, sortKpis, toInput } from "./kpis";
 import { SAMPLE_AWARENESS, SAMPLE_BOOKING, SAMPLE_STATS } from "./sample";
 
 /** Förväntade värden ur handoffen, avsnitt 12. */
@@ -127,6 +127,12 @@ describe("Regler", () => {
   });
   it("kolumner sorteras i bibliotekets ordning", () => {
     expect(sortKpis(["cpa", "spend", "ctr"])).toEqual(["spend", "ctr", "cpa"]);
+  });
+  it("inmatningsfält visar tusentalsavgränsare och läser tillbaka samma tal", () => {
+    expect(toInput(412000)).toBe("412 000");
+    expect(toInput(2.5)).toBe("2,5");
+    expect(toInput(1234567.25)).toBe("1 234 567,25");
+    for (const v of [0, 7, 999, 1000, 412000, 2.5, 8200.75, 1e9]) expect(parseNum(toInput(v))).toBe(v);
   });
   it("svenska skrivsätt godtas", () => {
     expect(parseNum("412 000")).toBe(412000);

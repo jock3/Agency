@@ -42,6 +42,18 @@ describe("editorn i en simulerad webbläsare", () => {
     expect(field.getAttribute("aria-invalid")).toBe("true");
   });
 
+  it("siffrefälten visar tusentalsavgränsare när man lämnar fältet", async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: "Sida 4: Statistik · Bokningskampanj" }));
+    const field = screen.getAllByLabelText("Kostnad (kr)")[0] as HTMLInputElement;
+    await user.clear(field);
+    await user.type(field, "1234567");
+    expect(field.value).toBe("1234567");
+    await user.tab();
+    expect(field.value).toBe("1 234 567");
+  });
+
   it("Alt+pil flyttar sidan, pil byter sida", async () => {
     const user = userEvent.setup();
     open();

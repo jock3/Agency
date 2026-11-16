@@ -128,8 +128,12 @@ export function fmt(key: KpiKey, v: number | null | undefined): string {
   }
 }
 
-/** Tal som visas i ett inmatningsfält: decimalkomma. */
-export const toInput = (v: number) => String(v).replace(".", ",");
+const nfInput = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 6, useGrouping: true });
+/**
+ * Tal som visas i ett inmatningsfält: decimalkomma och vanligt mellanslag
+ * mellan tusental ("412 000", "2,5"). parseNum läser tillbaka det.
+ */
+export const toInput = (v: number) => nfInput.format(v).replace(/[\u00a0\u202f]/g, " ").replace(/\u2212/g, "-");
 
 /**
  * Läser svenska skrivsätt: "412 000", "2,5", "8 200 kr", "0,5 %".

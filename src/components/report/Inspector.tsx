@@ -110,6 +110,11 @@ function MetricInput({ title, value, placeholder, onChange }: { title: string; v
         aria-invalid={invalid}
         value={text}
         placeholder={placeholder}
+        onBlur={() => {
+          // Tusentalsavgränsare när man lämnar fältet, inte medan man skriver.
+          const n = parseNum(text);
+          if (n !== null && !Number.isNaN(n) && n >= 0) setText(toInput(n));
+        }}
         onChange={(e) => {
           const t = e.target.value;
           setText(t);
