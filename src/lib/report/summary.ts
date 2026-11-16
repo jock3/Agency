@@ -24,6 +24,8 @@ export interface BudgetEntry {
   value: number;
   /** Andel av total kostnad, 0–1. */
   pct: number;
+  /** Andelen i hela procent, avrundad så att alla plattformar tillsammans blir exakt 100. */
+  share: number;
   /** Stapelbredd relativt största posten, 0–1. */
   w: number;
 }
@@ -44,7 +46,25 @@ export function budgetByPlatform(stats: readonly StatsLike[]): BudgetEntry[] {
   }
   const arr = [...map.values()].sort((a, b) => b.value - a.value);
   const total = arr.reduce((a, b) => a + b.value, 0);
-  return total > 0 ? arr.slice(0, 6).map((e) => ({ ...e, pct: e.value / total, w: e.value / arr[0].value })) : [];
+  if (total <= 0) return [];
+  const shares = largestRemainder(arr.map((e) => (e.value / total) * 100));
+  return arr.slice(0, 6).map((e, i) => ({ ...e, pct: e.value / total, share: shares[i], w: e.value / arr[0].value }));
+}
+
+/**
+ * Avrundning efter största rest: alla avrundas nedåt och de som tappade mest
+ * får en procentenhet tillbaka, tills summan är 100. Vanlig avrundning kan ge 101.
+ */
+export function largestRemainder(percents: number[]): number[] {
+  const floors = percents.map(Math.floor);
+  let left = Math.round(percents.reduce((a, b) => a + b, 0)) - floors.reduce((a, b) => a + b, 0);
+  const order = percents.map((p, i) => ({ i, rest: p - floors[i] })).sort((a, b) => b.rest - a.rest || a.i - b.i);
+  for (const { i } of order) {
+    if (left <= 0) break;
+    floors[i] += 1;
+    left -= 1;
+  }
+  return floors;
 }
 
 export interface Insight {
@@ -73,7 +93,7 @@ export function insights(stats: readonly StatsLike[]): Insight[] {
   best("ctr", "max", "hade högst CTR");
   best("cpa", "min", "hade lägst kostnad per konvertering");
   const b = budgetByPlatform(stats);
-  if (b.length > 1) out.push({ name: b[0].name, text: `stod för störst del av budgeten: ${Math.round(b[0].pct * 100)} %` });
+  if (b.length > 1) out.push({ name: b[0].name, text: `stod för störst del av budgeten: ${b[0].share} %` });
   best("cpc", "min", "hade lägst CPC");
   return out.slice(0, 4);
 }

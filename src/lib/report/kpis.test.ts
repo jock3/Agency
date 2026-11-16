@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { budgetByPlatform, insights, summaryTiles, allRows } from "./summary";
+import { budgetByPlatform, insights, largestRemainder, summaryTiles, allRows } from "./summary";
 import { effRaw, fmt, kpiValue, neededRaw, parseNum, sortKpis } from "./kpis";
 import { SAMPLE_AWARENESS, SAMPLE_BOOKING, SAMPLE_STATS } from "./sample";
 
@@ -70,14 +70,19 @@ describe("Sammanfattning · totalt (matchad täckning)", () => {
 });
 
 describe("Budget per plattform", () => {
-  it("Meta 50 %, TikTok 23 %, Google Ads 21 %, Snapchat 7 %", () => {
+  it("Meta 50 %, TikTok 23 %, Google Ads 21 %, Snapchat 6 % (summan blir 100, inte 101)", () => {
     const b = budgetByPlatform(SAMPLE_STATS);
-    expect(b.map((e) => [e.name, e.value, Math.round(e.pct * 100)])).toEqual([
+    expect(b.map((e) => [e.name, e.value, e.share])).toEqual([
       ["Meta", 30000, 50],
       ["TikTok", 13700, 23],
       ["Google Ads", 12500, 21],
-      ["Snapchat", 4000, 7],
+      ["Snapchat", 4000, 6],
     ]);
+    expect(b.reduce((a, e) => a + e.share, 0)).toBe(100);
+  });
+  it("största rest: tre lika delar blir 34 + 33 + 33", () => {
+    expect(largestRemainder([100 / 3, 100 / 3, 100 / 3])).toEqual([34, 33, 33]);
+    expect(largestRemainder([50, 50])).toEqual([50, 50]);
   });
   it("slår ihop plattformsnamn oavsett versaler", () => {
     const b = budgetByPlatform([{ title: "x", platforms: [{ id: "1", name: "Meta", values: { spend: 100 }, ads: [] }, { id: "2", name: " meta ", values: { spend: 50 }, ads: [] }] }]);

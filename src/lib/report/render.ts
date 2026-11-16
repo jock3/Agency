@@ -179,7 +179,7 @@ function summaryPage(doc: ReportDoc, sec: Extract<Section, { type: "summary" }>,
         `<div><h3 class="rp-sm-h">Budget per plattform</h3>${b
           .map(
             (e) =>
-              `<div class="rp-bar-row"><div class="rp-bar-top"><span class="rp-bar-name">${logoTile(doc, e.name, true)}${esc(e.name)}</span><span>${fmt("spend", e.value)} · ${Math.round(e.pct * 100)}&nbsp;%</span></div><div class="rp-bar-track"><div class="rp-bar-fill" style="width:${(e.w * 100).toFixed(1)}%"></div></div></div>`,
+              `<div class="rp-bar-row"><div class="rp-bar-top"><span class="rp-bar-name">${logoTile(doc, e.name, true)}${esc(e.name)}</span><span>${fmt("spend", e.value)} · ${e.share}&nbsp;%</span></div><div class="rp-bar-track"><div class="rp-bar-fill" style="width:${(e.w * 100).toFixed(1)}%"></div></div></div>`,
           )
           .join("")}</div>`,
       );
