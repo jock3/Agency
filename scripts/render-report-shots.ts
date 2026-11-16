@@ -11,6 +11,7 @@ import puppeteer from "puppeteer-core";
 import { sampleDoc } from "../src/lib/report/sample";
 import { renderDocument } from "../src/lib/report/render";
 import { FONT_LINK, PAGE_CSS, PAGE_H, PAGE_W } from "../src/lib/report/css";
+import { testLogos } from "./test-png";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PROTOTYPE = process.argv[2] ?? `${process.env.HOME}/Downloads/some-rapport-prototyp.html`;
@@ -23,14 +24,18 @@ async function main() {
     // Prototypens sidor: ta deras HTML och stilar ur miniatyrerna, utan skalning.
     const proto = await browser.newPage();
     await proto.setViewport({ width: 1500, height: 900 });
-    await proto.goto(`file://${PROTOTYPE}`, { waitUntil: "networkidle0" });
+    // Samma rapport, med provlogotyper, läggs i prototypens lagring så att båda ritar exakt samma data.
+    const ours = sampleDoc();
+    ours.logos = testLogos();
+    await proto.goto(`file://${PROTOTYPE}`, { waitUntil: "load" });
+    await proto.evaluate((json: string) => localStorage.setItem("some-rapport-v1", json), JSON.stringify(ours));
+    await proto.reload({ waitUntil: "load" });
     const { style, pages } = await proto.evaluate(() => ({
       style: (document.querySelector("style") as HTMLStyleElement).textContent ?? "",
       pages: [...document.querySelectorAll(".thumb .page")].map((p) => p.outerHTML),
     }));
     await proto.close();
 
-    const ours = sampleDoc();
     if (pages.length !== ours.sections.length) throw new Error(`Olika antal sidor: prototypen ${pages.length}, vår ${ours.sections.length}`);
 
     const shoot = async (html: string, selector: string, prefix: string) => {

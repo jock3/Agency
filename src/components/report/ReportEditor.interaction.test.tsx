@@ -137,6 +137,16 @@ describe("PDF", () => {
 });
 
 describe("autosparning", () => {
+  it("sparar det som väntar när man lämnar editorn inom 800 ms", async () => {
+    const sent: { doc: { meta: { client: string } } }[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: { body: string }) => { sent.push(JSON.parse(init.body)); return { ok: true }; }));
+    const { unmount } = open();
+    fireEvent.change(screen.getAllByLabelText("Kundnamn")[0], { target: { value: "Snabb" } });
+    unmount();
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].doc.meta.client).toBe("Snabb");
+  });
+
   it("skickar ett anrop åt gången och sparar senaste versionen efteråt", async () => {
     const calls: { resolve: (ok: boolean) => void; doc: { meta: { client: string } } }[] = [];
     vi.stubGlobal("fetch", vi.fn((_url: string, init: { body: string }) => new Promise((resolve) => {

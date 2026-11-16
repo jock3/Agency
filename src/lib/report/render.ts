@@ -221,7 +221,7 @@ export function renderDocument(doc: ReportDoc, css: string, fontLink: string): s
   const pages = doc.sections.map((_, i) => renderPage(doc, i)).join("\n");
   return `<!doctype html><html lang="sv"><head><meta charset="utf-8"><title>${esc(`Rapport ${doc.meta.client} ${doc.meta.campaign}`.trim())}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="${esc(fontLink)}" rel="stylesheet">
-<style>@page{size:1123px 794px;margin:0}html,body{margin:0;padding:0}.rp-page{break-after:page;page-break-after:always}.rp-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}${css}</style></head><body>${pages}</body></html>`;
+<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0}.rp-page{break-after:page;page-break-after:always}.rp-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}${css}</style></head><body>${pages}</body></html>`;
 }
 
 export { fmtPlain };

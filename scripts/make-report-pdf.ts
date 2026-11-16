@@ -5,12 +5,13 @@
 import fs from "node:fs";
 import { renderPdf } from "../src/lib/report/pdf";
 import { sampleDoc } from "../src/lib/report/sample";
+import { testLogos } from "./test-png";
 
 async function main() {
   const out = process.argv[2] ?? "/tmp/report-shots/exempel.pdf";
   fs.mkdirSync("/tmp/report-shots", { recursive: true });
   const t = Date.now();
-  const { pdf, fontOk } = await renderPdf(sampleDoc());
+  const { pdf, fontOk } = await renderPdf({ ...sampleDoc(), logos: testLogos() });
   fs.writeFileSync(out, pdf);
   console.log(`${out}: ${(pdf.length / 1024).toFixed(0)} kB på ${Date.now() - t} ms, typsnittet REM ${fontOk ? "hämtades" : "SAKNAS (reservfont)"}`);
 }

@@ -53,6 +53,16 @@ export function useAutosave(id: string, doc: ReportDoc, initial: ReportDoc) {
     return () => clearTimeout(timer.current);
   }, [doc, flush]);
 
+  // Lämnar man editorn inom appen (klick på en länk eller flik) körs inte beforeunload.
+  // Då sparas det som väntar direkt, innan tidtagaren hunnit gå.
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      if (latest.current !== lastSaved.current) void flush();
+    },
+    [flush],
+  );
+
   // Varna innan man lämnar sidan med osparat arbete.
   useEffect(() => {
     if (state === "saved") return;

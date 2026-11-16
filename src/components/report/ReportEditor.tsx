@@ -307,7 +307,7 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
                 {[
                   { title: "Spara projektfil", desc: "Ladda ner rapporten som .json och fortsätt senare", run: saveProjectFile },
                   { title: "Öppna projektfil", desc: "Läs in en sparad .json-rapport", run: () => fileInput.current?.click() },
-                  { title: "Visa exempelrapporten", desc: "Ersätter nuvarande innehåll, går att ångra", run: () => replaceDoc({ ...sampleDoc(), logos: doc.logos }, "Exempelrapporten är inläst.") },
+                  { title: "Visa exempelrapporten", desc: "Ersätter nuvarande innehåll, går att ångra", run: () => replaceDoc({ ...sampleDoc(new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", year: "numeric" }).format(new Date())), logos: doc.logos }, "Exempelrapporten är inläst.") },
                   { title: "Ny tom rapport", desc: "Börja om med bara en startsida", run: () => replaceDoc(blankKeepingLogos(doc), "Ny tom rapport skapad. Logotyperna finns kvar.") },
                 ].map((it) => (
                   <button key={it.title} type="button" role="menuitem" onClick={() => { setProjectMenu(false); it.run(); }} className="block w-full text-left px-2.5 py-2 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none">

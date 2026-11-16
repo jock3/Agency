@@ -26,6 +26,9 @@ async function launch(): Promise<Browser> {
 }
 
 /** Det enda sidan får hämta utifrån är typsnittet. Allt annat, inklusive loggor, ligger i HTML:en som data. */
+/** A4 liggande, 297 mm, i CSS-pixlar (96 dpi). */
+const A4_LANDSCAPE_PX = 1122.52;
+
 const ALLOWED = /^(data:|about:|https:\/\/fonts\.(googleapis|gstatic)\.com\/)/;
 
 export interface PdfResult {
@@ -47,7 +50,8 @@ export async function renderPdf(doc: ReportDoc): Promise<PdfResult> {
     await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
     await page.evaluate("document.fonts.ready");
     const fontOk = (await page.evaluate("document.fonts.check('700 16px REM')")) === true;
-    const pdf = await page.pdf({ width: `${PAGE_W}px`, height: `${PAGE_H}px`, printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 }, preferCSSPageSize: true });
+    // Riktig A4 liggande (841,89 × 595,28 pt). Sidan är 1123 px bred men A4 är 1122,52 px, så innehållet skalas en aning.
+    const pdf = await page.pdf({ format: "A4", landscape: true, printBackground: true, scale: A4_LANDSCAPE_PX / PAGE_W, margin: { top: 0, right: 0, bottom: 0, left: 0 }, preferCSSPageSize: false });
     return { pdf, fontOk };
   } finally {
     await browser.close();
