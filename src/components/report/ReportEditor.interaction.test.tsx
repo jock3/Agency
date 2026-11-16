@@ -1,0 +1,139 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { createElement } from "react";
+import { sampleDoc } from "@/lib/report/sample";
+import { blankDoc } from "@/lib/report/doc";
+import ReportEditor from "./ReportEditor";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
+vi.mock("next/link", () => ({ default: ({ children, href }: { children: unknown; href: string }) => createElement("a", { href }, children as never) }));
+
+beforeEach(() => {
+  window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as typeof window.matchMedia;
+  globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+  Element.prototype.scrollIntoView = () => {};
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
+
+const open = (doc = sampleDoc()) => render(<ReportEditor id="r1" initial={doc} />);
+const slideLabels = () => within(screen.getByRole("navigation", { name: "Sektioner i rapporten" })).getAllByRole("button").map((b) => b.getAttribute("aria-label")).filter(Boolean);
+
+describe("editorn i en simulerad webbläsare", () => {
+  it("lägger till en sektion efter den valda och väljer den", async () => {
+    const user = userEvent.setup();
+    open(blankDoc("K", "C"));
+    await user.click(screen.getByRole("button", { name: /Lägg till sektion/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Kommentar/ }));
+    expect(slideLabels()).toEqual(["Sida 1: Startsida", "Sida 2: Kommentar · Rubrik"]);
+    expect(screen.getByText("Sida 2 av 2")).toBeTruthy();
+  });
+
+  it("skriver man i ett siffrefält räknas kvoterna om, och komma får stå kvar under skrivning", async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: "Sida 4: Statistik · Bokningskampanj" }));
+    const field = screen.getAllByLabelText("Kostnad (kr)")[0] as HTMLInputElement; // Metas plattformsfält
+    await user.clear(field);
+    await user.type(field, "2,5");
+    expect(field.value).toBe("2,5");
+    await user.type(field, "x");
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("Alt+pil flyttar sidan, pil byter sida", async () => {
+    const user = userEvent.setup();
+    open();
+    const first = screen.getByRole("button", { name: "Sida 1: Startsida" });
+    first.focus();
+    await user.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    expect(slideLabels()[1]).toBe("Sida 2: Startsida");
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getAllByText(/Sida 3 av 6/).length).toBeGreaterThan(0);
+  });
+
+  /** jsdom saknar DragEvent, så musens läge läggs på händelsen för hand. */
+  const dragOver = (el: Element, y: number, dt: object) => {
+    const ev = createEvent.dragOver(el, { dataTransfer: dt });
+    Object.defineProperty(ev, "clientY", { value: y });
+    Object.defineProperty(ev, "clientX", { value: 10 });
+    fireEvent(el, ev);
+  };
+  const dragSlide = (from: string, onto: string, y: number) => {
+    const rect = { top: 0, bottom: 100, left: 0, right: 100, width: 100, height: 100, x: 0, y: 0, toJSON() {} };
+    const target = screen.getByRole("button", { name: onto });
+    target.getBoundingClientRect = () => rect;
+    const dt = { effectAllowed: "", setData() {} };
+    fireEvent.dragStart(screen.getByRole("button", { name: from }), { dataTransfer: dt });
+    dragOver(target, y, dt);
+    fireEvent.drop(target, { dataTransfer: dt });
+  };
+
+  it("dra och släpp i övre halvan av en sida lägger sidan före den", () => {
+    open();
+    dragSlide("Sida 5: Kommentar · Vad vi tar med oss", "Sida 2: KPI:er", 10);
+    expect(slideLabels().slice(0, 3)).toEqual(["Sida 1: Startsida", "Sida 2: Kommentar · Vad vi tar med oss", "Sida 3: KPI:er"]);
+  });
+
+  it("dra och släpp i nedre halvan lägger sidan efter, och en sida släppt på sig själv ligger kvar", () => {
+    open();
+    dragSlide("Sida 5: Kommentar · Vad vi tar med oss", "Sida 2: KPI:er", 90);
+    expect(slideLabels().slice(0, 3)).toEqual(["Sida 1: Startsida", "Sida 2: KPI:er", "Sida 3: Kommentar · Vad vi tar med oss"]);
+    dragSlide("Sida 1: Startsida", "Sida 1: Startsida", 10);
+    expect(slideLabels()[0]).toBe("Sida 1: Startsida");
+  });
+
+  it("Ta bort sektion går att ångra", async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: "Ta bort sektionen" }));
+    expect(slideLabels()).toHaveLength(5);
+    await user.click(screen.getByRole("button", { name: "Ångra" }));
+    expect(slideLabels()).toHaveLength(6);
+  });
+
+  it("Ny tom rapport behåller logotyperna och går att ångra", async () => {
+    const user = userEvent.setup();
+    const doc = sampleDoc();
+    doc.logos = { meta: "data:image/png;base64,AAAA" };
+    open(doc);
+    await user.click(screen.getByRole("button", { name: /Projekt/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Ny tom rapport/ }));
+    expect(slideLabels()).toEqual(["Sida 1: Startsida"]);
+    await user.click(screen.getByRole("button", { name: "Ångra" }));
+    expect(slideLabels()).toHaveLength(6);
+  });
+});
+
+describe("autosparning", () => {
+  it("skickar ett anrop åt gången och sparar senaste versionen efteråt", async () => {
+    const calls: { resolve: (ok: boolean) => void; doc: { meta: { client: string } } }[] = [];
+    vi.stubGlobal("fetch", vi.fn((_url: string, init: { body: string }) => new Promise((resolve) => {
+      calls.push({ doc: JSON.parse(init.body).doc, resolve: (ok) => resolve({ ok }) });
+    })));
+    open();
+    const client = screen.getAllByLabelText("Kundnamn")[0] as HTMLInputElement;
+    fireEvent.change(client, { target: { value: "A" } });
+    await waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+    fireEvent.change(client, { target: { value: "AB" } });
+    await new Promise((r) => setTimeout(r, 1200));
+    expect(calls).toHaveLength(1); // första anropet pågår fortfarande, inget nytt skickas
+    await act(async () => { calls[0].resolve(true); });
+    await waitFor(() => expect(calls).toHaveLength(2), { timeout: 3000 });
+    expect(calls[1].doc.meta.client).toBe("AB");
+    await act(async () => { calls[1].resolve(true); });
+    await waitFor(() => expect(screen.getByRole("status", { name: "" }).textContent).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Sparat")).toBeTruthy());
+  }, 15000);
+
+  it("visar fel och försöker igen på begäran", async () => {
+    let n = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: ++n > 1 })));
+    open();
+    fireEvent.change(screen.getAllByLabelText("Kundnamn")[0], { target: { value: "X" } });
+    await waitFor(() => expect(screen.getByText("Kunde inte spara")).toBeTruthy(), { timeout: 3000 });
+    await userEvent.click(screen.getByRole("button", { name: "Försök igen" }));
+    await waitFor(() => expect(screen.getByText("Sparat")).toBeTruthy());
+  }, 10000);
+});

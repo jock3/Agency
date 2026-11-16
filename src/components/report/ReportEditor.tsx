@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
-import { MAX_SECTIONS, newId, SECTION_TYPES, type ReportDoc, type Section, type SectionType } from "@/lib/report/doc";
+import { ArrowLeft, Check, ChevronDown, Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { logoKey, MAX_SECTIONS, newId, SECTION_TYPES, type ReportDoc, type Section, type SectionType } from "@/lib/report/doc";
+import { blankKeepingLogos, fileBase, parseProjectFile, withLogos } from "@/lib/report/project";
+import { sampleDoc } from "@/lib/report/sample";
 import { slideLabel } from "@/lib/report/render";
 import { sortKpis, type KpiKey } from "@/lib/report/kpis";
 import Inspector, { type Ops } from "./Inspector";
@@ -42,6 +44,10 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
   const [doc, setDoc] = useState(initial);
   const [selId, setSelId] = useState<string | null>(initial.sections[0]?.id ?? null);
   const [menu, setMenu] = useState(false);
+  const [projectMenu, setProjectMenu] = useState(false);
+  const [drag, setDrag] = useState<{ id: string; over: { id: string; before: boolean } | null } | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const railRef = useRef<HTMLElement>(null);
   const [toast, setToast] = useState<{ text: string; undo: boolean } | null>(null);
   const undoSnap = useRef<{ doc: ReportDoc; selId: string | null } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -59,9 +65,26 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
     toastTimer.current = setTimeout(() => setToast(null), undo ? 7000 : 3800);
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenu(false);
+        setProjectMenu(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const ops: Ops = {
     newId,
+    say,
+    setLogo: (name, url) => edit((d) => {
+      const key = logoKey(name);
+      if (!key) return;
+      if (url) d.logos[key] = url;
+      else delete d.logos[key];
+    }),
     patchMeta: (p) => edit((d) => { Object.assign(d.meta, p); }),
     patchSection: (sid, p) => edit((d) => { const s = d.sections.find((x) => x.id === sid); if (s) Object.assign(s, p); }),
     toggleKpi: (sid, k) => edit((d) => {
@@ -104,6 +127,94 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
     const s = makeSection(type, doc);
     edit((d) => { d.sections.splice(sec ? index + 1 : d.sections.length, 0, s); });
     setSelId(s.id);
+  };
+
+  const focusSlide = (sid: string) => requestAnimationFrame(() => {
+    const el = railRef.current?.querySelector<HTMLElement>(`[data-id="${sid}"]`);
+    el?.focus();
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+
+  const moveSection = (sid: string, to: number) => {
+    edit((d) => {
+      const from = d.sections.findIndex((s) => s.id === sid);
+      if (from < 0) return;
+      const [s] = d.sections.splice(from, 1);
+      d.sections.splice(Math.max(0, Math.min(to, d.sections.length)), 0, s);
+    });
+  };
+
+  /** Piltangenter byter sida, Alt+pil flyttar sidan. */
+  const onSlideKey = (e: React.KeyboardEvent, sid: string, i: number) => {
+    const keys = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"];
+    if (!keys.includes(e.key)) return;
+    e.preventDefault();
+    const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1;
+    if (e.altKey) {
+      if (i + d < 0 || i + d >= doc.sections.length) return;
+      setSelId(sid);
+      moveSection(sid, i + d);
+      focusSlide(sid);
+    } else {
+      const next = doc.sections[i + d];
+      if (next) {
+        setSelId(next.id);
+        focusSlide(next.id);
+      }
+    }
+  };
+
+  const horizontalRail = () => window.matchMedia("(max-width: 999px)").matches;
+  const onDragOver = (e: React.DragEvent, sid: string) => {
+    if (!drag) return;
+    e.preventDefault();
+    if (sid === drag.id) return setDrag({ ...drag, over: null });
+    const r = e.currentTarget.getBoundingClientRect();
+    const before = horizontalRail() ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+    if (drag.over?.id !== sid || drag.over.before !== before) setDrag({ ...drag, over: { id: sid, before } });
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (drag?.over) {
+      const from = doc.sections.findIndex((s) => s.id === drag.id);
+      let to = doc.sections.findIndex((s) => s.id === drag.over!.id) + (drag.over.before ? 0 : 1);
+      if (from < to) to -= 1;
+      setSelId(drag.id);
+      moveSection(drag.id, to);
+    }
+    setDrag(null);
+  };
+
+  /** Byter hela rapporten (exempel, ny tom, inläst fil). Går att ångra. */
+  const replaceDoc = (next: ReportDoc, message: string) => {
+    undoSnap.current = { doc, selId };
+    setDoc(next);
+    setSelId(next.sections[0]?.id ?? null);
+    say(message, true);
+  };
+
+  const saveProjectFile = () => {
+    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileBase(doc)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    say("Projektfilen laddas ner.");
+  };
+
+  const openProjectFile = (f: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const incoming = parseProjectFile(String(reader.result));
+      if (!incoming) return say("Filen kunde inte läsas. Välj en projektfil som sparats från verktyget.");
+      replaceDoc(withLogos(incoming, doc), `${f.name} är inläst.`);
+    };
+    reader.onerror = () => say("Filen kunde inte läsas.");
+    reader.readAsText(f);
   };
 
   const deleteReport = async () => {
@@ -149,8 +260,48 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
           <button
             type="button"
             aria-haspopup="menu"
+            aria-expanded={projectMenu}
+            onClick={() => { setProjectMenu((v) => !v); setMenu(false); }}
+            className="inline-flex items-center gap-2 h-9 px-3.5 border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50"
+          >
+            Projekt <ChevronDown className="w-4 h-4" aria-hidden />
+          </button>
+          {projectMenu && (
+            <>
+              <button type="button" aria-label="Stäng menyn" className="fixed inset-0 z-40 cursor-default" onClick={() => setProjectMenu(false)} />
+              <div role="menu" aria-label="Projekt" className="absolute right-0 top-full mt-1.5 z-50 min-w-[290px] bg-white border border-gray-200 shadow-xl p-1.5">
+                {[
+                  { title: "Spara projektfil", desc: "Ladda ner rapporten som .json och fortsätt senare", run: saveProjectFile },
+                  { title: "Öppna projektfil", desc: "Läs in en sparad .json-rapport", run: () => fileInput.current?.click() },
+                  { title: "Visa exempelrapporten", desc: "Ersätter nuvarande innehåll, går att ångra", run: () => replaceDoc({ ...sampleDoc(), logos: doc.logos }, "Exempelrapporten är inläst.") },
+                  { title: "Ny tom rapport", desc: "Börja om med bara en startsida", run: () => replaceDoc(blankKeepingLogos(doc), "Ny tom rapport skapad. Logotyperna finns kvar.") },
+                ].map((it) => (
+                  <button key={it.title} type="button" role="menuitem" onClick={() => { setProjectMenu(false); it.run(); }} className="block w-full text-left px-2.5 py-2 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none">
+                    <b className="block font-semibold">{it.title}</b>
+                    <small className="block text-gray-600 text-xs">{it.desc}</small>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <input
+            ref={fileInput}
+            type="file"
+            hidden
+            accept="application/json,.json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) openProjectFile(f);
+            }}
+          />
+        </div>
+        <div className="relative">
+          <button
+            type="button"
+            aria-haspopup="menu"
             aria-expanded={menu}
-            onClick={() => setMenu((v) => !v)}
+            onClick={() => { setMenu((v) => !v); setProjectMenu(false); }}
             className="inline-flex items-center gap-2 h-9 px-3.5 border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50"
           >
             <Plus className="w-4 h-4" aria-hidden /> Lägg till sektion
@@ -172,18 +323,33 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 min-[1000px]:grid-cols-[212px_minmax(0,1fr)_400px]">
-        <nav aria-label="Sektioner i rapporten" className="bg-white border-b min-[1000px]:border-b-0 min-[1000px]:border-r border-gray-200 flex min-[1000px]:flex-col gap-3.5 overflow-x-auto min-[1000px]:overflow-y-auto min-[1000px]:overflow-x-hidden p-3 min-[1000px]:pb-6">
+        <nav ref={railRef} aria-label="Sektioner i rapporten" className="bg-white border-b min-[1000px]:border-b-0 min-[1000px]:border-r border-gray-200 flex min-[1000px]:flex-col gap-3.5 overflow-x-auto min-[1000px]:overflow-y-auto min-[1000px]:overflow-x-hidden p-3 min-[1000px]:pb-6">
           {railDoc.sections.map((s, i) => {
             const selected = s.id === selId;
             return (
               <button
                 key={s.id}
                 type="button"
+                data-id={s.id}
+                draggable
+                onDragStart={(e) => { setDrag({ id: s.id, over: null }); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", s.id); } catch {} }}
+                onDragOver={(e) => onDragOver(e, s.id)}
+                onDrop={onDrop}
+                onDragEnd={() => setDrag(null)}
+                onKeyDown={(e) => onSlideKey(e, s.id, i)}
                 onClick={() => setSelId(s.id)}
                 aria-current={selected ? "true" : undefined}
                 aria-label={`Sida ${i + 1}: ${slideLabel(s)}`}
-                className="grid grid-cols-[18px_164px] gap-1.5 text-left shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500"
+                className={`relative grid grid-cols-[18px_164px] gap-1.5 text-left shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500 ${drag?.id === s.id ? "opacity-40" : ""}`}
               >
+                {drag?.over?.id === s.id && (
+                  <span
+                    aria-hidden
+                    className={`absolute bg-milou-500 pointer-events-none min-[1000px]:left-6 min-[1000px]:right-0 min-[1000px]:h-[3px] max-[999px]:top-0 max-[999px]:bottom-0 max-[999px]:w-[3px] ${
+                      drag.over.before ? "min-[1000px]:-top-2 max-[999px]:-left-2" : "min-[1000px]:-bottom-2 max-[999px]:-right-2"
+                    }`}
+                  />
+                )}
                 <span className={`text-xs text-right pt-0.5 tabular-nums ${selected ? "text-milou-600 font-bold" : "text-gray-600"}`}>{i + 1}</span>
                 <span>
                   <span className={`block ${selected ? "ring-2 ring-milou-500" : "ring-1 ring-gray-300 hover:ring-gray-400"}`}>

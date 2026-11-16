@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
-import { SECTION_TYPES, type ReportDoc, type Section } from "@/lib/report/doc";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, Copy, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { logoKey, SECTION_TYPES, type ReportDoc, type Section } from "@/lib/report/doc";
+import { processLogo, type LogoError } from "@/lib/report/logo";
 import { fmtPlain, isNum, KPI_ORDER, KPIS, kpiValue, neededRaw, parseNum, sortKpis, toInput, type KpiKey, type PlatformRow, type RawKey } from "@/lib/report/kpis";
 
 export const PLATFORM_PRESETS = ["Meta", "TikTok", "LinkedIn", "Snapchat", "Google Ads", "YouTube", "Pinterest"];
@@ -21,6 +22,9 @@ export interface Ops {
   /** Tar ögonblicksbild och visar "Ångra" efter ändringen. */
   undoable: (message: string, fn: () => void) => void;
   newId: () => string;
+  /** Sätter eller (null) tar bort logotypen för ett plattformsnamn. Gäller alla rader med samma namn. */
+  setLogo: (name: string, url: string | null) => void;
+  say: (text: string) => void;
 }
 
 const input = "w-full border border-gray-300 bg-gray-50 px-2.5 py-2 text-sm focus:outline-none focus:border-milou-500 aria-[invalid=true]:border-red-600";
@@ -140,12 +144,57 @@ function MetricGrid({ need, values, sums, onChange }: { need: RawKey[]; values: 
   );
 }
 
-function PlatformCard({ sec, p, need, ops }: { sec: Stats; p: PlatformRow; need: RawKey[]; ops: Ops }) {
+const LOGO_ERRORS: Record<LogoError, string> = {
+  type: "Bilden kunde inte läsas. Använd PNG, JPG, WebP eller SVG.",
+  read: "Bilden kunde inte läsas. Använd PNG, JPG, WebP eller SVG.",
+  decode: "Bilden kunde inte läsas. Använd PNG, JPG, WebP eller SVG.",
+  big: "Bilden blev för stor. Prova en enklare version av logotypen.",
+};
+
+function LogoSlot({ name, src, ops }: { name: string; src: string | undefined; ops: Ops }) {
+  const file = useRef<HTMLInputElement>(null);
+  const label = `${src ? "Byt" : "Ladda upp"} logotyp för ${name || "plattformen"}`;
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={label}
+        title={src ? "Byt logotyp" : "Ladda upp logotyp"}
+        onClick={() => (logoKey(name) ? file.current?.click() : ops.say("Ge plattformen ett namn först."))}
+        className={`w-[38px] h-[38px] shrink-0 grid place-items-center overflow-hidden text-gray-600 hover:border-milou-500 hover:text-milou-600 ${src ? "border border-gray-300 bg-white" : "border border-dashed border-gray-400 bg-gray-50"}`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {src ? <img src={src} alt="" width={26} height={26} /> : <ImagePlus className="w-4 h-4" aria-hidden />}
+      </button>
+      <input
+        ref={file}
+        type="file"
+        hidden
+        accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f) return;
+          try {
+            ops.setLogo(name, await processLogo(f));
+            ops.say("Logotypen är uppladdad.");
+          } catch (err) {
+            ops.say(LOGO_ERRORS[(err as Error).message as LogoError] ?? LOGO_ERRORS.read);
+          }
+        }}
+      />
+    </>
+  );
+}
+
+function PlatformCard({ sec, p, need, logos, ops }: { sec: Stats; p: PlatformRow; need: RawKey[]; logos: ReportDoc["logos"]; ops: Ops }) {
+  const logo = p.name ? logos[logoKey(p.name)] : undefined;
   const sums = p.ads.length ? Object.fromEntries(need.map((m) => [m, kpiValue(m, p.ads.map((a) => a.values))])) : null;
   const setPlatform = (fn: (x: PlatformRow) => void) => ops.editStats(sec.id, (s) => { const t = s.platforms.find((x) => x.id === p.id); if (t) fn(t); });
   return (
     <div className="border border-gray-300 p-3 flex flex-col gap-2.5 bg-white">
       <div className="flex gap-1.5 items-center">
+        <LogoSlot name={p.name} src={logo} ops={ops} />
         <input
           type="text"
           list="rp-platform-list"
@@ -165,6 +214,18 @@ function PlatformCard({ sec, p, need, ops }: { sec: Stats; p: PlatformRow; need:
         >
           <Trash2 className="w-4 h-4" aria-hidden />
         </button>
+      </div>
+      <div className="flex justify-between items-center gap-2 text-xs text-gray-600 -mt-0.5">
+        {logo ? (
+          <>
+            <span>Logotypen används på alla {p.name.trim()}-rader.</span>
+            <button type="button" className="text-milou-600 font-semibold shrink-0" onClick={() => ops.undoable(`Logotypen för ${p.name.trim()} togs bort.`, () => ops.setLogo(p.name, null))}>
+              Ta bort logotyp
+            </button>
+          </>
+        ) : (
+          <span>Klicka på rutan för att ladda upp plattformens ikon, helst kvadratisk PNG eller SVG.</span>
+        )}
       </div>
       {need.length > 0 && <MetricGrid need={need} values={p.values} sums={sums} onChange={(m, v) => setPlatform((t) => { if (v === null) delete t.values[m]; else t.values[m] = v; })} />}
       {p.ads.length > 0 && need.length > 0 && (
@@ -265,7 +326,7 @@ function Body({ doc, sec, ops }: { doc: ReportDoc; sec: Section; ops: Ops }) {
           <p className="text-[13px] font-bold flex justify-between items-baseline mt-1.5">
             Plattformar <small className="font-normal text-gray-600 text-xs">{sec.platforms.length} st</small>
           </p>
-          {sec.platforms.map((p) => <PlatformCard key={p.id} sec={sec} p={p} need={need} ops={ops} />)}
+          {sec.platforms.map((p) => <PlatformCard key={p.id} sec={sec} p={p} need={need} logos={doc.logos} ops={ops} />)}
           <div className="flex flex-col gap-1.5">
             <span className={label}>Lägg till plattform</span>
             <div className="flex flex-wrap gap-1.5">
