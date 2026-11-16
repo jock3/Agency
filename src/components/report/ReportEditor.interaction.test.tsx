@@ -106,6 +106,36 @@ describe("editorn i en simulerad webbläsare", () => {
   });
 });
 
+describe("PDF", () => {
+  it("skickar det som syns i editorn och laddar ner svaret", async () => {
+    const calls: { url: string; body: { doc: { meta: { client: string } } } }[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: { body: string }) => {
+      calls.push({ url, body: JSON.parse(init.body) });
+      return { ok: true, blob: async () => new Blob(["%PDF"]), headers: { get: () => "1" } };
+    }));
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+    const clicked: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { clicked.push(this.download); });
+    const user = userEvent.setup();
+    open();
+    fireEvent.change(screen.getAllByLabelText("Kundnamn")[0], { target: { value: "Ny kund" } });
+    await user.click(screen.getByRole("button", { name: /Ladda ner PDF/ }));
+    await waitFor(() => expect(clicked).toEqual(["Rapport Ny kund Sommarsäsongen 2026.pdf"]));
+    const pdfCall = calls.find((c) => c.url.endsWith("/pdf"))!;
+    expect(pdfCall.url).toBe("/api/mediaplan/rapport/r1/pdf");
+    expect(pdfCall.body.doc.meta.client).toBe("Ny kund");
+  });
+
+  it("visar ett felmeddelande när PDF:en inte kan skapas", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
+    const user = userEvent.setup();
+    open();
+    await user.click(screen.getByRole("button", { name: /Ladda ner PDF/ }));
+    await waitFor(() => expect(screen.getByText(/PDF:en kunde inte skapas/)).toBeTruthy());
+  });
+});
+
 describe("autosparning", () => {
   it("skickar ett anrop åt gången och sparar senaste versionen efteråt", async () => {
     const calls: { resolve: (ok: boolean) => void; doc: { meta: { client: string } } }[] = [];

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, ChevronDown, Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Download, Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { logoKey, MAX_SECTIONS, newId, SECTION_TYPES, type ReportDoc, type Section, type SectionType } from "@/lib/report/doc";
 import { blankKeepingLogos, fileBase, parseProjectFile, withLogos } from "@/lib/report/project";
 import { sampleDoc } from "@/lib/report/sample";
@@ -45,6 +45,7 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
   const [selId, setSelId] = useState<string | null>(initial.sections[0]?.id ?? null);
   const [menu, setMenu] = useState(false);
   const [projectMenu, setProjectMenu] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [drag, setDrag] = useState<{ id: string; over: { id: string; before: boolean } | null } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const railRef = useRef<HTMLElement>(null);
@@ -193,17 +194,41 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
     say(message, true);
   };
 
-  const saveProjectFile = () => {
-    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+  const download = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${fileBase(doc)}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  const saveProjectFile = () => {
+    download(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }), `${fileBase(doc)}.json`);
     say("Projektfilen laddas ner.");
+  };
+
+  /** Servern bygger PDF:en av det som syns just nu, så den behöver inte vänta på autosparningen. */
+  const downloadPdf = async () => {
+    if (pdfBusy) return;
+    if (!doc.sections.length) return say("Lägg till minst en sektion först.");
+    setPdfBusy(true);
+    try {
+      const res = await fetch(`/api/mediaplan/rapport/${id}/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doc }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      download(await res.blob(), `${fileBase(doc)}.pdf`);
+      say(res.headers.get("X-Font-Ok") === "0" ? "PDF:en laddas ner, men typsnittet kunde inte hämtas och en reservfont används." : "PDF:en laddas ner.");
+    } catch {
+      say("PDF:en kunde inte skapas. Försök igen om en stund.");
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   const openProjectFile = (f: File) => {
@@ -253,6 +278,15 @@ export default function ReportEditor({ id, initial }: { id: string; initial: Rep
             <button type="button" onClick={retry} className="underline ml-1">Försök igen</button>
           )}
         </span>
+        <button
+          type="button"
+          onClick={downloadPdf}
+          disabled={pdfBusy}
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-milou-500 hover:bg-milou-600 disabled:opacity-60 disabled:cursor-progress text-white text-sm font-bold order-last"
+        >
+          {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Download className="w-4 h-4" aria-hidden />}
+          {pdfBusy ? "Skapar PDF …" : "Ladda ner PDF"}
+        </button>
         <button type="button" onClick={deleteReport} className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-milou-600">
           <Trash2 className="w-3.5 h-3.5" aria-hidden /> Ta bort rapporten
         </button>

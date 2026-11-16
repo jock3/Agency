@@ -7,6 +7,7 @@ const nextConfig = {
   serverExternalPackages: ["puppeteer-core", "axe-core"],
   outputFileTracingIncludes: {
     "/api/tillganglighet/run": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    "/api/mediaplan/rapport/[id]/pdf": ["./node_modules/@sparticuz/chromium/bin/**/*"],
   },
   async headers() {
     return [
