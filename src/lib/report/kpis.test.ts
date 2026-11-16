@@ -95,11 +95,21 @@ describe("Höjdpunkter", () => {
   it("fyra punkter i rätt ordning", () => {
     const i = insights(SAMPLE_STATS).map((x) => `${x.name} ${x.text}`);
     expect(i).toEqual([
-      `TikTok hade lägst CPM i Kännedomskampanj: ${nb("12,63 kr")}`,
-      `Google Ads hade högst CTR i Bokningskampanj: ${nb("9,06 %")}`,
+      `TikTok hade lägst CPM bland sociala kanaler i Kännedomskampanj: ${nb("12,63 kr")}`,
+      `Meta hade högst CTR bland sociala kanaler i Bokningskampanj: ${nb("2,17 %")}`,
       `Google Ads hade lägst kostnad per konvertering i Bokningskampanj: ${nb("36,66 kr")}`,
       `Meta stod för störst del av budgeten: 50 %`,
     ]);
+  });
+  it("Google Ads jämförs inte med sociala kanaler på CTR (handoffens backlogg punkt 3)", () => {
+    expect(insights(SAMPLE_STATS).some((x) => x.name === "Google Ads" && x.text.includes("CTR"))).toBe(false);
+  });
+  it("sökkanaler jämförs med varandra, och utan blandning står det ingen grupp", () => {
+    const p = (id: string, name: string, clicks: number) => ({ id, name, values: { spend: 100, impressions: 1000, clicks }, ads: [] });
+    const onlySearch = insights([{ title: "x", platforms: [p("1", "Google Ads", 50), p("2", "Microsoft Ads", 80)] }]);
+    expect(onlySearch.find((x) => x.text.includes("CTR"))).toMatchObject({ name: "Microsoft Ads", text: expect.stringMatching(/^hade högst CTR: /) });
+    const onlySocial = insights([{ title: "x", platforms: [p("1", "Meta", 5), p("2", "TikTok", 8)] }]);
+    expect(onlySocial.find((x) => x.text.includes("CTR"))!.text.startsWith("hade högst CTR:")).toBe(true);
   });
   it("kräver minst två rader att jämföra", () => {
     expect(insights([{ title: "x", platforms: [{ id: "1", name: "Meta", values: { spend: 1, impressions: 1000, clicks: 10 }, ads: [] }] }])).toEqual([]);

@@ -75,25 +75,48 @@ export interface Insight {
 }
 
 /**
+ * Sökannonser (Google Ads, Microsoft Ads ...) visas för den som redan letar och
+ * får därför mycket högre klickfrekvens än sociala kanaler. De jämförs bara med
+ * varandra på CPM, CTR och CPC, aldrig med sociala kanaler.
+ */
+const SEARCH = /\b(google( ads| search| sök)?|adwords|bing|microsoft ads|sökannons(er)?|sök)\b/i;
+export const isSearchChannel = (name: string) => SEARCH.test(name.trim());
+
+/**
  * Upp till fyra höjdpunkter, i ordningen: lägst CPM, högst CTR, lägst CPA,
  * störst budgetandel, lägst CPC. Varje jämförelse kräver minst två rader.
+ * CPM, CTR och CPC jämförs bara mellan kanaler av samma typ (sociala med
+ * sociala, sök med sök). Kostnad per konvertering jämförs över alla kanaler,
+ * eftersom den mäter samma sak oavsett var annonsen visades.
  */
 export function insights(stats: readonly StatsLike[]): Insight[] {
-  const rows = stats.flatMap((s) => s.platforms.map((p) => ({ name: (p.name || "").trim() || "Okänd", camp: s.title || "kampanjen", raw: effRaw(p) })));
+  const rows = stats.flatMap((s) =>
+    s.platforms.map((p) => {
+      const name = (p.name || "").trim() || "Okänd";
+      return { name, camp: s.title || "kampanjen", raw: effRaw(p), search: isSearchChannel(name) };
+    }),
+  );
   const multi = stats.length > 1;
+  const mixed = rows.some((r) => r.search) && rows.some((r) => !r.search);
   const out: Insight[] = [];
-  const best = (key: KpiKey, dir: "min" | "max", phrase: string) => {
-    const c = rows.map((r) => ({ ...r, v: kpiValue(key, [r.raw]) })).filter((r): r is typeof r & { v: number } => isNum(r.v));
+  const best = (key: KpiKey, dir: "min" | "max", phrase: string, group: "social" | "search" | "all") => {
+    const c = rows
+      .filter((r) => group === "all" || r.search === (group === "search"))
+      .map((r) => ({ ...r, v: kpiValue(key, [r.raw]) }))
+      .filter((r): r is typeof r & { v: number } => isNum(r.v));
     if (c.length < 2) return;
     c.sort((a, b) => (dir === "min" ? a.v - b.v : b.v - a.v));
     const r = c[0];
-    out.push({ name: r.name, text: `${phrase}${multi ? ` i ${r.camp}` : ""}: ${fmt(key, r.v)}` });
+    const among = mixed && group !== "all" ? (group === "search" ? " bland sökkanaler" : " bland sociala kanaler") : "";
+    out.push({ name: r.name, text: `${phrase}${among}${multi ? ` i ${r.camp}` : ""}: ${fmt(key, r.v)}` });
   };
-  best("cpm", "min", "hade lägst CPM");
-  best("ctr", "max", "hade högst CTR");
-  best("cpa", "min", "hade lägst kostnad per konvertering");
+  best("cpm", "min", "hade lägst CPM", "social");
+  best("ctr", "max", "hade högst CTR", "social");
+  best("cpa", "min", "hade lägst kostnad per konvertering", "all");
   const b = budgetByPlatform(stats);
-  if (b.length > 1) out.push({ name: b[0].name, text: `stod för störst del av budgeten: ${b[0].share} %` });
-  best("cpc", "min", "hade lägst CPC");
+  if (b.length > 1) out.push({ name: b[0].name, text: `stod för störst del av budgeten: ${b[0].share}\u00a0%` });
+  best("cpc", "min", "hade lägst CPC", "social");
+  best("ctr", "max", "hade högst CTR", "search");
+  best("cpc", "min", "hade lägst CPC", "search");
   return out.slice(0, 4);
 }
