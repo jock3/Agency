@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 export interface SectionTab {
   href: string;
   label: string;
+  /** Aktiv bara på exakt den här sökvägen, för en flik vars adress är början på en annan. */
+  exact?: boolean;
 }
 
 /** Flikraden under sidhuvudet i en sektion med flera verktyg, till exempel SEO/GEO-audit. */
@@ -16,7 +18,7 @@ export default function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label
     <div className="bg-white border-b border-gray-200 px-4 h-9 flex items-center shrink-0">
       <nav aria-label={label} className="flex items-center gap-1">
         {tabs.map((t) => {
-          const active = pathname.startsWith(t.href);
+          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
           return (
             <Link
               key={t.href}

@@ -8,6 +8,7 @@ import NewPlanModal from "@/components/dashboard/NewPlanModal";
 import PlanOverlay from "@/components/plan-overlay/PlanOverlay";
 import TagFilterBar from "@/components/shared/TagFilterBar";
 import PageHeader, { PageHeaderButton } from "@/components/PageHeader";
+import MediaplanTabs from "@/components/MediaplanTabs";
 
 export default function Dashboard() {
   const [plans, setPlans] = useState<MediaPlan[]>([]);
@@ -71,6 +72,7 @@ export default function Dashboard() {
         description="Budget, kanaler och tidsplan per kund, med en vy kunden kan öppna via länk."
         action={<PageHeaderButton onClick={() => setShowNewModal(true)}>+ Ny mediaplan</PageHeaderButton>}
       />
+      <MediaplanTabs />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
