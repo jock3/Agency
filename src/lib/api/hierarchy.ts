@@ -180,6 +180,22 @@ export async function getProject(id: string): Promise<{ client: MplanClient; pro
   return { client: c.data as MplanClient, project: project as MplanProject, plans: (plans.data ?? []) as MediaPlan[] };
 }
 
+/** Var en plan hör hemma, till rubriken i planens vy: kund, projekt och projektets mönster. Null för en osorterad plan. */
+export async function getPlanContext(planId: string): Promise<{ client: { id: string; name: string; client_number: string }; project: { id: string; name: string; pattern_round: number } } | null> {
+  const sb = await authedDb();
+  if (!UUID.test(planId)) return null;
+  const { data: plan } = await sb.from("media_plans").select("project_id").eq("id", planId).maybeSingle();
+  if (!plan?.project_id) return null;
+  const { data: project } = await sb.from("mplan_projects").select("id, name, pattern_round, client_id").eq("id", plan.project_id).maybeSingle();
+  if (!project) return null;
+  const { data: client } = await sb.from("mplan_clients").select("id, name, client_number").eq("id", project.client_id).maybeSingle();
+  if (!client) return null;
+  return {
+    client: { id: client.id as string, name: client.name as string, client_number: client.client_number as string },
+    project: { id: project.id as string, name: project.name as string, pattern_round: project.pattern_round as number },
+  };
+}
+
 async function projectNames(projectId: string) {
   const sb = await authedDb();
   const { data: project } = await sb.from("mplan_projects").select("id, name, client_id").eq("id", uuid(projectId)).maybeSingle();

@@ -3,7 +3,7 @@
 import { Fragment, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { format, differenceInWeeks, differenceInCalendarDays } from "date-fns";
 import type { FullMediaPlan, MediaPlan, MediaLine, MediaConcept, MediaCategory, MediaDeadline } from "@/lib/types";
-import { getPlanWeeks, getMonthGroups, dateRangeToGridSpan, WeekColumn } from "@/lib/utils/dates";
+import { getPlanWeeks, getMonthGroups, dateRangeToWeekSpan, WeekColumn } from "@/lib/utils/dates";
 import { calcLineTotal, calcCategoryTotal, calcCategoryReach, calcPlanTotal, formatSEK, formatReach } from "@/lib/utils/budget";
 import { updatePlan } from "@/lib/api/plans";
 import { updateLine, createLine, deleteLine, reorderLines, addChannelLine } from "@/lib/api/lines";
@@ -12,13 +12,26 @@ import { updateConcept, deleteConcept } from "@/lib/api/concepts";
 import { createDeadline, updateDeadline, deleteDeadline } from "@/lib/api/deadlines";
 import InlineEdit from "./InlineEdit";
 import ColorDot from "./ColorDot";
+import CellInput from "./CellInput";
+import { barLabel, endFraction, laneBackground, locateToday, monogram } from "@/lib/mediaplan/planmath";
+import { dayLabel, todayIso } from "@/lib/mediaplan/schedule";
 import { AddButton, DeleteButton, LANE, isLight, laneStyle, lineShade } from "@/components/shared/timeline";
 import { PLATFORMS, EXTERN_CHANNELS, findPlatform, type Platform } from "@/lib/platforms";
 import PlatformLogo from "@/components/shared/PlatformLogo";
 import { Plus } from "lucide-react";
 import { createPortal } from "react-dom";
 
-const INFO_COLS_FULL = "232px 96px 112px 64px 116px 100px";
+const INFO_COLS_FULL = "196px 100px 132px 70px 104px 84px";
+/** Rubrikradernas höjd: månadsraden och veckoraden. Idag-linjen börjar under dem. */
+const MONTH_ROW_H = 44;
+const WEEK_ROW_H = 54;
+
+/** Sektionernas färg: sociala medier rött, extern media vinrött. */
+const TONE = {
+  social: { strip: "#E60330", solid: "#E60330", text: "#B00226", stripe: "rgba(230,3,48,.12)" },
+  extern: { strip: "#931644", solid: "#931644", text: "#931644", stripe: "rgba(147,22,68,.12)" },
+} as const;
+type Tone = keyof typeof TONE;
 const INFO_COLS_COMPACT = "232px 116px 100px";
 const INFO_COL_COUNT_FULL = 6;
 const INFO_COL_COUNT_COMPACT = 3;
@@ -52,7 +65,7 @@ interface Props {
 
 export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, onPlanLocal }: Props) {
   const weeks = useMemo(() => getPlanWeeks(plan.period_start, plan.period_end), [plan.period_start, plan.period_end]);
-  const months = useMemo(() => getMonthGroups(weeks), [weeks]);
+  const months = useMemo(() => getMonthGroups(weeks, "thursday"), [weeks]);
   const weekCount = weeks.length;
   const socialCats = useMemo(() => plan.categories.filter((c) => c.section === "social"), [plan.categories]);
   const externCats = useMemo(() => plan.categories.filter((c) => c.section === "extern"), [plan.categories]);
@@ -66,16 +79,12 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
   const gridCols = `${INFO_COLS} repeat(${weekCount}, minmax(20px, 1fr))`;
   // Infokolumnernas bredd i px, för att placera idag-linjen i tidslinjen.
   const infoPx = INFO_COLS.split(" ").reduce((n, c) => n + parseInt(c, 10), 0);
-  const today = useMemo(() => {
-    const now = new Date();
-    const t = format(now, "yyyy-MM-dd");
-    const idx = weeks.findIndex((w) => t >= format(w.startDate, "yyyy-MM-dd") && t <= format(w.endDate, "yyyy-MM-dd"));
-    if (idx === -1) return null;
-    const day = Math.min(differenceInCalendarDays(now, weeks[idx].startDate), 6);
-    return { weekIdx: idx, frac: (idx + (day + 0.5) / 7) / weeks.length };
-  }, [weeks]);
+  const todayStr = useMemo(() => todayIso(), []);
+  const today = useMemo(() => locateToday(todayStr, weeks), [todayStr, weeks]);
+  // Tidslinjens bakgrund: veckolinjer, den här veckan svagt rosa och grått efter kampanjens slut.
+  const laneBg = useMemo(() => laneBackground(weekCount, today?.weekIdx ?? null, endFraction(plan.period_end, weeks)), [weekCount, today, plan.period_end, weeks]);
 
-  const cellClass = "border-b border-gray-100 px-3 min-h-[48px] text-sm flex items-center";
+  const cellClass = "border-b border-[#EDEDED] px-3 min-h-[48px] text-sm flex items-center";
   const stickyClass = "sticky left-0 z-10 bg-white";
 
   // ── Toasts ──────────────────────────────────────────────
@@ -105,7 +114,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
 
   const getSpan = useCallback((startDate: string | null, endDate: string | null) => {
     if (!startDate || !endDate) return null;
-    return dateRangeToGridSpan(startDate, endDate, weeks);
+    return dateRangeToWeekSpan(startDate, endDate, weeks);
   }, [weeks]);
 
   const patchLineLocal = (lineId: string, updates: Partial<MediaLine>) =>
@@ -233,8 +242,9 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
     onPlanChanged();
   };
 
-  const renderBrandRows = (cats: typeof plan.categories) =>
-    cats.map((cat) =>
+  const renderBrandRows = (cats: typeof plan.categories, tone: Tone) => {
+    const names = cats.flatMap((c) => c.lines.map((l) => l.platform_name));
+    return cats.map((cat) =>
               cat.lines.map((line, idx) => {
                 const platform = findPlatform(line.platform_name);
                 const brandColor = platform?.color ?? lineShade(cat.color, idx);
@@ -242,9 +252,10 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
                 const logoColor = isLight(brandColor) ? "#1C1C1C" : brandColor;
                 return (
                   <Fragment key={line.id}>
-                    <div className={`${stickyClass} h-5`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
-                    <div style={laneStyle(weekCount)} className="relative h-5 bg-white" />
                     <GanttLineRow
+                      tone={tone}
+                      laneBg={laneBg}
+                      monogramText={monogram(line.platform_name, names)}
                       line={line}
                       plan={plan}
                       weeks={weeks}
@@ -269,6 +280,7 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
                 );
               })
             );
+  };
 
   return (
     <>
@@ -320,20 +332,20 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
         {today && (
           <div
             aria-hidden
-            className="pointer-events-none absolute bottom-0 w-0.5 bg-milou-500 z-[7]"
-            style={{ top: 76, left: `calc(${infoPx}px + (100% - ${infoPx}px) * ${today.frac})` }}
+            className="pointer-events-none absolute bottom-0 w-0.5 bg-[#E60330] z-[7]"
+            style={{ top: MONTH_ROW_H + WEEK_ROW_H, left: `calc(${infoPx}px + (100% - ${infoPx}px) * ${today.frac})` }}
           />
         )}
         {/* ── Month header row ── */}
         <div
-          className={`${cellClass} ${stickyClass} border-b-0 min-h-[40px]`}
-          style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}
+          className={`${stickyClass}`}
+          style={{ gridColumn: `1 / span ${INFO_COL_COUNT}`, minHeight: MONTH_ROW_H }}
         />
         {months.map((m) => (
           <div
             key={m.label}
-            className="min-h-[40px] px-3 flex items-end pb-1.5 border-l border-gray-200 font-display font-bold text-base text-gray-900 capitalize"
-            style={{ gridColumn: `span ${m.spanCols}` }}
+            className="px-2.5 pt-3.5 pb-2 flex items-end border-l-2 border-gray-900 text-sm font-extrabold text-gray-900 capitalize"
+            style={{ gridColumn: `span ${m.spanCols}`, minHeight: MONTH_ROW_H }}
           >
             {m.label}
           </div>
@@ -343,9 +355,10 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
         {(compact ? ["Kanal", "Kostnad", "Räckvidd"] : ["Kanal", "À-pris", "Enhet", "Antal", "Kostnad", "Räckvidd"]).map((h, i) => (
           <div
             key={h}
-            className={`${cellClass} ${i === 0 ? stickyClass : "bg-white"} min-h-[36px] text-xs text-gray-500 border-gray-200 ${
-              ["À-pris", "Kostnad", "Räckvidd"].includes(h) ? "justify-end" : h === "Antal" ? "justify-center" : ""
+            className={`${i === 0 ? `${stickyClass} pl-[22px]` : "bg-white"} px-3 pb-2.5 flex items-end border-b-2 border-gray-900 text-[11px] font-bold tracking-[0.06em] uppercase text-gray-600 ${
+              ["À-pris", "Kostnad", "Räckvidd", "Antal"].includes(h) ? "justify-end" : ""
             }`}
+            style={{ minHeight: WEEK_ROW_H }}
           >
             {h}
           </div>
@@ -353,10 +366,12 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
         {weeks.map((w, i) => (
           <div
             key={w.index}
-            className={`min-h-[36px] flex items-center justify-center border-b border-gray-200 text-xs tabular-nums ${i === 0 ? "border-l border-l-gray-200" : "border-l border-l-[#EFEFEF]"} ${today?.weekIdx === i ? "bg-milou-500 text-white font-bold" : "text-gray-500"}`}
+            className={`flex flex-col justify-center gap-0.5 px-2.5 py-2 border-b-2 border-gray-900 border-l border-l-[#E6E6E6] ${today?.weekIdx === i ? "bg-[#E60330] text-white" : "text-gray-900"}`}
+            style={{ minHeight: WEEK_ROW_H }}
             title={today?.weekIdx === i ? "Den här veckan" : undefined}
           >
-            {w.label}
+            <span className="text-[13px] font-extrabold">{w.label}</span>
+            {!compact && <span className={`text-[11px] font-medium whitespace-nowrap ${today?.weekIdx === i ? "text-[#FFDED0]" : "text-gray-600"}`}>{w.range}</span>}
           </div>
         ))}
 
@@ -447,32 +462,30 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
         {/* ── Sociala medier ── */}
         {(!readOnly || socialLines.length > 0) && (
           <>
-            <SectionBand title="Sociala medier" infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(socialLines)} reach={calcCategoryReach(socialLines)} action={!readOnly && <PlatformPicker items={PLATFORMS} label="Lägg till plattform" onPick={(p) => handleAddChannel(p, "social")} busy={addingPlatform} />} />
-            {renderBrandRows(socialCats)}
+            <SectionBand title="Sociala medier" noun={["kanal", "kanaler"]} count={socialLines.length} laneBg={laneBg} compact={compact} infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(socialLines)} reach={calcCategoryReach(socialLines)} action={!readOnly && <PlatformPicker items={PLATFORMS} label="Lägg till plattform" onPick={(p) => handleAddChannel(p, "social")} busy={addingPlatform} />} />
+            {renderBrandRows(socialCats, "social")}
             {socialLines.length === 0 && (
               <>
-                <div className={`${cellClass} ${stickyClass} min-h-[72px] text-gray-500`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
-                  Inga plattformar än. Tryck på plusset för att välja en.
+                <div className={`${cellClass} ${stickyClass} min-h-[72px] pl-[22px] text-gray-600`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
+                  Inga plattformar än. Tryck på &quot;Lägg till plattform&quot; för att välja en.
                 </div>
-                <div style={laneStyle(weekCount)} className={`${LANE} min-h-[72px]`} />
+                <div style={{ gridColumn: `span ${weekCount}`, background: laneBg }} className="relative border-b border-[#EDEDED] min-h-[72px]" />
               </>
             )}
-            <div className={`${stickyClass} h-6`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }} />
-            <div style={laneStyle(weekCount)} className="relative h-6 bg-white" />
           </>
         )}
 
         {/* ── Extern media ── */}
         {(!readOnly || externLines.length > 0) && (
           <>
-            <SectionBand title="Extern media" infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(externLines)} reach={calcCategoryReach(externLines)} action={!readOnly && <PlatformPicker items={EXTERN_CHANNELS} label="Lägg till kanal" onPick={(p) => handleAddChannel(p, "extern")} busy={addingPlatform} />} />
-            {renderBrandRows(externCats)}
+            <SectionBand title="Extern media" noun={["kanal", "kanaler"]} count={externLines.length} laneBg={laneBg} compact={compact} infoColCount={INFO_COL_COUNT} weekCount={weekCount} total={calcCategoryTotal(externLines)} reach={calcCategoryReach(externLines)} action={!readOnly && <PlatformPicker items={EXTERN_CHANNELS} label="Lägg till kanal" onPick={(p) => handleAddChannel(p, "extern")} busy={addingPlatform} />} />
+            {renderBrandRows(externCats, "extern")}
             {externLines.length === 0 && (
               <>
-                <div className={`${cellClass} ${stickyClass} min-h-[72px] text-gray-500`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
-                  Inga kanaler än. Tryck på plusset för att välja en.
+                <div className={`${cellClass} ${stickyClass} min-h-[72px] pl-[22px] text-gray-600`} style={{ gridColumn: `1 / span ${INFO_COL_COUNT}` }}>
+                  Inga kanaler än. Tryck på &quot;Lägg till kanal&quot; för att välja en.
                 </div>
-                <div style={laneStyle(weekCount)} className={`${LANE} min-h-[72px]`} />
+                <div style={{ gridColumn: `span ${weekCount}`, background: laneBg }} className="relative border-b border-[#EDEDED] min-h-[72px]" />
               </>
             )}
           </>
@@ -507,8 +520,15 @@ export default function GanttTimeline({ plan, readOnly, compact, onPlanChanged, 
         )}
 
         {/* ── Budget summary row ── */}
-        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} compact={compact} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
+        <BudgetSummaryRow plan={plan} infoColCount={INFO_COL_COUNT} weekCount={weekCount} cellClass={cellClass} stickyClass={stickyClass} readOnly={readOnly} compact={compact} today={today} todayStr={todayStr} onPlanUpdate={async (updates) => { await updatePlan(plan.id, updates); onPlanChanged(); }} />
       </div>
+      <ul aria-label="Förklaring" className="list-none m-0 mt-4 p-0 flex flex-wrap gap-x-[22px] gap-y-2 text-[13px] text-[#3D3D3D]">
+        <li className="flex items-center gap-2"><span aria-hidden className="w-7 h-3.5 bg-[#E60330]" />Helfärgad = prissatt</li>
+        <li className="flex items-center gap-2"><span aria-hidden className="w-7 h-3.5 border-2 border-[#E60330]" style={{ background: `repeating-linear-gradient(135deg, ${TONE.social.stripe} 0 6px, transparent 6px 12px), #FFFFFF` }} />Randig = inget pris än</li>
+        <li className="flex items-center gap-2"><span aria-hidden className="w-3.5 h-3.5 bg-[#E60330]" /><span aria-hidden className="w-3.5 h-3.5 bg-[#931644] -ml-1" />Rött = sociala medier · vinrött = extern media</li>
+        <li className="flex items-center gap-2"><span aria-hidden className="w-7 h-3.5 bg-[#EDEDED]" />Grått = efter kampanjens slut</li>
+        <li className="flex items-center gap-2"><span aria-hidden className="w-0.5 h-4 bg-[#E60330]" />Röd linje = idag</li>
+      </ul>
     </div>
     </>
   );
@@ -728,7 +748,7 @@ type DragState = {
 };
 
 function GanttLineRow({
-  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, barColor, accentColor, brand, cellClass, stickyClass,
+  line, plan, weeks, weekCount, infoColCount, readOnly, compact, deadlines, span, onUpdate, onDelete, onAddLine, lineIndex, lineCount, onReorder, barColor, accentColor, brand, cellClass, stickyClass, tone, laneBg, monogramText,
 }: {
   line: MediaLine;
   plan: FullMediaPlan;
@@ -751,8 +771,15 @@ function GanttLineRow({
   brand?: { color: string; fg: string; platform?: Platform };
   cellClass: string;
   stickyClass: string;
+  /** Sektionens färg (plattformsrader). */
+  tone?: Tone;
+  /** Bakgrund för tidslinjeraden. */
+  laneBg?: string;
+  /** Bokstav(er) på kanalbrickan när kanalen saknar logotyp. */
+  monogramText?: string;
 }) {
   if (brand) cellClass = `${cellClass} !min-h-[60px]`;
+  const toneColors = TONE[tone ?? "social"];
   const total = calcLineTotal(line);
   // Tidning prissätts per annonsstorlek; övriga rader per tidsenhet. Ett redan sparat värde som inte finns i listan behålls.
   const channelUnits = brand?.platform?.units;
@@ -887,40 +914,43 @@ function GanttLineRow({
   return (
     <>
       {/* Platform name */}
-      <div className={`${cellClass} ${stickyClass} gap-2 group pl-4`} style={{ boxShadow: `inset ${brand ? 8 : 4}px 0 0 ${accentColor}` }}>
+      <div className={`${cellClass} ${stickyClass} gap-3 group ${brand ? "pl-0 pr-3" : "pl-4"}`} style={brand ? undefined : { boxShadow: `inset 4px 0 0 ${accentColor}` }}>
+        {brand && <span aria-hidden className="w-[5px] self-stretch shrink-0 -my-px" style={{ background: toneColors.strip }} />}
         {!readOnly && onReorder ? (
-          <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-col gap-0 shrink-0 w-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <button
               onClick={() => onReorder("up")}
               disabled={lineIndex === 0}
-              className="text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+              className="text-gray-600 hover:text-gray-900 disabled:opacity-20 leading-none"
               style={{ fontSize: "9px" }}
               title="Flytta upp"
+              aria-label={`Flytta upp ${line.platform_name}`}
             >▲</button>
             <button
               onClick={() => onReorder("down")}
               disabled={lineIndex === undefined || lineCount === undefined || lineIndex >= lineCount - 1}
-              className="text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+              className="text-gray-600 hover:text-gray-900 disabled:opacity-20 leading-none"
               style={{ fontSize: "9px" }}
               title="Flytta ner"
+              aria-label={`Flytta ner ${line.platform_name}`}
             >▼</button>
           </div>
         ) : (
           <span className="w-2 shrink-0" />
         )}
         {brand ? (
-          <span className="shrink-0 flex" style={{ color: brand.fg }}>
-            {brand.platform ? <PlatformLogo platform={brand.platform} size={24} /> : <span className="w-6 h-6" aria-hidden />}
+          <span aria-hidden className="w-[34px] h-[34px] grid place-items-center shrink-0 bg-gray-50 text-gray-900 text-xs font-extrabold" style={{ color: brand.platform ? brand.fg : undefined }}>
+            {brand.platform ? <PlatformLogo platform={brand.platform} size={20} /> : monogramText}
           </span>
         ) : (
           <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: barColor }} aria-hidden />
         )}
         {brand ? (
           <div className="flex items-center gap-1 flex-1 min-w-0">
-            <span className="font-display font-bold text-base truncate">{line.platform_name}</span>
+            <strong className="text-[15px] font-extrabold truncate">{line.platform_name}</strong>
             {!readOnly && (
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                <button onClick={onDelete} title="Ta bort plattform" aria-label="Ta bort plattform" className="text-gray-300 hover:text-milou-500 transition-colors">✕</button>
+              <span className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ml-auto">
+                <button onClick={onDelete} title={`Ta bort ${line.platform_name}`} aria-label={`Ta bort ${line.platform_name}`} className="text-gray-600 hover:text-[#E60330] transition-colors">✕</button>
               </span>
             )}
           </div>
@@ -942,9 +972,11 @@ function GanttLineRow({
 
       {/* Cost per unit — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-end`}>
+        <div className={`${cellClass} justify-end ${brand ? "!px-2" : ""}`}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.cost_per_unit != null ? `${line.cost_per_unit.toLocaleString("sv-SE")} kr` : "–"}</span>
+          ) : brand ? (
+            <CellInput value={line.cost_per_unit ?? 0} onCommit={(v) => onUpdate({ cost_per_unit: v ?? 0 })} label={`À-pris för ${line.platform_name}`} />
           ) : (
             <InlineEdit
               value={String(line.cost_per_unit ?? 0)}
@@ -959,14 +991,17 @@ function GanttLineRow({
 
       {/* Unit type — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass}`}>
+        <div className={`${cellClass} ${brand ? "!px-2" : ""}`}>
           {readOnly ? (
             <span className="truncate text-gray-700">{line.unit_type}</span>
           ) : (
             <select
+              aria-label={`Enhet för ${line.platform_name}`}
               value={line.unit_type}
               onChange={(e) => onUpdate({ unit_type: e.target.value })}
-              className="text-sm text-gray-700 w-full bg-transparent border-0 focus:outline-none cursor-pointer"
+              className={brand
+                ? "w-full h-[38px] px-1.5 border border-[#D6D6D6] bg-white text-sm text-gray-900 rounded-none cursor-pointer focus:border-gray-900 focus:outline-none focus:ring-[3px] focus:ring-[#FCBEB7]"
+                : "text-sm text-gray-700 w-full bg-transparent border-0 focus:outline-none cursor-pointer"}
             >
               {unitOptions.map((u) => (
                 <option key={u}>{u}</option>
@@ -978,9 +1013,11 @@ function GanttLineRow({
 
       {/* Quantity — hidden in compact mode */}
       {!compact && (
-        <div className={`${cellClass} justify-center`}>
+        <div className={`${cellClass} ${brand ? "justify-end !px-2" : "justify-center"}`}>
           {readOnly ? (
             <span className="text-gray-700 tabular-nums">{line.quantity}</span>
+          ) : brand ? (
+            <CellInput value={line.quantity ?? 0} onCommit={(v) => onUpdate({ quantity: v ?? 0 })} label={`Antal för ${line.platform_name}`} />
           ) : (
             <InlineEdit
               value={String(line.quantity ?? 0)}
@@ -993,14 +1030,16 @@ function GanttLineRow({
       )}
 
       {/* Total */}
-      <div className={`${cellClass} justify-end text-gray-900 tabular-nums`}>
+      <div className={`${cellClass} justify-end text-gray-900 tabular-nums whitespace-nowrap ${brand ? "text-[15px] font-extrabold" : ""}`}>
         {formatSEK(total)}
       </div>
 
       {/* Estimated reach */}
-      <div className={`${cellClass} justify-end`}>
+      <div className={`${cellClass} justify-end ${brand ? "!px-2" : ""}`}>
         {readOnly ? (
           <span className="text-gray-700 tabular-nums">{line.estimated_reach ? formatReach(line.estimated_reach) : "–"}</span>
+        ) : brand ? (
+          <CellInput value={line.estimated_reach ?? null} emptyAs={null} placeholder="–" onCommit={(v) => onUpdate({ estimated_reach: v && v > 0 ? v : null })} label={`Räckvidd för ${line.platform_name}`} />
         ) : (
           <InlineEdit
             value={line.estimated_reach ? String(line.estimated_reach) : ""}
@@ -1016,8 +1055,8 @@ function GanttLineRow({
       {/* Gantt bar cell */}
       <div
         ref={containerRef}
-        style={laneStyle(weekCount)}
-        className={`${LANE} group/bar ${brand ? "min-h-[60px]" : ""}`}
+        style={brand && laneBg ? { gridColumn: `span ${weekCount}`, background: laneBg } : laneStyle(weekCount)}
+        className={brand ? "relative border-b border-[#EDEDED] group/bar min-h-[60px]" : `${LANE} group/bar`}
       >
         <DeadlineMarkers deadlines={deadlines} weeks={weeks} weekCount={weekCount} />
 
@@ -1073,21 +1112,28 @@ function GanttLineRow({
 
         {displaySpan ? (
           <div
+            className={brand ? "flex items-center px-3 overflow-hidden whitespace-nowrap text-[13px] font-extrabold transition-[transform,box-shadow] duration-200 motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#1C1C1C] motion-reduce:hover:transform-none" : undefined}
             style={{
               position: "absolute",
               left: `${((displaySpan.colStart - 1) / weekCount) * 100}%`,
               width: `${Math.max(((displaySpan.colEnd - displaySpan.colStart) / weekCount) * 100, 0.5)}%`,
-              backgroundColor: barColor,
-              top: brand ? 0 : "50%",
-              height: brand ? "100%" : "20px",
-              transform: brand ? "none" : "translateY(-50%)",
+              ...(brand
+                ? total > 0
+                  ? { background: toneColors.solid, color: "#FFFFFF" }
+                  : { background: `repeating-linear-gradient(135deg, ${toneColors.stripe} 0 6px, transparent 6px 12px), #FFFFFF`, border: `2px solid ${toneColors.solid}`, color: toneColors.text }
+                : { backgroundColor: barColor }),
+              top: brand ? 11 : "50%",
+              bottom: brand ? 11 : undefined,
+              height: brand ? undefined : "20px",
+              transform: brand ? undefined : "translateY(-50%)",
               zIndex: 5,
               cursor: isDragging ? "grabbing" : (readOnly ? "default" : "grab"),
               userSelect: "none",
             }}
             onPointerDown={!readOnly ? (e) => startDrag(e, "move") : undefined}
-            title={`${line.platform_name}: v.${displaySpan.colStart} – v.${displaySpan.colEnd - 1}`}
+            title={`${line.platform_name}: v.${weeks[displaySpan.colStart - 1]?.no ?? displaySpan.colStart} – v.${weeks[displaySpan.colEnd - 2]?.no ?? displaySpan.colEnd - 1}`}
           >
+            {brand && weeks[displaySpan.colStart - 1] && weeks[displaySpan.colEnd - 2] && barLabel(weeks[displaySpan.colStart - 1].no, weeks[displaySpan.colEnd - 2].no, total)}
             {!readOnly && (
               <>
                 {/* Left resize handle */}
@@ -1166,7 +1212,7 @@ function DeadlineMarkers({ deadlines, weeks, weekCount }: { deadlines: MediaDead
 
 /* ─── Budget Summary ────────────────────────────────────── */
 function BudgetSummaryRow({
-  plan, infoColCount, weekCount, cellClass, stickyClass, readOnly, compact, onPlanUpdate,
+  plan, infoColCount, weekCount, cellClass, stickyClass, readOnly, compact, today, todayStr,
 }: {
   plan: FullMediaPlan;
   infoColCount: number;
@@ -1175,65 +1221,62 @@ function BudgetSummaryRow({
   stickyClass: string;
   readOnly?: boolean;
   compact?: boolean;
+  today: { weekIdx: number; frac: number } | null;
+  todayStr: string;
   onPlanUpdate: (updates: Partial<MediaPlan>) => Promise<void>;
 }) {
   const totalReach = plan.categories.reduce((sum, cat) => sum + calcCategoryReach(cat.lines), 0);
-
-  const summaryBorder = "border-t-2 border-b-0 border-gray-900 min-h-[60px] mt-6";
+  const row = "border-t-2 border-b-0 border-gray-900 min-h-[64px] bg-[#FFDED0]";
 
   return (
     <>
-      {/* Col 1: "Budget" label — matches Kanal/Plattform column */}
-      <div className={`${cellClass} ${stickyClass} bg-white ${summaryBorder}`}>
-        <span className="font-display font-bold text-base text-gray-900">Totalt</span>
+      {/* Totalt: summan av raderna. Planerad budget redigeras i planens rubrik. */}
+      <div className={`${cellClass} ${stickyClass} !bg-[#FFDED0] ${row} pl-[22px]`} style={{ gridColumn: `1 / span ${infoColCount - 2}` }}>
+        <span className="text-base font-extrabold text-gray-900">Totalt</span>
       </div>
-
-      {/* Middle info cols (full) or just Totalt col (compact) */}
-      {!compact && (
-        <>
-          <div className={`${cellClass} bg-white ${summaryBorder}`} />
-          <div className={`${cellClass} bg-white ${summaryBorder}`} />
-          <div className={`${cellClass} bg-white ${summaryBorder}`} />
-        </>
-      )}
-
-      {/* Totalt col: summan av raderna. Planerad budget redigeras i planens rubrik. */}
-      <div className={`${cellClass} bg-white ${summaryBorder} justify-end`}>
-        <span className="font-display font-bold text-base text-gray-900 tabular-nums">{formatSEK(calcPlanTotal(plan))}</span>
+      <div className={`${cellClass} ${row} justify-end`}>
+        <span className="text-[17px] font-black text-gray-900 tabular-nums whitespace-nowrap">{formatSEK(calcPlanTotal(plan))}</span>
       </div>
-
-      {/* Räckvidd col */}
-      <div className={`${cellClass} bg-white ${summaryBorder} justify-end`}>
-        <span className="font-display font-bold text-base text-gray-900 tabular-nums">{formatReach(totalReach)}</span>
+      <div className={`${cellClass} ${row} justify-end`}>
+        <span className="text-sm font-bold text-gray-900 tabular-nums">{formatReach(totalReach)}</span>
       </div>
-
-      {/* Timeline area — white, no gray */}
-      <div style={{ gridColumn: `span ${weekCount}` }} className={`bg-white ${summaryBorder}`} />
+      <div style={{ gridColumn: `span ${weekCount}` }} className={`relative ${row}`}>
+        {today && (
+          <span className="absolute top-1/2 px-2 py-[3px] bg-[#E60330] text-white text-[11px] font-extrabold whitespace-nowrap" style={{ left: `${today.frac * 100}%`, transform: "translate(8px, -50%)" }}>
+            Idag {dayLabel(todayStr)}
+          </span>
+        )}
+      </div>
     </>
   );
 }
 
 
 /* ─── Sektionsband och plattformsväljare ─────────────────── */
-function SectionBand({ title, action, infoColCount, weekCount, total, reach }: {
+function SectionBand({ title, noun, count, action, infoColCount, weekCount, total, reach, laneBg }: {
   title: string;
+  noun: [string, string];
+  count: number;
   action?: React.ReactNode;
   infoColCount: number;
   weekCount: number;
   total: number;
   reach: number;
+  laneBg: string;
+  compact?: boolean;
 }) {
-  const band = "bg-white border-t-[3px] border-gray-900 min-h-[60px]";
-  const sum = `${band} px-3 flex items-center justify-end font-display font-bold text-base text-gray-900 tabular-nums`;
+  const band = "bg-[#FAFAFA] border-b border-[#E6E6E6] min-h-[64px]";
+  const sum = `${band} px-3 flex items-center justify-end text-[15px] font-extrabold text-gray-900 tabular-nums whitespace-nowrap`;
   return (
     <>
-      <div className={`${band} sticky left-0 z-10 flex items-center gap-4 px-4`} style={{ gridColumn: `1 / span ${infoColCount - 2}` }}>
-        <span className="font-display font-bold text-lg text-gray-900">{title}</span>
+      <div className={`${band} sticky left-0 z-10 flex flex-wrap items-center gap-x-3.5 gap-y-2 pl-[22px] pr-3 py-2.5`} style={{ gridColumn: `1 / span ${infoColCount - 2}` }}>
+        <h3 className="m-0 text-lg font-extrabold text-gray-900">{title}</h3>
+        <span className="text-[13px] font-semibold text-gray-600">{count} {count === 1 ? noun[0] : noun[1]}</span>
         {action}
       </div>
       <div className={sum}>{formatSEK(total)}</div>
-      <div className={sum}>{formatReach(reach)}</div>
-      <div className={band} style={{ gridColumn: `span ${weekCount}` }} />
+      <div className={`${sum} !text-sm !font-bold`}>{formatReach(reach)}</div>
+      <div className="border-b border-[#E6E6E6] min-h-[64px]" style={{ gridColumn: `span ${weekCount}`, background: laneBg }} />
     </>
   );
 }
@@ -1266,7 +1309,7 @@ function PlatformPicker({ items, label, onPick, busy }: { items: Platform[]; lab
         onClick={toggle}
         disabled={busy}
         aria-expanded={open}
-        className="h-8 pl-2 pr-3 flex items-center gap-1.5 bg-gray-900 text-white text-sm font-bold hover:bg-milou-500 transition-colors disabled:opacity-50"
+        className="min-h-8 pl-2.5 pr-3 flex items-center gap-1.5 bg-gray-900 text-white text-xs font-extrabold hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
         <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden />
         {label}

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getFullPlan, updatePlan, generateShareToken } from "@/lib/api/plans";
+import { getPlanContext } from "@/lib/api/hierarchy";
 import type { FullMediaPlan } from "@/lib/types";
 import GanttTimeline from "./GanttTimeline";
-import InlineEdit from "./InlineEdit";
-import { formatSwedishDateFull } from "@/lib/utils/dates";
-import { calcPlanReach, calcPlanTotal, formatReach, formatSEK } from "@/lib/utils/budget";
-import { Check, ImageDown, Link2 } from "lucide-react";
-import { PlanHero, PlanToolbar, ShareLinkBar, ToolbarButton } from "@/components/shared/PlanShell";
+import PlanHeader, { PlanSettings, type PlanContext } from "./PlanHeader";
+import { getPlanWeeks } from "@/lib/utils/dates";
+import { todayIso } from "@/lib/mediaplan/schedule";
+import { ShareLinkBar } from "@/components/shared/PlanShell";
 
 interface Props {
   planId: string;
@@ -16,12 +16,19 @@ interface Props {
   readOnly?: boolean;
 }
 
+/**
+ * Kampanjens mediaplan i ett fönster ovanpå sidan: rubrik med nyckeltal, inställningar
+ * och tabellen med kanaler och veckor. Allt går att ändra direkt.
+ */
 export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
   const [plan, setPlan] = useState<FullMediaPlan | null>(null);
+  const [ctx, setCtx] = useState<PlanContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [copyDone, setCopyDone] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [today] = useState(() => todayIso());
   const captureRef = useRef<HTMLDivElement>(null);
 
   const loadPlan = useCallback(async () => {
@@ -33,6 +40,7 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
   }, [planId, readOnly]);
 
   useEffect(() => { loadPlan(); }, [loadPlan]);
+  useEffect(() => { getPlanContext(planId).then(setCtx).catch(() => setCtx(null)); }, [planId]);
 
   // Close on Escape
   useEffect(() => {
@@ -47,20 +55,31 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  const handleShare = async () => {
+  // Sparar i bakgrunden; visar ett felmeddelande och hämtar om planen om det misslyckas.
+  const save = async (updates: Partial<FullMediaPlan>) => {
     if (!plan) return;
-    const token = await generateShareToken(plan.id);
-    const url = `${window.location.origin}/share/${token}`;
-    setShareLink(url);
-    await navigator.clipboard.writeText(url).catch(() => {});
-    setCopyDone(true);
-    setTimeout(() => setCopyDone(false), 2000);
+    setPlan((p) => (p ? { ...p, ...updates } : p));
+    try {
+      await updatePlan(plan.id, updates);
+      setError(null);
+    } catch {
+      setError("Ändringen kunde inte sparas. Försök igen.");
+      loadPlan();
+    }
   };
 
-  const handleNameUpdate = async (name: string) => {
+  const handleShare = async () => {
     if (!plan) return;
-    await updatePlan(plan.id, { campaign_name: name });
-    setPlan((p) => p ? { ...p, campaign_name: name } : p);
+    try {
+      const token = await generateShareToken(plan.id);
+      const url = `${window.location.origin}/share/${token}`;
+      setShareLink(url);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+    } catch {
+      setError("Kundlänken kunde inte skapas. Försök igen.");
+    }
   };
 
   const handleExportImage = async () => {
@@ -83,123 +102,82 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
       link.download = `${plan.campaign_name.replace(/\s+/g, "-")}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
+    } catch {
+      setError("Bilden kunde inte skapas. Försök igen.");
     } finally {
       setExporting(false);
     }
   };
 
-  const handleClientIdUpdate = async (value: string) => {
-    if (!plan) return;
-    const trimmed = value.trim() || null;
-    await updatePlan(plan.id, { client_id: trimmed });
-    setPlan((p) => p ? { ...p, client_id: trimmed } : p);
-  };
-
-  const handlePeriodUpdate = async (field: "period_start" | "period_end", value: string) => {
-    if (!plan) return;
-    await updatePlan(plan.id, { [field]: value });
-    setPlan((p) => p ? { ...p, [field]: value } : p);
-  };
-
-  const handlePlannedBudgetUpdate = async (v: string) => {
-    if (!plan) return;
-    const planned_budget = v.trim() ? Number(v) : null;
-    await updatePlan(plan.id, { planned_budget });
-    setPlan((p) => p ? { ...p, planned_budget } : p);
-  };
-
-  const handleTagsUpdate = async (tags: string[]) => {
-    if (!plan) return;
-    await updatePlan(plan.id, { tags });
-    setPlan((p) => p ? { ...p, tags } : p);
-  };
+  const weekCount = plan ? getPlanWeeks(plan.period_start, plan.period_end).length : 0;
+  const weekSpan = plan ? (() => { const w = getPlanWeeks(plan.period_start, plan.period_end); return w.length ? `v.${w[0].no}${w.length > 1 ? `–${w[w.length - 1].no}` : ""} · ${w.length} ${w.length === 1 ? "vecka" : "veckor"}` : ""; })() : "";
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 z-50 flex flex-col" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative flex flex-col bg-white w-full h-full overflow-hidden">
-        <PlanToolbar
-          kind="mediaplaner"
-          readOnly={readOnly}
-          periodStart={plan?.period_start}
-          periodEnd={plan?.period_end}
-          onPeriod={handlePeriodUpdate}
-          clientId={plan?.client_id}
-          onClientId={handleClientIdUpdate}
-          tags={plan?.tags ?? []}
-          onTags={handleTagsUpdate}
-          onClose={onClose}
-          actions={
-            plan && !readOnly && (
-              <>
-                <ToolbarButton onClick={handleExportImage} disabled={exporting}>
-                  <ImageDown className="w-4 h-4" />
-                  {exporting ? "Exporterar…" : "Exportera bild"}
-                </ToolbarButton>
-                <ToolbarButton onClick={handleShare} primary>
-                  {copyDone ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                  {copyDone ? "Länken är kopierad" : "Kopiera kundlänk"}
-                </ToolbarButton>
-              </>
-            )
-          }
-        />
-
+      <div role="dialog" aria-modal="true" aria-label={plan ? `Mediaplan ${plan.campaign_name}` : "Mediaplan"} className="mp relative flex flex-col bg-gray-50 text-gray-900 w-full h-full overflow-hidden">
         {shareLink && !copyDone && <ShareLinkBar link={shareLink} />}
+        {error && (
+          <p role="alert" className="m-0 px-6 py-2.5 bg-[#E60330] text-white text-sm font-semibold flex justify-between gap-4">
+            {error}
+            <button type="button" onClick={() => setError(null)} aria-label="Stäng meddelandet" className="font-bold">✕</button>
+          </p>
+        )}
 
-        {/* Plan content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-400 animate-pulse">Laddar mediaplan…</div>
-            </div>
+            <div className="flex items-center justify-center h-64 text-gray-600 animate-pulse">Laddar mediaplan…</div>
           ) : !plan ? (
-            <div className="flex items-center justify-center h-64 text-red-500">
+            <div role="alert" className="flex flex-col items-center justify-center gap-4 h-64 text-[#C8022A] font-semibold">
               Kunde inte ladda planen
+              <button type="button" onClick={onClose} className="min-h-11 px-4 border border-gray-900 text-gray-900 text-sm font-bold hover:bg-gray-900 hover:text-white">Stäng</button>
             </div>
           ) : (
-            <div ref={captureRef}>
-              {/* Rubrikytan kommer med i PNG-exporten. */}
-              <PlanHero
-                name={plan.campaign_name}
-                onName={readOnly ? undefined : handleNameUpdate}
-                period={`${formatSwedishDateFull(plan.period_start)} – ${formatSwedishDateFull(plan.period_end)}`}
-                stats={(() => {
-                  const booked = calcPlanTotal(plan);
-                  const left = plan.planned_budget != null ? plan.planned_budget - booked : null;
-                  return [
-                    { label: "Bokat", value: formatSEK(booked) },
-                    {
-                      label: "Planerad budget",
-                      value: readOnly ? (plan.planned_budget != null ? formatSEK(plan.planned_budget) : "–") : (
-                        <InlineEdit
-                          value={plan.planned_budget != null ? String(plan.planned_budget) : ""}
-                          onSave={handlePlannedBudgetUpdate}
-                          type="number"
-                          suffix="kr"
-                          placeholder="Ange"
-                        />
-                      ),
-                    },
-                    ...(left != null
-                      ? [left >= 0
-                        ? { label: "Kvar av budget", value: formatSEK(left) }
-                        : { label: "Över budget", value: formatSEK(-left), alert: true }]
-                      : []),
-                    { label: "Räckvidd", value: formatReach(calcPlanReach(plan)) },
-                  ];
-                })()}
-              />
-              <GanttTimeline
+            <div ref={captureRef} className="bg-gray-50">
+              <PlanHeader
                 plan={plan}
+                ctx={ctx}
+                today={today}
                 readOnly={readOnly}
-                onPlanChanged={loadPlan}
-                onPlanLocal={(update) => setPlan((p) => (p ? update(p) : p))}
+                exporting={exporting}
+                copyDone={copyDone}
+                onName={(campaign_name) => save({ campaign_name })}
+                onBudget={(planned_budget) => save({ planned_budget })}
+                onExport={handleExportImage}
+                onShare={handleShare}
+                onClose={onClose}
               />
+              <div className="max-w-[1280px] mx-auto px-5 min-[761px]:px-10 pt-8 pb-[72px]">
+                {!readOnly && (
+                  <PlanSettings
+                    plan={plan}
+                    backLabel={ctx ? `Alla kampanjer i ${ctx.project.name}` : "Alla planer"}
+                    onClose={onClose}
+                    onPeriod={(field, value) => save({ [field]: value })}
+                    onClientId={(value) => { const v = value.trim() || null; if (v !== (plan.client_id ?? null)) save({ client_id: v }); }}
+                    onStatus={(status) => save({ status })}
+                    onTags={(tags) => save({ tags })}
+                  />
+                )}
+                <section aria-labelledby="planen" className="mt-10">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <h2 id="planen" className="m-0 text-[30px] font-extrabold tracking-[-0.01em]">Kanaler och veckor</h2>
+                      {!readOnly && <p className="mt-1.5 mb-0 text-[15px] text-gray-600">Ändra à-pris och antal så räknas kostnaden, bokat och kvar av budget ut direkt. Dra i ett block för att ändra veckorna.</p>}
+                    </div>
+                    {weekCount > 0 && <p className="m-0 text-sm font-bold">{weekSpan}</p>}
+                  </div>
+                  <div className="-mx-4">
+                    <GanttTimeline
+                      plan={plan}
+                      readOnly={readOnly}
+                      onPlanChanged={loadPlan}
+                      onPlanLocal={(update) => setPlan((p) => (p ? update(p) : p))}
+                    />
+                  </div>
+                </section>
+              </div>
             </div>
           )}
         </div>
