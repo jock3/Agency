@@ -18,7 +18,7 @@ const date = (iso: string) => { const [, m, d] = iso.split("-"); return `${Numbe
 
 /**
  * Årsplanen som kalender: tolv månader och ett block per kampanj över dess
- * period. Kampanjer som överlappar ligger på olika rader. Klick på ett block
+ * period. Kampanjerna ligger som en trappa, en rad var i ordning efter start. Klick på ett block
  * öppnar kampanjens plan.
  */
 export default function YearCalendar({ year, campaigns, onOpen, today }: { year: number; campaigns: MediaPlan[]; onOpen: (id: string) => void; today?: string }) {

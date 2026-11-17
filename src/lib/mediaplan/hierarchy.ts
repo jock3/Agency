@@ -94,7 +94,7 @@ export interface YearBlock<T> {
   /** Andel av året (0–1) där blocket börjar och slutar. */
   start: number;
   end: number;
-  /** Rad i kalendern; överlappande kampanjer hamnar på olika rader. */
+  /** Rad i kalendern. Varje kampanj har en egen rad, så att blocken bildar en trappa. */
   lane: number;
   /** Kampanjen börjar före eller slutar efter året. */
   clippedStart: boolean;
@@ -122,8 +122,8 @@ export function todayFraction(year: number, today: string): number | null {
 
 /**
  * Lägger kampanjerna som block över ett år. Slutdagen räknas med, så en
- * kampanj som slutar 31/12 fyller året ut. Block som överlappar i tid hamnar
- * på olika rader; ingen kampanj utanför året tas med.
+ * kampanj som slutar 31/12 fyller året ut. Kampanjerna läggs som en trappa,
+ * en rad var i ordning efter start; ingen kampanj utanför året tas med.
  */
 export function layoutYear<T extends { period_start: string; period_end: string }>(items: readonly T[], year: number): YearBlock<T>[] {
   const first = dayNumber(`${year}-01-01`);
@@ -143,12 +143,7 @@ export function layoutYear<T extends { period_start: string; period_end: string 
       };
     })
     .sort((a, b) => a.start - b.start || a.end - b.end);
-  const laneEnds: number[] = [];
-  for (const b of blocks) {
-    let lane = laneEnds.findIndex((end) => end <= b.start);
-    if (lane === -1) lane = laneEnds.length;
-    laneEnds[lane] = b.end;
-    b.lane = lane;
-  }
+  // Trappa: varje kampanj får en egen rad, i ordning efter startdatum.
+  blocks.forEach((b, i) => { b.lane = i; });
   return blocks;
 }

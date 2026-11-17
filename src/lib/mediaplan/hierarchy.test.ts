@@ -51,13 +51,9 @@ describe("årskalender", () => {
     expect(b.end).toBeCloseTo(60 / 365, 5); // 1 jan–1 mars = 60 dagar
   });
   it("kampanjer utanför året tas inte med", () => expect(layoutYear([k("2025-01-01", "2025-12-31")], 2026)).toEqual([]));
-  it("överlappande kampanjer får olika rader, de som följer på varandra delar rad", () => {
-    const blocks = layoutYear([k("2026-06-01", "2026-08-31"), k("2026-07-01", "2026-09-30"), k("2026-09-01", "2026-10-31"), k("2026-01-01", "2026-02-28")], 2026);
-    const lane = (s: string) => blocks.find((b) => b.item.period_start === s)!.lane;
-    expect(lane("2026-01-01")).toBe(0);
-    expect(lane("2026-06-01")).toBe(0);
-    expect(lane("2026-07-01")).toBe(1);
-    expect(lane("2026-09-01")).toBe(0); // första är slut 31/8
+  it("kampanjerna bildar en trappa: en rad var, i ordning efter start", () => {
+    const blocks = layoutYear([k("2026-06-01", "2026-08-31"), k("2026-01-01", "2026-02-28"), k("2026-09-01", "2026-10-31"), k("2026-07-01", "2026-09-30")], 2026);
+    expect(blocks.map((b) => [b.item.period_start, b.lane])).toEqual([["2026-01-01", 0], ["2026-06-01", 1], ["2026-07-01", 2], ["2026-09-01", 3]]);
   });
   it("en dags kampanj syns", () => {
     const [b] = layoutYear([k("2026-05-05", "2026-05-05")], 2026);
