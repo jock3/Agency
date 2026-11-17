@@ -86,3 +86,69 @@ export function rollup(plans: readonly PlanLike[], opts: { includeArchived?: boo
 }
 
 export const formatKr = (v: number) => `${new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(v).replace(/[  ]/g, " ")} kr`;
+
+// ---- Årskalender ----
+
+export interface YearBlock<T> {
+  item: T;
+  /** Andel av året (0–1) där blocket börjar och slutar. */
+  start: number;
+  end: number;
+  /** Rad i kalendern; överlappande kampanjer hamnar på olika rader. */
+  lane: number;
+  /** Kampanjen börjar före eller slutar efter året. */
+  clippedStart: boolean;
+  clippedEnd: boolean;
+}
+
+const dayNumber = (iso: string) => {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+};
+export const daysInYear = (year: number) => dayNumber(`${year + 1}-01-01`) - dayNumber(`${year}-01-01`);
+
+/** Månadernas gränser som andel av året, för rubrikrad och stödlinjer. */
+export function monthEdges(year: number): number[] {
+  const first = dayNumber(`${year}-01-01`);
+  const total = daysInYear(year);
+  return Array.from({ length: 13 }, (_, m) => (dayNumber(`${m === 12 ? year + 1 : year}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`) - first) / total);
+}
+
+/** Dagens plats i året (0–1), eller null om dagen inte ligger i året. */
+export function todayFraction(year: number, today: string): number | null {
+  const d = dayNumber(today) - dayNumber(`${year}-01-01`);
+  return d >= 0 && d < daysInYear(year) ? (d + 0.5) / daysInYear(year) : null;
+}
+
+/**
+ * Lägger kampanjerna som block över ett år. Slutdagen räknas med, så en
+ * kampanj som slutar 31/12 fyller året ut. Block som överlappar i tid hamnar
+ * på olika rader; ingen kampanj utanför året tas med.
+ */
+export function layoutYear<T extends { period_start: string; period_end: string }>(items: readonly T[], year: number): YearBlock<T>[] {
+  const first = dayNumber(`${year}-01-01`);
+  const total = daysInYear(year);
+  const blocks = items
+    .filter((p) => overlapsYear(p, year))
+    .map((item) => {
+      const s = dayNumber(item.period_start) - first;
+      const e = dayNumber(item.period_end) - first + 1;
+      return {
+        item,
+        start: Math.max(0, s) / total,
+        end: Math.min(total, Math.max(e, s + 1)) / total,
+        lane: 0,
+        clippedStart: s < 0,
+        clippedEnd: e > total,
+      };
+    })
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  const laneEnds: number[] = [];
+  for (const b of blocks) {
+    let lane = laneEnds.findIndex((end) => end <= b.start);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = b.end;
+    b.lane = lane;
+  }
+  return blocks;
+}

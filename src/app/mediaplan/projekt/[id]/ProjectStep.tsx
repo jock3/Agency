@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarPlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import PageHeader, { PageHeaderButton } from "@/components/PageHeader";
 import MediaplanTabs from "@/components/MediaplanTabs";
 import MediaplanCrumbs from "@/components/mediaplan/MediaplanCrumbs";
 import Steps from "@/components/mediaplan/Steps";
 import FormModal from "@/components/mediaplan/FormModal";
+import YearCalendar from "@/components/mediaplan/YearCalendar";
 import PlanCard from "@/components/dashboard/PlanCard";
 import PlanOverlay from "@/components/plan-overlay/PlanOverlay";
 import { usePlanReports } from "@/components/dashboard/usePlanReports";
@@ -29,8 +30,6 @@ export default function ProjectStep({ id }: { id: string }) {
   const [extraYears, setExtraYears] = useState<number[]>([]);
   const [modal, setModal] = useState<"campaign" | "edit" | null>(null);
   const [openPlan, setOpenPlan] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { reportProps, reportUi } = usePlanReports();
 
   const load = useCallback(() => {
@@ -56,20 +55,6 @@ export default function ProjectStep({ id }: { id: string }) {
   const campaigns = plans.filter((p) => p.kind !== "year" && !p.archived && overlapsYear(p, selected));
   const archived = plans.filter((p) => p.archived && (p.kind === "year" ? p.plan_year === selected : overlapsYear(p, selected)));
   const sum = rollup([...(yearPlan ? [yearPlan] : []), ...campaigns]);
-
-  async function createYearPlan() {
-    setBusy(true);
-    setError(null);
-    try {
-      const p = await createProjectPlan(id, { kind: "year", year: selected });
-      load();
-      setOpenPlan(p.id);
-    } catch (e) {
-      setError(e instanceof Error && e.message === "DUPLICATE" ? `Det finns redan en årsplan för ${selected}. Den kan vara arkiverad.` : "Årsplanen kunde inte skapas. Försök igen.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   const card = (p: MediaPlan, isArchived = false) => (
     <PlanCard
@@ -127,22 +112,17 @@ export default function ProjectStep({ id }: { id: string }) {
 
             <section aria-labelledby="yearplan" className="mb-12">
               <h2 id="yearplan" className="text-xl font-bold mb-1">Årsplan {selected}</h2>
-              <p className="text-sm text-gray-600 mb-4">Mediaplanen över hela året för {project.name}.</p>
-              {error && <p role="alert" className="text-sm text-milou-600 mb-3">{error}</p>}
-              {yearPlan ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">{card(yearPlan)}</div>
-              ) : (
-                <button
-                  onClick={createYearPlan}
-                  disabled={busy}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-14 px-6 border-2 border-dashed border-gray-300 bg-white text-gray-700 font-semibold hover:border-milou-500 hover:text-milou-600 disabled:opacity-60"
-                >
-                  <CalendarPlus className="w-5 h-5" aria-hidden /> {busy ? "Skapar…" : `Skapa årsplan för ${selected}`}
-                </button>
+              <p className="text-sm text-gray-600 mb-4">Alla kampanjer i {project.name} över året. Klicka på ett block för att öppna kampanjens plan.</p>
+              <YearCalendar year={selected} campaigns={campaigns} onOpen={setOpenPlan} />
+              {yearPlan && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-bold text-gray-600 mb-3">Egen årsplan</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">{card(yearPlan)}</div>
+                </div>
               )}
             </section>
 
-            <section aria-labelledby="campaigns">
+            <section aria-labelledby="campaigns" className="mb-4">
               <h2 id="campaigns" className="text-xl font-bold mb-1">Kampanjer {selected}</h2>
               <p className="text-sm text-gray-600 mb-4">Kampanjer som pågår någon gång under {selected}. En kampanj över årsskiftet syns båda åren.</p>
               {campaigns.length === 0 ? (

@@ -87,7 +87,7 @@ describe("mediaplan i tre steg", () => {
     expect(screen.getByText("Årsplaner: 2026")).toBeTruthy();
   });
 
-  it("steg 3 visar årsplan och kampanjer per år, och skapar en årsplan för ett nytt år", async () => {
+  it("steg 3 visar årskalender och kampanjer per år", async () => {
     const user = userEvent.setup();
     const { default: ProjectStep } = await import("./projekt/[id]/ProjectStep");
     render(<ProjectStep id="pr1" />);
@@ -97,16 +97,20 @@ describe("mediaplan i tre steg", () => {
     expect(within(camp).getByRole("button", { name: "Sommarkampanj" })).toBeTruthy();
     expect(within(camp).getByRole("button", { name: "Innerstad och hämttider" })).toBeTruthy();
     expect(within(camp).queryByText("Vår 2027")).toBeNull();
-    expect(screen.getByRole("button", { name: "Vattenkampanj 2026" })).toBeTruthy();
+    const cal = screen.getByRole("group", { name: "Årskalender 2026" });
+    expect(within(cal).getByRole("button", { name: "Sommarkampanj, 1/6–31/8" })).toBeTruthy();
+    expect(within(cal).getByRole("button", { name: "Innerstad och hämttider, 24/9–1/3 (pågår över årsskiftet)" })).toBeTruthy();
+    expect(within(cal).queryByRole("button", { name: /Vår 2027/ })).toBeNull();
     expect(within(camp).getByRole("button", { name: "Se rapport" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "2027" }));
     const camp27 = screen.getByRole("region", { name: "Kampanjer 2027" });
     expect(within(camp27).getByRole("button", { name: "Innerstad och hämttider" })).toBeTruthy();
     expect(within(camp27).getByRole("button", { name: "Vår 2027" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Skapa årsplan för 2027" }));
-    expect(api.createProjectPlan).toHaveBeenCalledWith("pr1", { kind: "year", year: 2027 });
-    expect(await screen.findByRole("dialog", { name: "plan y27" })).toBeTruthy();
+    // Årsplanen är en kalender med ett block per kampanj; klick öppnar kampanjens plan.
+    const cal27 = screen.getByRole("group", { name: "Årskalender 2027" });
+    await user.click(within(cal27).getByRole("button", { name: /^Vår 2027/ }));
+    expect(await screen.findByRole("dialog", { name: "plan c3" })).toBeTruthy();
   });
 });
 
