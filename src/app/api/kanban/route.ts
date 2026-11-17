@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const { id, status } = (await req.json().catch(() => ({}))) as { id?: unknown; status?: unknown };
-  if (typeof id !== "string" || !isStatus(status)) return NextResponse.json({ error: "BAD_INPUT" }, { status: 400 });
+  if (typeof id !== "string" || !/^[a-z0-9-]+$/.test(id) || !isStatus(status)) return NextResponse.json({ error: "BAD_INPUT" }, { status: 400 });
   try {
     await moveCard(id, status);
     return NextResponse.json({ ok: true });
