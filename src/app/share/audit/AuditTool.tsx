@@ -164,7 +164,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               className="mt-1 accent-milou-500"
             />
             <span>
-              Jag godkänner att Milou kontaktar mig om resultatet och hur vi kan hjälpa till. Läs vår{" "}
+              Jag godkänner att Milou lagrar mina uppgifter och kontaktar mig om resultatet, enligt Milous{" "}
               <a
                 href="https://milou.se/integritetspolicy"
                 target="_blank"
