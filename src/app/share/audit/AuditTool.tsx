@@ -166,7 +166,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
             <span>
               Jag godkänner att Milou lagrar mina uppgifter och kontaktar mig om resultatet, enligt Milous{" "}
               <a
-                href="https://milou.se/integritetspolicy"
+                href="https://milou.se/intergritetspolicy/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-white"
