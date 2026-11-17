@@ -148,8 +148,8 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
                 onShare={handleShare}
                 onClose={onClose}
               />
-              <div className="max-w-[1280px] mx-auto px-5 min-[761px]:px-10 pt-8 pb-[72px]">
-                {!readOnly && (
+              {!readOnly && (
+                <div className="max-w-[1280px] mx-auto px-5 min-[761px]:px-10 pt-8">
                   <PlanSettings
                     plan={plan}
                     backLabel={ctx ? `Alla kampanjer i ${ctx.project.name}` : "Alla planer"}
@@ -159,25 +159,26 @@ export default function PlanOverlay({ planId, onClose, readOnly }: Props) {
                     onStatus={(status) => save({ status })}
                     onTags={(tags) => save({ tags })}
                   />
-                )}
-                <section aria-labelledby="planen" className="mt-10">
-                  <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <h2 id="planen" className="m-0 text-[30px] font-extrabold tracking-[-0.01em]">Kanaler och veckor</h2>
-                      {!readOnly && <p className="mt-1.5 mb-0 text-[15px] text-gray-600">Ändra à-pris och antal så räknas kostnaden, bokat och kvar av budget ut direkt. Dra i ett block för att ändra veckorna.</p>}
-                    </div>
-                    {weekCount > 0 && <p className="m-0 text-sm font-bold">{weekSpan}</p>}
+                </div>
+              )}
+              {/* Kalendern får hela fönstrets bredd; rubrik och inställningar ovanför behåller sin spalt. */}
+              <section aria-labelledby="planen" className="px-5 min-[761px]:px-10 pt-10 pb-[72px]">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h2 id="planen" className="m-0 text-[30px] font-extrabold tracking-[-0.01em]">Kanaler och veckor</h2>
+                    {!readOnly && <p className="mt-1.5 mb-0 text-[15px] text-gray-600">Ändra à-pris och antal så räknas kostnaden, bokat och kvar av budget ut direkt. Dra i ett block för att ändra veckorna.</p>}
                   </div>
-                  <div className="-mx-4">
-                    <GanttTimeline
-                      plan={plan}
-                      readOnly={readOnly}
-                      onPlanChanged={loadPlan}
-                      onPlanLocal={(update) => setPlan((p) => (p ? update(p) : p))}
-                    />
-                  </div>
-                </section>
-              </div>
+                  {weekCount > 0 && <p className="m-0 text-sm font-bold">{weekSpan}</p>}
+                </div>
+                <div className="-mx-4">
+                  <GanttTimeline
+                    plan={plan}
+                    readOnly={readOnly}
+                    onPlanChanged={loadPlan}
+                    onPlanLocal={(update) => setPlan((p) => (p ? update(p) : p))}
+                  />
+                </div>
+              </section>
             </div>
           )}
         </div>

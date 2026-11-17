@@ -242,7 +242,7 @@ describe.skipIf(!process.env.MEDIAPLAN_SHOTS)("skärmbild", () => {
     const html = `<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link href="https://fonts.googleapis.com/css2?family=REM:wght@400;600;700;800;900&display=swap" rel="stylesheet"><style>${tailwind}body{font-family:'REM',system-ui,sans-serif;background:#F2F2F2;margin:0}.font-display{font-family:'REM',system-ui,sans-serif}</style></head><body><div style="height:56px;background:#1C1C1C;color:#fff;display:flex;align-items:center;padding:0 24px;font-weight:900">MILOU</div>${dialog.parentElement!.outerHTML}</body></html>`;
     const browser = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: true });
     try {
-      for (const [suffix, w, h] of [["", 1440, 900], ["-mobil", 390, 844]] as const) {
+      for (const [suffix, w, h] of [["", 1920, 1000], ["-mobil", 390, 844]] as const) {
         const p = await browser.newPage();
         await p.setViewport({ width: w, height: h });
         await p.setContent(html, { waitUntil: "load" });
