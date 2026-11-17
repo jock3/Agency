@@ -101,7 +101,7 @@ export interface YearBlock<T> {
   clippedEnd: boolean;
 }
 
-const dayNumber = (iso: string) => {
+export const dayNumber = (iso: string) => {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
 };

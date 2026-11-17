@@ -32,6 +32,8 @@ export interface MplanProject {
   client_id: string;
   name: string;
   archived: boolean;
+  /** Antal gånger "Blanda mönster" tryckts. Projektets mönster räknas fram från id och det här talet. */
+  pattern_round: number;
   created_at: string;
   updated_at: string;
 }

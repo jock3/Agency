@@ -261,3 +261,28 @@
   background-image: conic-gradient(#e5e5e5 25%, transparent 0 50%, #e5e5e5 0 75%, transparent 0);
   background-size: 16px 16px;
 }
+
+/* Mediaplan (kund → projekt → kampanjer): fokusram, utkastränder och pulserande prick. */
+@layer components {
+  .mp :focus-visible {
+    outline: 3px solid #e60330;
+    outline-offset: 2px;
+  }
+  .mp-draft {
+    background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.11) 0 6px, transparent 6px 12px);
+  }
+  .mp-draft.mp-on-dark {
+    background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 6px, transparent 6px 12px);
+  }
+  .mp-pulse {
+    animation: mp-pulse 1.6s ease-out infinite;
+  }
+  @keyframes mp-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(230, 3, 48, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(230, 3, 48, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(230, 3, 48, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mp-pulse { animation: none; }
+  }
+}

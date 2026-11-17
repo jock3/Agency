@@ -26,8 +26,20 @@ function dup(error: { code?: string; message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-export interface ClientSummary extends MplanClient { projects: number; rollup: Rollup }
+export interface ClientSummary extends MplanClient {
+  projects: number;
+  rollup: Rollup;
+  /** Plats i skapandeordningen (0 = äldst). Ger kundens färg. */
+  rank: number;
+}
 export interface ProjectSummary extends MplanProject { rollup: Rollup; years: number[] }
+
+/** Kundernas plats i skapandeordningen, för färgen. */
+async function clientRanks(): Promise<Map<string, number>> {
+  const sb = await authedDb();
+  const { data } = await sb.from("mplan_clients").select("id, created_at").order("created_at").order("id");
+  return new Map((data ?? []).map((c, i) => [c.id as string, i]));
+}
 
 /** Steg 1: alla kunder med antal projekt och summering av deras planer, plus antal osorterade planer. */
 export async function listClients(): Promise<{ clients: ClientSummary[]; unsorted: number }> {
@@ -40,10 +52,12 @@ export async function listClients(): Promise<{ clients: ClientSummary[]; unsorte
   if (c.error) throw new Error(c.error.message);
   const projects = p.data ?? [];
   const all = (plans.data ?? []) as (Pick<MediaPlan, "project_id" | "kind" | "plan_year" | "period_start" | "period_end" | "planned_budget" | "archived">)[];
+  const ranks = await clientRanks();
   const clients = (c.data ?? []).map((cl) => {
     const ids = new Set(projects.filter((x) => x.client_id === cl.id).map((x) => x.id));
     return {
       ...(cl as MplanClient),
+      rank: ranks.get(cl.id as string) ?? 0,
       projects: projects.filter((x) => x.client_id === cl.id && !x.archived).length,
       rollup: rollup(all.filter((pl) => pl.project_id && ids.has(pl.project_id))),
     };
@@ -88,7 +102,7 @@ export async function deleteClient(id: string): Promise<void> {
 }
 
 /** Steg 2: kunden och dess projekt med summering per projekt. */
-export async function getClient(id: string): Promise<{ client: MplanClient; projects: ProjectSummary[] } | null> {
+export async function getClient(id: string): Promise<{ client: MplanClient; rank: number; projects: ProjectSummary[] } | null> {
   const sb = await authedDb();
   if (!UUID.test(id)) return null;
   const [c, p] = await Promise.all([
@@ -101,8 +115,10 @@ export async function getClient(id: string): Promise<{ client: MplanClient; proj
     ? await sb.from("media_plans").select("project_id, kind, plan_year, period_start, period_end, planned_budget, archived").in("project_id", projects.map((x) => x.id))
     : { data: [] };
   const list = (plans ?? []) as MediaPlan[];
+  const ranks = await clientRanks();
   return {
     client: c.data as MplanClient,
+    rank: ranks.get(id) ?? 0,
     projects: projects.map((pr) => {
       const mine = list.filter((pl) => pl.project_id === pr.id);
       const years = [...new Set(mine.filter((pl) => pl.kind === "year" && pl.plan_year).map((pl) => pl.plan_year as number))].sort();
@@ -130,6 +146,17 @@ export async function updateProject(id: string, input: { name?: string; archived
   const { error } = await sb.from("mplan_projects").update(patch).eq("id", id);
   dup(error);
   if (patch.name && patch.name !== before.name) await retag([id], before.name, patch.name as string);
+}
+
+/** "Blanda mönster": nästa mönster för projektet. Returnerar det nya värdet. */
+export async function shufflePattern(id: string): Promise<number> {
+  const sb = await authedDb();
+  const { data: before } = await sb.from("mplan_projects").select("pattern_round").eq("id", uuid(id)).single();
+  if (!before) throw new Error("NOT_FOUND");
+  const next = ((before.pattern_round as number) + 1) % 1000000;
+  const { error } = await sb.from("mplan_projects").update({ pattern_round: next }).eq("id", id);
+  if (error) throw new Error(error.message);
+  return next;
 }
 
 /** Tar bort projektet. Planerna finns kvar under Osorterade. */
