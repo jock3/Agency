@@ -4,7 +4,7 @@
  * Filen är ren (inga ikoner, ingen server-kod) så att proxyn, servern och
  * klienten kan läsa den.
  */
-export const TOOL_KEYS = ["mediaplan", "kampanj", "formatkoll", "social", "audit", "tillganglighet", "todo"] as const;
+export const TOOL_KEYS = ["mediaplan", "kampanj", "formatkoll", "social", "audit", "tillganglighet", "todo", "kanban"] as const;
 export type ToolKey = (typeof TOOL_KEYS)[number];
 
 export const TOOL_NAMES: Record<ToolKey, string> = {
@@ -15,6 +15,7 @@ export const TOOL_NAMES: Record<ToolKey, string> = {
   audit: "SEO/GEO-audit",
   tillganglighet: "Tillgänglighet",
   todo: "Uppgifter",
+  kanban: "Kanban",
 };
 
 export const isToolKey = (v: unknown): v is ToolKey => typeof v === "string" && (TOOL_KEYS as readonly string[]).includes(v);
