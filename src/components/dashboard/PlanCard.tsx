@@ -12,9 +12,15 @@ interface Props {
   onDelete: () => void;
   onDuplicate?: () => void;
   archived?: boolean;
+  /** Id på planens rapport, om den har en. Då heter knappen "Se rapport". */
+  reportId?: string | null;
+  /** Visas först när länkarna är hämtade, så knappen inte byter text. */
+  reportReady?: boolean;
+  onReport?: () => void;
+  reportBusy?: boolean;
 }
 
-export default function PlanCard({ plan, onOpen, onArchive, onDelete, onDuplicate, archived }: Props) {
+export default function PlanCard({ plan, onOpen, onArchive, onDelete, onDuplicate, archived, reportId, reportReady, onReport, reportBusy }: Props) {
   return (
     <div
       className="milou-plate bg-white cursor-pointer group flex flex-col"
@@ -67,6 +73,15 @@ export default function PlanCard({ plan, onOpen, onArchive, onDelete, onDuplicat
         </button>
 
         <div className="flex items-center gap-3">
+          {onReport && reportReady && (
+            <button
+              onClick={onReport}
+              disabled={reportBusy}
+              className="text-xs font-semibold text-milou-600 hover:text-milou-700 disabled:opacity-50"
+            >
+              {reportBusy ? "Skapar…" : reportId ? "Se rapport" : "Skapa rapport"}
+            </button>
+          )}
           {onDuplicate && (
             <button
               onClick={onDuplicate}

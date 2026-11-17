@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import MediaplanTabs from "@/components/MediaplanTabs";
 import { companiesOf, currentUser } from "@/lib/ads/access";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import TagChips from "@/components/shared/TagChips";
 import NewReportForm from "./NewReportForm";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +19,11 @@ export default async function ReportListPage() {
   const { data } = companies.length
     ? await getSupabaseAdminClient()
         .from("report_docs")
-        .select("id, company_id, title, client, updated_at")
+        .select("id, company_id, title, client, updated_at, tags, plan_id")
         .in("company_id", companies.map((c) => c.id))
         .order("updated_at", { ascending: false })
     : { data: [] };
-  const reports = (data ?? []) as { id: string; company_id: string; title: string; client: string; updated_at: string }[];
+  const reports = (data ?? []) as { id: string; company_id: string; title: string; client: string; updated_at: string; tags: string[] | null; plan_id: string | null }[];
   const date = (iso: string) => new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
 
   return (
@@ -62,6 +63,7 @@ export default async function ReportListPage() {
                           <span className="text-xs text-gray-600 block truncate">
                             {r.client} · {companies.find((c) => c.id === r.company_id)?.name} · ändrad {date(r.updated_at)}
                           </span>
+                          <TagChips tags={r.tags ?? []} />
                         </span>
                         <ArrowRight className="w-4 h-4 text-gray-600 shrink-0" aria-hidden />
                       </Link>
