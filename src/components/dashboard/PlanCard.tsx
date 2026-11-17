@@ -3,7 +3,6 @@
 import type { MediaPlan } from "@/lib/types";
 import { formatSwedishDate } from "@/lib/utils/dates";
 import TagChips from "@/components/shared/TagChips";
-import ArrowSquare from "@/components/shared/ArrowSquare";
 
 interface Props {
   plan: MediaPlan;
@@ -22,14 +21,18 @@ interface Props {
 
 export default function PlanCard({ plan, onOpen, onArchive, onDelete, onDuplicate, archived, reportId, reportReady, onReport, reportBusy }: Props) {
   return (
-    <div
-      className="milou-plate bg-white cursor-pointer group flex flex-col"
-      onClick={onOpen}
-    >
+    <div className="milou-plate bg-white flex flex-col">
       <div className="p-5 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-extrabold text-plum-dark text-xl leading-tight line-clamp-2 group-hover:underline">
-            {plan.campaign_name}
+          <h2 className="font-extrabold text-plum-dark text-xl leading-tight line-clamp-2">
+            <button
+              type="button"
+              onClick={onOpen}
+              title="Öppna plan"
+              className="text-left hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500"
+            >
+              {plan.campaign_name}
+            </button>
           </h2>
           <div className="flex shrink-0 items-center gap-1.5">
             {!archived && (
@@ -64,24 +67,19 @@ export default function PlanCard({ plan, onOpen, onArchive, onDelete, onDuplicat
         </p>
       </div>
 
-      <div
-        className="px-5 pb-5 flex items-center justify-between gap-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onOpen} aria-label="Öppna plan" title="Öppna plan" className="group">
-          <ArrowSquare />
-        </button>
+      <div className="px-5 pb-5 flex flex-col gap-3">
+        {onReport && (
+          <button
+            type="button"
+            onClick={onReport}
+            disabled={!reportReady || reportBusy}
+            className="w-full h-11 bg-milou-500 hover:bg-milou-600 disabled:opacity-60 text-white font-bold text-sm transition-colors"
+          >
+            {!reportReady ? "Rapport" : reportBusy ? "Skapar…" : reportId ? "Se rapport" : "Skapa rapport"}
+          </button>
+        )}
 
-        <div className="flex items-center gap-3">
-          {onReport && reportReady && (
-            <button
-              onClick={onReport}
-              disabled={reportBusy}
-              className="text-xs font-semibold text-milou-600 hover:text-milou-700 disabled:opacity-50"
-            >
-              {reportBusy ? "Skapar…" : reportId ? "Se rapport" : "Skapa rapport"}
-            </button>
-          )}
+        <div className="flex items-center justify-end gap-3">
           {onDuplicate && (
             <button
               onClick={onDuplicate}
