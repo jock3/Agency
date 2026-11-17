@@ -163,7 +163,18 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               disabled={running}
               className="mt-1 accent-milou-500"
             />
-            <span>Jag godkänner att Milou kontaktar mig om resultatet och hur vi kan hjälpa till.</span>
+            <span>
+              Jag godkänner att Milou kontaktar mig om resultatet och hur vi kan hjälpa till. Läs vår{" "}
+              <a
+                href="https://milou.se/integritetspolicy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white"
+              >
+                integritetspolicy
+              </a>
+              .
+            </span>
           </label>
         </form>
 
