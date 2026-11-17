@@ -1,0 +1,11 @@
+-- Engångsflytt (körd 2026-11-17): befintliga mediaplaner in under kunder och
+-- projekt utifrån deras taggar och kundnummer. Alla fyra blev kampanjer; ingen
+-- gjordes till årsplan. TEst1 (arkiverad, utan kund) ligger kvar under Osorterade.
+--
+--   Region Gotland (G-001) / Vattenkampanj: Vattenkampanj - Region Gotland,
+--                                           Vattenkampanj - Innerstad och Hämttider
+--   PMalmö (PM-001)        / Pmalmö 2026:   Pmalmö 2026
+--   Brovik Bageri (BB-001) / Jul 2026:      Brovik Bageri: Julbak 2026
+--
+-- Taggen "Gotland" byttes mot kundnamnet "Region Gotland". Kördes via SQL med
+-- planernas id:n och finns här bara som anteckning.

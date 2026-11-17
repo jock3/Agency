@@ -9,6 +9,29 @@ export interface MediaPlan {
   planned_budget: number | null;
   status: 'draft' | 'active' | 'approved';
   tags: string[];
+  /** Projektet planen hör till (Mediaplan → kund → projekt). null = osorterad. */
+  project_id?: string | null;
+  /** Årsplan (en per projekt och år) eller kampanj. */
+  kind?: 'year' | 'campaign';
+  plan_year?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MplanClient {
+  id: string;
+  name: string;
+  client_number: string;
+  archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MplanProject {
+  id: string;
+  client_id: string;
+  name: string;
+  archived: boolean;
   created_at: string;
   updated_at: string;
 }

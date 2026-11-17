@@ -5,9 +5,9 @@ const TABS = [
 ];
 
 /**
- * Flikraden för Mediaplan. Mediaplaner ligger på /mediaplan, som också är
- * början på rapportens adress, så den fliken matchas separat.
+ * Flikraden för Mediaplan. Mediaplaner gäller /mediaplan och allt under den
+ * (kund, projekt, osorterade), utom rapporterna.
  */
 export default function MediaplanTabs() {
-  return <SectionTabs tabs={[{ href: "/mediaplan", label: "Mediaplaner", exact: true }, ...TABS]} label="Mediaplan" />;
+  return <SectionTabs tabs={[{ href: "/mediaplan", label: "Mediaplaner", except: ["/mediaplan/rapport"] }, ...TABS]} label="Mediaplan" />;
 }

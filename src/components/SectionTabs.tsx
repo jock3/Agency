@@ -8,6 +8,8 @@ export interface SectionTab {
   label: string;
   /** Aktiv bara på exakt den här sökvägen, för en flik vars adress är början på en annan. */
   exact?: boolean;
+  /** Aktiv på sökvägen och allt under den, utom de här adresserna. */
+  except?: string[];
 }
 
 /** Flikraden under sidhuvudet i en sektion med flera verktyg, till exempel SEO/GEO-audit. */
@@ -18,7 +20,7 @@ export default function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label
     <div className="bg-white border-b border-gray-200 px-4 h-9 flex items-center shrink-0">
       <nav aria-label={label} className="flex items-center gap-1">
         {tabs.map((t) => {
-          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
+          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href) && !(t.except ?? []).some((e) => pathname.startsWith(e));
           return (
             <Link
               key={t.href}
