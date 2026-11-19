@@ -99,7 +99,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center text-white">
+    <div className="audit-public min-h-screen flex flex-col justify-center text-white">
       {demo && (
         <p className="bg-gray-900 text-peach text-xs font-bold text-center px-4 py-2">
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
@@ -130,10 +130,10 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={running}
-              className="w-full bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg outline-none focus:border-gray-900 disabled:bg-gray-100"
+              className="w-full bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg focus:border-gray-900 disabled:bg-gray-100"
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div>
             <label htmlFor="audit-email" className="sr-only">
               E-postadress
             </label>
@@ -145,15 +145,8 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={running}
-              className="flex-1 bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg outline-none focus:border-gray-900 disabled:bg-gray-100"
+              className="w-full bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg focus:border-gray-900 disabled:bg-gray-100"
             />
-            <button
-              type="submit"
-              disabled={running || !url.trim() || !email.trim() || !consent}
-              className="bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
-            >
-              {running ? "Granskar…" : "Granska"}
-            </button>
           </div>
           <label className="flex items-start justify-center gap-2 text-sm text-white/90 cursor-pointer">
             <input
@@ -176,6 +169,13 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               .
             </span>
           </label>
+          <button
+            type="submit"
+            disabled={running || !url.trim() || !email.trim() || !consent}
+            className="w-full bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
+          >
+            {running ? "Granskar…" : "Granska"}
+          </button>
         </form>
 
         {running && (
@@ -203,13 +203,18 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
 }
 
 function Result({ result }: { result: PublicAuditResult }) {
+  const section = useRef<HTMLElement>(null);
+  // Flytta fokus till resultatet när det visas, så att tangentbords- och skärmläsaranvändare hamnar rätt.
+  useEffect(() => {
+    section.current?.focus();
+  }, []);
   const groups = [
     { key: "seo" as const, label: "SEO", hint: "Synlighet i Google", score: result.seoScore },
     { key: "geo" as const, label: "GEO", hint: "Synlighet i AI-sök", score: result.geoScore },
   ];
 
   return (
-    <section className="mt-12" aria-label="Resultat">
+    <section ref={section} tabIndex={-1} className="mt-12 focus:outline-none" aria-label="Resultat">
       <div className="milou-plate bg-gray-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-end gap-6 sm:gap-10">
         <div>
           <p className="text-sm text-gray-400">

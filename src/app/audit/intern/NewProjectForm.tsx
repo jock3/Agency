@@ -40,14 +40,14 @@ export default function NewProjectForm({
   }
 
   const input =
-    "border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:border-milou-500 min-w-0";
+    "border border-gray-300 bg-white px-3 py-2 text-sm focus:border-milou-500 min-w-0";
 
   return (
     <form onSubmit={create} className="bg-white p-4">
       <h2 className="font-bold mb-3">Nytt projekt</h2>
       <div className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Namn, t.ex. Kund AB" className={`${input} flex-1 sm:flex-none sm:w-56`} />
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Domän, t.ex. kund.se" className={`${input} flex-1 sm:flex-none sm:w-56`} />
+        <input aria-label="Projektnamn" value={name} onChange={(e) => setName(e.target.value)} placeholder="Namn, t.ex. Kund AB" className={`${input} flex-1 sm:flex-none sm:w-56`} />
+        <input aria-label="Domän" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Domän, t.ex. kund.se" className={`${input} flex-1 sm:flex-none sm:w-56`} />
         <button
           type="submit"
           disabled={loading || !name.trim() || !url.trim()}
@@ -57,7 +57,7 @@ export default function NewProjectForm({
           Lägg till
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-milou-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-milou-600">{error}</p>}
     </form>
   );
 }

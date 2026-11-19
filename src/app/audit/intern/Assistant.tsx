@@ -29,6 +29,7 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -61,6 +62,8 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
       setError(fallbackError);
     } finally {
       setLoading(false);
+      // Förslagsknapparna försvinner när chatten startar, så fokus flyttas till frågefältet.
+      inputRef.current?.focus();
     }
   }
 
@@ -86,7 +89,7 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
             </div>
           </div>
         ) : (
-          <ul className="px-5 py-4 space-y-4 max-h-[520px] overflow-y-auto">
+          <ul role="log" aria-live="polite" aria-label="Samtal med SEO-assistenten" className="px-5 py-4 space-y-4 max-h-[520px] overflow-y-auto">
             {messages.map((m, i) => (
               <li key={i} className={m.role === "user" ? "flex justify-end" : ""}>
                 <div className={m.role === "user" ? "bg-gray-900 text-white px-4 py-2.5 max-w-[80%]" : "max-w-[80ch]"}>
@@ -114,18 +117,20 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
           className="flex gap-2 px-5 py-4 border-t border-gray-100"
         >
           <input
+            ref={inputRef}
+            aria-label="Fråga till SEO-assistenten"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={!enabled}
             maxLength={2000}
             placeholder={enabled ? "Ställ en fråga om projektet …" : "AI är avstängt (ANTHROPIC_API_KEY saknas)"}
-            className="flex-1 min-w-0 h-10 px-3 border border-gray-200 text-sm focus:outline-none focus:border-milou-500 disabled:bg-gray-50"
+            className="flex-1 min-w-0 h-10 px-3 border border-gray-200 text-sm focus:border-milou-500 disabled:bg-gray-50"
           />
           <button type="submit" disabled={!enabled || loading || !input.trim()} className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 disabled:opacity-50 text-white px-4">
             <Send className="w-4 h-4" /> Skicka
           </button>
         </form>
-        {error && <p className="px-5 pb-4 -mt-2 text-sm text-milou-600">{error}</p>}
+        {error && <p role="alert" className="px-5 pb-4 -mt-2 text-sm text-milou-600">{error}</p>}
       </div>
       <p className="mt-2 text-xs text-gray-500">Svaren skrivs av AI utifrån projektets audits och webbsökning. Läs igenom innan de används. Sökvolymer och ranking finns inte i underlaget.</p>
     </section>

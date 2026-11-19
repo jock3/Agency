@@ -55,8 +55,8 @@ export default function AuditButton({
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
         {loading ? "Granskar …" : label}
       </button>
-      {loading && hint && <p className="mt-2 text-sm text-gray-400">{hint}</p>}
-      {error && <p className="mt-2 text-sm text-milou-300">{error}</p>}
+      {loading && hint && <p role="status" className="mt-2 text-sm text-gray-400">{hint}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-milou-300">{error}</p>}
     </div>
   );
 }

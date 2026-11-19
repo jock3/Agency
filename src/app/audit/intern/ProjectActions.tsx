@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { AUDIT_ERRORS, fallbackError } from "./errors";
@@ -27,6 +27,14 @@ export default function ProjectActions({
   const [domainDraft, setDomainDraft] = useState(domain);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const editBtn = useRef<HTMLButtonElement>(null);
+  const prevMode = useRef<Mode>("idle");
+
+  // Knapparna byts ut när läget ändras. Lämnar man redigera/ta bort går fokus tillbaka till knappen man kom från.
+  useEffect(() => {
+    if (mode === "idle" && prevMode.current !== "idle") editBtn.current?.focus();
+    prevMode.current = mode;
+  }, [mode]);
 
   function reset(next: Mode) {
     setMode(next);
@@ -69,7 +77,7 @@ export default function ProjectActions({
     <div className="mt-2">
       {mode === "idle" && (
         <div className="flex gap-1">
-          <button type="button" onClick={() => reset("edit")} className={`${small} text-gray-500 hover:text-milou-500`}>
+          <button ref={editBtn} type="button" onClick={() => reset("edit")} className={`${small} text-gray-500 hover:text-milou-500`}>
             <Pencil className="w-3 h-3" /> Redigera
           </button>
           <button type="button" onClick={() => reset("delete")} className={`${small} text-gray-500 hover:text-milou-500`}>
@@ -88,16 +96,18 @@ export default function ProjectActions({
         >
           <input
             autoFocus
+            aria-label="Projektnamn"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Namn"
-            className="border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:border-milou-500 w-56"
+            className="border border-gray-300 bg-white px-2 py-1 text-sm focus:border-milou-500 w-56"
           />
           <input
+            aria-label="Domän"
             value={domainDraft}
             onChange={(e) => setDomainDraft(e.target.value)}
             placeholder="Domän"
-            className="border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:border-milou-500 w-56"
+            className="border border-gray-300 bg-white px-2 py-1 text-sm focus:border-milou-500 w-56"
           />
           <button type="submit" disabled={loading || !draft.trim() || !domainDraft.trim()} className={`${small} bg-milou-500 hover:bg-milou-600 text-white`}>
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Spara
@@ -109,18 +119,18 @@ export default function ProjectActions({
       )}
 
       {mode === "delete" && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div role="alertdialog" aria-label="Bekräfta borttagning" className="flex flex-wrap items-center gap-2 text-sm">
           <span>Ta bort projektet och alla dess granskningar?</span>
           <button type="button" onClick={() => send("DELETE")} disabled={loading} className={`${small} bg-milou-500 hover:bg-milou-600 text-white`}>
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Ja, ta bort
           </button>
-          <button type="button" onClick={() => reset("idle")} className={`${small} text-gray-500 hover:text-gray-800`}>
+          <button type="button" autoFocus onClick={() => reset("idle")} className={`${small} text-gray-500 hover:text-gray-800`}>
             Avbryt
           </button>
         </div>
       )}
 
-      {error && <p className="mt-1 text-sm text-milou-600">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-milou-600">{error}</p>}
     </div>
   );
 }

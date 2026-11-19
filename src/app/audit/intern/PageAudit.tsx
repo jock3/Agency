@@ -47,7 +47,7 @@ export default function PageAudit({ projectId, url }: { projectId: string; url?:
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {loading ? "Granskar …" : "Granska om sidan"}
         </button>
-        {error && <p className="mt-2 text-sm text-milou-300">{error}</p>}
+        {error && <p role="alert" className="mt-2 text-sm text-milou-300">{error}</p>}
       </div>
     );
   }
@@ -56,17 +56,18 @@ export default function PageAudit({ projectId, url }: { projectId: string; url?:
     <form onSubmit={run}>
       <div className="flex gap-2">
         <input
+          aria-label="URL eller sökväg till sidan"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Klistra in en URL eller skriv en sökväg, till exempel /om-oss"
-          className="flex-1 min-w-0 h-10 px-3 bg-white border border-gray-200 text-sm focus:outline-none focus:border-milou-500"
+          className="flex-1 min-w-0 h-10 px-3 bg-white border border-gray-200 text-sm focus:border-milou-500"
         />
         <button type="submit" disabled={loading || !value.trim()} className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 disabled:opacity-50 text-white px-4">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           {loading ? "Granskar …" : "Granska sida"}
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-milou-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-milou-600">{error}</p>}
     </form>
   );
 }

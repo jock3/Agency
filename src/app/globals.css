@@ -262,6 +262,19 @@
   background-size: 16px 16px;
 }
 
+/* SEO/GEO-audit: tydlig fokusram för tangentbordsanvändare (publik sida: mörk ram med vit kant, syns på både rött och vitt). */
+@layer components {
+  .audit-a11y :focus-visible {
+    outline: 3px solid #e60330;
+    outline-offset: 2px;
+  }
+  .audit-public :focus-visible {
+    outline: 3px solid #111827;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #fff;
+  }
+}
+
 /* Mediaplan (kund → projekt → kampanjer): fokusram, utkastränder och pulserande prick. */
 @layer components {
   .mp :focus-visible {

@@ -66,12 +66,12 @@ export default function SuggestButton({
   }
 
   return (
-    <div className="mt-3">
+    <div className="mt-3" aria-live="polite">
       <button type="button" onClick={run} disabled={loading} className="inline-flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 bg-gray-100 hover:bg-peach/50 disabled:opacity-60">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-milou-500" />}
         {loading ? "Tar fram förslag …" : results ? "Ge nya förslag" : "Ge förslag"}
       </button>
-      {error && <p className="mt-2 text-sm text-milou-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-milou-600">{error}</p>}
 
       {results && (
         <div className="mt-3 space-y-4">
