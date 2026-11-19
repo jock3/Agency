@@ -367,19 +367,14 @@ export function aggregate(pages: PageResult[]): Check[] {
 
     if (ANY_PAGE.has(first.id)) {
       const best = all.find((x) => x.c.status === "pass") ?? all.find((x) => x.c.status === "warn") ?? all[0];
-      const where = best.c.status === "pass" ? ` (${pathOf(best.page.url)})` : ` Gäller alla ${n} granskade sidor.`;
-      return { ...best.c, detail: best.c.detail + where, fix: first.fix || bad[0]?.c.fix || "" };
+      return { ...best.c, fix: first.fix || bad[0]?.c.fix || "" };
     }
 
     const ratio = all.reduce((s, x) => s + POINTS[x.c.status], 0) / n;
     // Grönt kräver att varje granskad sida klarar kontrollen.
     const status: CheckStatus = bad.length === 0 ? "pass" : ratio >= 0.5 ? "warn" : "fail";
-    const detail =
-      bad.length === 0
-        ? `OK på alla ${n} sidor.`
-        : bad.length === n
-          ? `Gäller alla ${n} sidor. ${bad[0].c.detail}`
-          : `${bad.length} av ${n} sidor. Till exempel ${pathOf(bad[0].page.url)}: ${bad[0].c.detail}`;
+    // Förklaringen är den från första sidan som brister, utan antal eller omfattning.
+    const detail = bad.length === 0 ? first.detail : bad[0].c.detail;
     return { ...first, status, detail, fix: bad[0]?.c.fix ?? "" };
   });
 }
