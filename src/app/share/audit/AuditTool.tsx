@@ -72,10 +72,30 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   const [error, setError] = useState("");
   const [result, setResult] = useState<PublicAuditResult | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLInputElement>(null);
 
   async function run(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim() || !email.trim() || !consent || running) return;
+    if (running) return;
+    // Safari tabbar som standard bara mellan textfält och hoppar över kryssrutor och knappar.
+    // Därför går Enter i fältet att använda hela vägen: saknas något flyttas fokus dit och det sägs vad som ska göras.
+    if (!url.trim()) {
+      setError("Fyll i webbadressen.");
+      urlRef.current?.focus();
+      return;
+    }
+    if (!email.trim()) {
+      setError("Fyll i din e-postadress.");
+      emailRef.current?.focus();
+      return;
+    }
+    if (!consent) {
+      setError("Godkänn lagringen av dina uppgifter: tryck mellanslag för att kryssa i rutan och sedan Enter för att granska.");
+      consentRef.current?.focus();
+      return;
+    }
     setRunning(true);
     setError("");
     setResult(null);
@@ -123,6 +143,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
             </label>
             <input
               id="audit-url"
+              ref={urlRef}
               type="text"
               inputMode="url"
               autoComplete="url"
@@ -139,6 +160,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
             </label>
             <input
               id="audit-email"
+              ref={emailRef}
               type="email"
               autoComplete="email"
               placeholder="din@epost.se"
@@ -150,8 +172,16 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           </div>
           <label className="flex items-start justify-center gap-2 text-sm text-white/90 cursor-pointer">
             <input
+              ref={consentRef}
               type="checkbox"
               checked={consent}
+              onKeyDown={(e) => {
+                // Enter skickar inte formuläret från en kryssruta i alla webbläsare.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
               onChange={(e) => setConsent(e.target.checked)}
               disabled={running}
               className="mt-1 accent-milou-500"
@@ -171,7 +201,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           </label>
           <button
             type="submit"
-            disabled={running || !url.trim() || !email.trim() || !consent}
+            disabled={running}
             className="w-full bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
           >
             {running ? "Granskar…" : "Granska"}
