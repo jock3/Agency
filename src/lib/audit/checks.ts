@@ -168,17 +168,17 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   // SEO
 
   if (!title) {
-    checks.push(check("title", "seo", "Sidtitel", 3, "fail", "Sidan saknar <title>.", "Ge varje sida en unik titel på 30–60 tecken som börjar med det viktigaste sökordet."));
+    checks.push(check("title", "seo", "Sidtitel", 3, "fail", "Sidan saknar titel. Det är texten som visas som rubrik i Google-resultatet och i webbläsarfliken.", "Ge varje sida en unik titel på 30–60 tecken som börjar med det viktigaste sökordet."));
   } else if (title.length < 30 || title.length > 60) {
-    checks.push(check("title", "seo", "Sidtitel", 3, "warn", `Titeln är ${title.length} tecken, inte 30–60: "${title}".`, "Skriv om titlarna till 30–60 tecken så de inte kapas i sökresultatet och ändå säger vad sidan handlar om."));
+    checks.push(check("title", "seo", "Sidtitel", 3, "warn", `Titeln är ${title.length} tecken. Google kapar längre titlar i sökresultatet, och korta säger ofta för lite. Nu: "${title}".`, "Skriv om titlarna till 30–60 tecken så de inte kapas i sökresultatet och ändå säger vad sidan handlar om."));
   } else {
     checks.push(check("title", "seo", "Sidtitel", 3, "pass", `"${title}" (${title.length} tecken).`, ""));
   }
 
   if (!description) {
-    checks.push(check("description", "seo", "Metabeskrivning", 2, "fail", "Ingen metabeskrivning.", "Skriv en metabeskrivning på 120–160 tecken för varje viktig sida, som säljer in klicket från sökresultatet."));
+    checks.push(check("description", "seo", "Metabeskrivning", 2, "fail", "Sidan saknar metabeskrivning. Det är texten under titeln i Google-resultatet. Utan den väljer Google själv vad som visas.", "Skriv en metabeskrivning på 120–160 tecken för varje viktig sida, som säljer in klicket från sökresultatet."));
   } else if (description.length < 120 || description.length > 160) {
-    checks.push(check("description", "seo", "Metabeskrivning", 2, "warn", `Beskrivningen är ${description.length} tecken, inte 120–160.`, "Justera metabeskrivningarna till 120–160 tecken."));
+    checks.push(check("description", "seo", "Metabeskrivning", 2, "warn", `Metabeskrivningen är ${description.length} tecken. Den syns helt i sökresultatet först vid cirka 120–160 tecken.`, "Justera metabeskrivningarna till 120–160 tecken."));
   } else {
     checks.push(check("description", "seo", "Metabeskrivning", 2, "pass", `${description.length} tecken.`, ""));
   }
@@ -186,16 +186,16 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   if (h1s.length === 1) {
     checks.push(check("h1", "seo", "Huvudrubrik (H1)", 2, "pass", `"${h1s[0].slice(0, 80)}"`, ""));
   } else if (h1s.length === 0) {
-    const detail = h1Count ? "H1 finns men innehåller ingen text, till exempel bara en logotyp." : "Sidan har ingen H1.";
+    const detail = h1Count ? "Huvudrubriken (H1) är tom. Taggen finns, men den innehåller ingen text, till exempel bara en logotyp." : "Sidan har ingen huvudrubrik (H1). Det är den stora rubriken som säger vad sidan handlar om.";
     checks.push(check("h1", "seo", "Huvudrubrik (H1)", 2, "fail", detail, "Ge varje sida exakt en H1 som tydligt säger vad sidan erbjuder."));
   } else {
-    checks.push(check("h1", "seo", "Huvudrubrik (H1)", 2, "warn", `Sidan har ${h1s.length} H1-rubriker.`, "Behåll en H1 per sida och gör övriga till H2."));
+    checks.push(check("h1", "seo", "Huvudrubrik (H1)", 2, "warn", `Sidan har ${h1s.length} huvudrubriker (H1). Det ska vara en per sida, annars är det oklart vad sidans huvudämne är.`, "Behåll en H1 per sida och gör övriga till H2."));
   }
 
   checks.push(
     h2Count >= 2
       ? check("structure", "seo", "Rubrikstruktur", 1, "pass", `${h2Count} underrubriker (H2).`, "")
-      : check("structure", "seo", "Rubrikstruktur", 1, "warn", `Bara ${h2Count} underrubriker (H2).`, "Dela upp innehållet med beskrivande H2-rubriker så både läsare och sökmotorer ser strukturen."),
+      : check("structure", "seo", "Rubrikstruktur", 1, "warn", `Bara ${h2Count} underrubriker (H2). Långa texter utan mellanrubriker är svåra att skanna, både för läsare och sökmotorer.`, "Dela upp innehållet med beskrivande H2-rubriker så både läsare och sökmotorer ser strukturen."),
   );
 
   const canonical = $('link[rel="canonical"]').attr("href")?.trim();
@@ -206,9 +206,9 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     // Ogiltig canonical behandlas som saknad.
   }
   if (!canonical || !canonicalHost) {
-    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "warn", "Ingen giltig canonical-länk.", "Lägg till <link rel=\"canonical\"> så sökmotorer vet vilken URL som är originalet."));
+    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "warn", "Sidan saknar canonical-länk, så sökmotorn kan inte se vilken adress som är originalet.", "Lägg till <link rel=\"canonical\"> så sökmotorer vet vilken URL som är originalet."));
   } else if (canonicalHost !== new URL(input.url).hostname.replace(/^www\./, "")) {
-    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "fail", `Canonical pekar på en annan domän: ${canonicalHost}.`, "Låt canonical peka på sidans egen URL — som det ser ut nu försöker sidan lämna över sin synlighet till en annan sajt."));
+    checks.push(check("canonical", "seo", "Kanonisk URL", 1, "fail", `Canonical-länken pekar till en annan sajt (${canonicalHost}). Google tolkar det som att den här sidan inte är originalet, så den riskerar att inte synas.`, "Låt canonical peka på sidans egen URL — som det ser ut nu försöker sidan lämna över sin synlighet till en annan sajt."));
   } else {
     checks.push(check("canonical", "seo", "Kanonisk URL", 1, "pass", "Canonical-länk finns.", ""));
   }
@@ -216,14 +216,14 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     $('meta[name="viewport"]').length > 0
       ? check("mobile", "seo", "Mobilanpassning", 2, "pass", "Viewport är satt.", "")
-      : check("mobile", "seo", "Mobilanpassning", 2, "fail", "Viewport-taggen saknas.", "Lägg till <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> och säkerställ att sidan fungerar i mobilen."),
+      : check("mobile", "seo", "Mobilanpassning", 2, "fail", "Sidan saknar viewport-inställning. Den visas då förminskad på mobil i stället för att anpassa sig till skärmen.", "Lägg till <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> och säkerställ att sidan fungerar i mobilen."),
   );
 
   const lang = $("html").attr("lang");
   checks.push(
     lang
       ? check("lang", "seo", "Språkangivelse", 1, "pass", `lang="${lang}".`, "")
-      : check("lang", "seo", "Språkangivelse", 1, "warn", "html-elementet saknar lang.", "Sätt lang=\"sv\" (eller rätt språk) på <html>."),
+      : check("lang", "seo", "Språkangivelse", 1, "warn", "Språket är inte angivet på sidan (html lang). Sökmotorer och skärmläsare får gissa vilket språk texten är på.", "Sätt lang=\"sv\" (eller rätt språk) på <html>."),
   );
 
   const images = $("img");
@@ -232,14 +232,14 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
     checks.push(check("alt", "seo", "Alt-texter på bilder", 1, "pass", images.length ? `Alla ${images.length} bilder har alt-text.` : "Inga bilder på sidan.", ""));
   } else {
     const share = missingAlt / images.length;
-    checks.push(check("alt", "seo", "Alt-texter på bilder", 1, share > 0.5 ? "fail" : "warn", `${missingAlt} av ${images.length} bilder saknar alt-text.`, "Beskriv bilderna med alt-text — det hjälper både tillgänglighet och bildsök."));
+    checks.push(check("alt", "seo", "Alt-texter på bilder", 1, share > 0.5 ? "fail" : "warn", `${missingAlt} av ${images.length} bilder saknar alt-text. Skärmläsare läser då inget, och bildsökningen har inget att gå på.`, "Beskriv bilderna med alt-text — det hjälper både tillgänglighet och bildsök."));
   }
 
   const unsized = images.filter((_, el) => !($(el).attr("width") && $(el).attr("height"))).length;
   checks.push(
     images.length === 0 || unsized === 0
       ? check("imgsize", "seo", "Bildstorlekar angivna", 1, "pass", images.length ? "Alla bilder har width och height." : "Inga bilder på sidan.", "")
-      : check("imgsize", "seo", "Bildstorlekar angivna", 1, unsized / images.length > 0.5 ? "fail" : "warn", `${unsized} av ${images.length} bilder saknar width och height.`, "Ange width och height på bilderna så sidan inte hoppar när de laddas — det är en del av Googles Core Web Vitals (CLS)."),
+      : check("imgsize", "seo", "Bildstorlekar angivna", 1, unsized / images.length > 0.5 ? "fail" : "warn", `${unsized} av ${images.length} bilder saknar angiven storlek. Sidan hoppar när bilderna laddas in, vilket gör den krånglig att läsa.`, "Ange width och height på bilderna så sidan inte hoppar när de laddas — det är en del av Googles Core Web Vitals (CLS)."),
   );
 
   const host = new URL(input.url).hostname.replace(/^www\./, "");
@@ -247,24 +247,24 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     internalLinks >= 5
       ? check("internal", "seo", "Intern länkning", 1, "pass", `${internalLinks} interna länkar.`, "")
-      : check("internal", "seo", "Intern länkning", 1, internalLinks >= 2 ? "warn" : "fail", `Bara ${internalLinks} interna länkar.`, "Länka till relaterade sidor i texten och i menyn — interna länkar hjälper sökrobotar hitta sidor och fördelar styrka mellan dem."),
+      : check("internal", "seo", "Intern länkning", 1, internalLinks >= 2 ? "warn" : "fail", `Sidan har bara ${internalLinks} interna länkar till andra sidor på sajten. Det gör det svårt för sökrobotar och besökare att hitta vidare.`, "Länka till relaterade sidor i texten och i menyn — interna länkar hjälper sökrobotar hitta sidor och fördelar styrka mellan dem."),
   );
 
   checks.push(
     ["og:title", "og:description", "og:image"].every((p) => $(`meta[property="${p}"]`).attr("content")?.trim())
       ? check("og", "seo", "Delningsbild (Open Graph)", 1, "pass", "og:title, og:description och og:image finns.", "")
-      : check("og", "seo", "Delningsbild (Open Graph)", 1, "warn", "Open Graph-taggar saknas eller är ofullständiga.", "Lägg till og:title, og:description och og:image så länkar ser bra ut när de delas."),
+      : check("og", "seo", "Delningsbild (Open Graph)", 1, "warn", "Delningsförhandsvisningen (Open Graph) saknar titel, beskrivning eller bild. Länkar till sidan visas då utan bild eller text på sociala medier.", "Lägg till og:title, og:description och og:image så länkar ser bra ut när de delas."),
   );
 
   checks.push(
     /noindex/i.test($('meta[name="robots"]').attr("content") ?? "")
-      ? check("indexable", "seo", "Indexerbar", 4, "fail", "Sidan har noindex.", "Ta bort noindex från sidor som ska synas — som det ser ut nu kan de inte visas i sökresultat alls.")
+      ? check("indexable", "seo", "Indexerbar", 4, "fail", "Sidan har noindex, en instruktion som säger åt Google att inte ta med sidan i sökresultaten.", "Ta bort noindex från sidor som ska synas — som det ser ut nu kan de inte visas i sökresultat alls.")
       : check("indexable", "seo", "Indexerbar", 4, "pass", "Sidan får indexeras.", ""),
   );
 
   const speed: CheckStatus = input.ms < 800 ? "pass" : input.ms < 2000 ? "warn" : "fail";
   checks.push(
-    check("speed", "seo", "Svarstid", 2, speed, `HTML-svaret tog ${(input.ms / 1000).toFixed(1)} s.`, speed === "pass" ? "" : "Snabba upp serverns svarstid med cache och CDN — långsamma sidor rankar och konverterar sämre."),
+    check("speed", "seo", "Svarstid", 2, speed, `Servern tog ${(input.ms / 1000).toFixed(1)} s på sig att svara. Sökrobotar och besökare väntar inte så länge.`, speed === "pass" ? "" : "Snabba upp serverns svarstid med cache och CDN — långsamma sidor rankar och konverterar sämre."),
   );
 
   // GEO
@@ -272,7 +272,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     words >= 400
       ? check("content", "geo", "Läsbart innehåll", 3, "pass", `Cirka ${words} ord i HTML:en.`, "")
-      : check("content", "geo", "Läsbart innehåll", 3, words >= 150 ? "warn" : "fail", `Bara cirka ${words} ord syns utan JavaScript.`, "AI-sökmotorer läser sällan JavaScript. Rendera huvudinnehållet på servern och skriv ut mer konkret text om vad ni erbjuder."),
+      : check("content", "geo", "Läsbart innehåll", 3, words >= 150 ? "warn" : "fail", `Bara cirka ${words} ord syns när sidan läses utan JavaScript. AI-sökmotorer läser ofta bara det som finns i HTML:en, så resten är osynligt för dem.`, "AI-sökmotorer läser sällan JavaScript. Rendera huvudinnehållet på servern och skriv ut mer konkret text om vad ni erbjuder."),
   );
 
   // Organisationen behöver bara beskrivas på en sida och kontrolleras därför
@@ -280,7 +280,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     schemaTypes.length > 0
       ? check("schema", "geo", "Strukturerad data", 2, "pass", `Typer: ${schemaTypes.slice(0, 5).join(", ")}.`, "")
-      : check("schema", "geo", "Strukturerad data", 2, "fail", "Ingen JSON-LD.", "Lägg till strukturerad data (schema.org) på varje sida — till exempel WebPage, Article, Service eller Product — så AI-tjänster förstår vad sidan handlar om."),
+      : check("schema", "geo", "Strukturerad data", 2, "fail", "Sidan saknar strukturerad data (JSON-LD). Det är maskinläsbar information om vad sidan är, som AI-tjänster kan använda.", "Lägg till strukturerad data (schema.org) på varje sida — till exempel WebPage, Article, Service eller Product — så AI-tjänster förstår vad sidan handlar om."),
   );
 
   const questions = $("h2, h3").filter((_, el) => $(el).text().trim().endsWith("?")).length;
@@ -288,7 +288,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     questions >= 2 || hasFaqSchema
       ? check("questions", "geo", "Svar på frågor", 2, "pass", hasFaqSchema ? "FAQ-schema finns." : `${questions} rubriker är formulerade som frågor.`, "")
-      : check("questions", "geo", "Svar på frågor", 2, "warn", "Innehållet är inte strukturerat kring frågor.", "Formulera rubriker som de frågor kunder faktiskt ställer och svara direkt under — det är så AI-svar plockar citat."),
+      : check("questions", "geo", "Svar på frågor", 2, "warn", "Rubrikerna är inte formulerade som frågor, och svaren står inte direkt under dem. AI-svar brukar hämta citat från sådana stycken.", "Formulera rubriker som de frågor kunder faktiskt ställer och svara direkt under — det är så AI-svar plockar citat."),
   );
 
   const hasContact =
@@ -298,7 +298,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     hasContact
       ? check("entity", "geo", "Tydlig avsändare", 2, "pass", "Kontaktuppgifter syns.", "")
-      : check("entity", "geo", "Tydlig avsändare", 2, "warn", "Inga kontaktuppgifter hittades.", "Visa vem som står bakom sajten — namn, adress, telefon och e-post — så AI-tjänster kan knyta innehållet till en verklig verksamhet."),
+      : check("entity", "geo", "Tydlig avsändare", 2, "warn", "Det går inte att se vem som står bakom sajten. Inga kontaktuppgifter (adress, telefon, e-post) hittades på sidan.", "Visa vem som står bakom sajten — namn, adress, telefon och e-post — så AI-tjänster kan knyta innehållet till en verklig verksamhet."),
   );
 
   const freshness =
@@ -307,7 +307,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     freshness
       ? check("freshness", "geo", "Datum och aktualitet", 1, "pass", "Publicerings- eller uppdateringsdatum finns.", "")
-      : check("freshness", "geo", "Datum och aktualitet", 1, "warn", "Inget datum.", "Märk upp när innehållet senast uppdaterades — AI-tjänster föredrar färsk och daterad information."),
+      : check("freshness", "geo", "Datum och aktualitet", 1, "warn", "Sidan visar inget publicerings- eller uppdateringsdatum, så det går inte att se hur färskt innehållet är.", "Märk upp när innehållet senast uppdaterades — AI-tjänster föredrar färsk och daterad information."),
   );
 
   const hasAuthor =
@@ -317,13 +317,13 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     hasAuthor
       ? check("author", "geo", "Avsändare med namn", 1, "pass", "Författare eller person anges.", "")
-      : check("author", "geo", "Avsändare med namn", 1, "warn", "Ingen författare eller namngiven person.", "Visa vem som skrivit eller står bakom innehållet, gärna med Person-schema — AI-tjänster väger expertis och trovärdighet (E-E-A-T)."),
+      : check("author", "geo", "Avsändare med namn", 1, "warn", "Det framgår inte vem som skrivit innehållet. Ingen författare eller namngiven person hittades på sidan.", "Visa vem som skrivit eller står bakom innehållet, gärna med Person-schema — AI-tjänster väger expertis och trovärdighet (E-E-A-T)."),
   );
 
   checks.push(
     $("ul li, ol li").length >= 5 || $("table").length > 0
       ? check("lists", "geo", "Lätt att citera", 1, "pass", "Listor eller tabeller finns.", "")
-      : check("lists", "geo", "Lätt att citera", 1, "warn", "Få listor och inga tabeller.", "Bryt ut fakta, priser och steg i listor och tabeller — korta, fristående stycken citeras oftare."),
+      : check("lists", "geo", "Lätt att citera", 1, "warn", "Sidan har få listor och inga tabeller. Fakta och steg ligger i löptext, som är svårare att citera.", "Bryt ut fakta, priser och steg i listor och tabeller — korta, fristående stycken citeras oftare."),
   );
 
   return {
@@ -403,19 +403,19 @@ export function siteChecks(input: {
   checks.push(
     url.protocol === "https:"
       ? check("https", "seo", "HTTPS", 2, "pass", "Sajten levereras över HTTPS.", "")
-      : check("https", "seo", "HTTPS", 2, "fail", "Sajten levereras utan kryptering.", "Flytta sajten till HTTPS och omdirigera all http-trafik dit."),
+      : check("https", "seo", "HTTPS", 2, "fail", "Sajten laddas utan kryptering (http). Webbläsare varnar för det, och Google prioriterar inte sidan.", "Flytta sajten till HTTPS och omdirigera all http-trafik dit."),
   );
 
   checks.push(
     blocked.has("*")
-      ? check("crawlable", "seo", "Sökrobotar släpps in", 4, "fail", "robots.txt spärrar alla sökrobotar.", "Ta bort spärren i robots.txt — som det ser ut nu kan sajten inte visas i sökresultat alls.")
+      ? check("crawlable", "seo", "Sökrobotar släpps in", 4, "fail", "robots.txt spärrar alla sökrobotar. Sajten kan därför inte synas i sökresultat alls.", "Ta bort spärren i robots.txt — som det ser ut nu kan sajten inte visas i sökresultat alls.")
       : check("crawlable", "seo", "Sökrobotar släpps in", 4, "pass", "robots.txt spärrar inte sajten.", ""),
   );
 
   checks.push(
     input.hasSitemap
       ? check("sitemap", "seo", "Sitemap", 1, "pass", "Sitemap hittades.", "")
-      : check("sitemap", "seo", "Sitemap", 1, "warn", "Ingen sitemap hittades.", "Publicera en sitemap.xml och länka den från robots.txt."),
+      : check("sitemap", "seo", "Sitemap", 1, "warn", "Ingen sitemap hittades. Det är en lista över sajtens sidor som hjälper Google hitta allt.", "Publicera en sitemap.xml och länka den från robots.txt."),
   );
 
   if (input.attempted > 0) {
@@ -428,7 +428,7 @@ export function siteChecks(input: {
             "Trasiga länkar",
             2,
             "fail",
-            `${input.broken.length} interna länkar leder till fel: ${input.broken.slice(0, 3).map((b) => `${pathOf(b.url)} (${b.status})`).join(", ")}.`,
+            `${input.broken.length} interna länkar leder till sidor som inte finns eller ger fel: ${input.broken.slice(0, 3).map((b) => `${pathOf(b.url)} (${b.status})`).join(", ")}.`,
             "Laga eller ta bort länkar till sidor som inte finns — de slösar sökrobotarnas tid och ger besökare en återvändsgränd.",
           ),
     );
@@ -448,7 +448,7 @@ export function siteChecks(input: {
             "Unika titlar",
             2,
             dupes.some(([, c]) => c >= titled.length / 2) ? "fail" : "warn",
-            `${dupes.reduce((s, [, c]) => s + c, 0)} sidor delar titel, till exempel "${dupes[0][0]}".`,
+            `${dupes.reduce((s, [, c]) => s + c, 0)} sidor har samma titel, till exempel "${dupes[0][0]}". Då vet Google inte vilken sida som ska visas för vilken sökning.`,
             "Ge varje sida en egen titel som beskriver just den sidan — annars vet sökmotorer inte vilken sida som ska visas för vad.",
           ),
     );
@@ -468,7 +468,7 @@ export function siteChecks(input: {
             "Unika metabeskrivningar",
             1,
             dupes.some(([, c]) => c >= described.length / 2) ? "fail" : "warn",
-            `${dupes.reduce((s, [, c]) => s + c, 0)} sidor delar metabeskrivning.`,
+            `${dupes.reduce((s, [, c]) => s + c, 0)} sidor har samma metabeskrivning. Sökresultaten ser då likadana ut och får lägre klickfrekvens.`,
             "Skriv en egen metabeskrivning per sida — samma text överallt ger sökresultat som ser likadana ut och lägre klickfrekvens.",
           ),
     );
@@ -481,7 +481,7 @@ export function siteChecks(input: {
     checks.push(
       blockedBots.length === 0
         ? check("aibots", "geo", "AI-robotar släpps in", 3, "pass", "robots.txt spärrar inga kända AI-robotar.", "")
-        : check("aibots", "geo", "AI-robotar släpps in", 3, "fail", `Spärrade: ${blockedBots.join(", ")}.`, "Släpp in AI-robotarna i robots.txt om ni vill synas i ChatGPT, Claude, Perplexity och Googles AI-svar."),
+        : check("aibots", "geo", "AI-robotar släpps in", 3, "fail", `robots.txt stoppar dessa AI-robotar från att läsa sajten: ${blockedBots.join(", ")}. De kan då inte använda innehållet i sina svar.`, "Släpp in AI-robotarna i robots.txt om ni vill synas i ChatGPT, Claude, Perplexity och Googles AI-svar."),
     );
   } else {
     checks.push(check("aibots", "geo", "AI-robotar släpps in", 3, "pass", "Ingen robots.txt, inga spärrar.", ""));
@@ -491,19 +491,19 @@ export function siteChecks(input: {
   checks.push(
     org
       ? check("org", "geo", "Organisation beskriven", 2, "pass", `Organisationsschema finns (${pathOf(org.url)}).`, "")
-      : check("org", "geo", "Organisation beskriven", 2, "fail", "Inget Organization- eller LocalBusiness-schema på de granskade sidorna.", "Beskriv företaget med Organization- eller LocalBusiness-schema: namn, logotyp, adress, kontaktuppgifter och sameAs-länkar till sociala profiler."),
+      : check("org", "geo", "Organisation beskriven", 2, "fail", "Företaget beskrivs inte i strukturerad form (Organization- eller LocalBusiness-schema). AI-tjänster får då gissa vem som står bakom sajten.", "Beskriv företaget med Organization- eller LocalBusiness-schema: namn, logotyp, adress, kontaktuppgifter och sameAs-länkar till sociala profiler."),
   );
 
   checks.push(
     input.pages.some((p) => p.hasSameAs)
       ? check("sameas", "geo", "Sociala profiler kopplade", 1, "pass", "sameAs-länkar finns i schemat.", "")
-      : check("sameas", "geo", "Sociala profiler kopplade", 1, "warn", "Inga sameAs-länkar i schemat.", "Lägg till sameAs i Organization-schemat med länkar till LinkedIn, Facebook, Instagram och andra profiler, så AI-tjänster kan koppla ihop varumärket."),
+      : check("sameas", "geo", "Sociala profiler kopplade", 1, "warn", "Företagsinformationen är inte kopplad till era sociala profiler, så AI-tjänster kan inte koppla ihop den med varumärket.", "Lägg till sameAs i Organization-schemat med länkar till LinkedIn, Facebook, Instagram och andra profiler, så AI-tjänster kan koppla ihop varumärket."),
   );
 
   checks.push(
     input.hasLlmsTxt
       ? check("llms", "geo", "llms.txt", 1, "pass", "/llms.txt finns.", "")
-      : check("llms", "geo", "llms.txt", 1, "warn", "/llms.txt saknas.", "Publicera en /llms.txt med en kort sammanfattning av verksamheten och länkar till de viktigaste sidorna."),
+      : check("llms", "geo", "llms.txt", 1, "warn", "Sajten har ingen /llms.txt, alltså en kort sammanfattning för AI-tjänster om vad företaget gör och var det viktigaste finns.", "Publicera en /llms.txt med en kort sammanfattning av verksamheten och länkar till de viktigaste sidorna."),
   );
 
   return checks;
