@@ -21,6 +21,11 @@ const ORG_TYPES = /Organization|LocalBusiness|Corporation|Store|Restaurant|Profe
 
 const AI_BOTS = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "PerplexityBot", "Google-Extended"];
 
+/** Böjer ord efter antal: plural(1, "bild", "bilder") ger "bild". */
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+/** Svenskt decimaltecken: 2,5 i stället för 2.5. */
+const sv = (n: number) => n.toFixed(1).replace(".", ",");
+
 function check(
   id: string,
   group: CheckGroup,
@@ -184,7 +189,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   }
 
   if (h1s.length === 1) {
-    checks.push(check("h1", "seo", "Huvudrubrik", 2, "pass", `Huvudrubriken säger vad sidan handlar om: "${h1s[0].slice(0, 80)}"`, ""));
+    checks.push(check("h1", "seo", "Huvudrubrik", 2, "pass", `Sidan har en huvudrubrik: "${h1s[0].slice(0, 80)}"`, ""));
   } else if (h1s.length === 0) {
     const detail = h1Count ? "Huvudrubriken är tom. Platsen för den finns, men ingen text står där, till exempel bara en logotyp." : "Huvudrubrik saknas. Varje sida bör ha en stor rubrik som tydligt säger vad sidan handlar om, för både besökare och Google.";
     checks.push(check("h1", "seo", "Huvudrubrik", 2, "fail", detail, "Ge varje sida exakt en H1 som tydligt säger vad sidan erbjuder."));
@@ -195,7 +200,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     h2Count >= 2
       ? check("structure", "seo", "Rubrikstruktur", 1, "pass", `Texten är uppdelad med ${h2Count} underrubriker, vilket gör den lätt att skumma.`, "")
-      : check("structure", "seo", "Rubrikstruktur", 1, "warn", `Bara ${h2Count} underrubriker. Delas texten upp med fler rubriker blir den lättare att skumma, för både besökare och Google.`, "Dela upp innehållet med beskrivande H2-rubriker så både läsare och sökmotorer ser strukturen."),
+      : check("structure", "seo", "Rubrikstruktur", 1, "warn", `${h2Count === 0 ? "Texten har inga underrubriker" : "Texten har bara en underrubrik"}. Delas texten upp med fler rubriker blir den lättare att skumma, för både besökare och Google.`, "Dela upp innehållet med beskrivande H2-rubriker så både läsare och sökmotorer ser strukturen."),
   );
 
   const canonical = $('link[rel="canonical"]').attr("href")?.trim();
@@ -229,17 +234,17 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   const images = $("img");
   const missingAlt = images.filter((_, el) => !$(el).attr("alt")?.trim()).length;
   if (images.length === 0 || missingAlt === 0) {
-    checks.push(check("alt", "seo", "Bildbeskrivningar", 1, "pass", images.length ? `Alla ${images.length} bilder har en beskrivning.` : "Inga bilder på sidan.", ""));
+    checks.push(check("alt", "seo", "Bildbeskrivningar", 1, "pass", images.length ? images.length === 1 ? "Bilden har en beskrivning." : `Alla ${images.length} bilder har en beskrivning.` : "Inga bilder på sidan.", ""));
   } else {
     const share = missingAlt / images.length;
-    checks.push(check("alt", "seo", "Bildbeskrivningar", 1, share > 0.5 ? "fail" : "warn", `${missingAlt} av ${images.length} bilder saknar beskrivning. Beskrivningen läses upp för personer som inte ser bilden och hjälper Google förstå vad bilden visar.`, "Beskriv bilderna med alt-text — det hjälper både tillgänglighet och bildsök."));
+    checks.push(check("alt", "seo", "Bildbeskrivningar", 1, share > 0.5 ? "fail" : "warn", `${images.length === 1 ? "Bilden saknar beskrivning" : `${missingAlt} av ${images.length} bilder saknar beskrivning`}. Beskrivningen läses upp för personer som inte ser bilden och hjälper Google förstå vad bilden visar.`, "Beskriv bilderna med alt-text — det hjälper både tillgänglighet och bildsök."));
   }
 
   const unsized = images.filter((_, el) => !($(el).attr("width") && $(el).attr("height"))).length;
   checks.push(
     images.length === 0 || unsized === 0
-      ? check("imgsize", "seo", "Bildstorlekar", 1, "pass", images.length ? "Alla bilder har angiven storlek." : "Inga bilder på sidan.", "")
-      : check("imgsize", "seo", "Bildstorlekar", 1, unsized / images.length > 0.5 ? "fail" : "warn", `${unsized} av ${images.length} bilder har ingen angiven storlek. Då hoppar innehållet omkring medan sidan laddas, vilket är irriterande och ger sämre betyg av Google.`, "Ange width och height på bilderna så sidan inte hoppar när de laddas — det är en del av Googles Core Web Vitals (CLS)."),
+      ? check("imgsize", "seo", "Bildstorlekar", 1, "pass", images.length ? images.length === 1 ? "Bilden har angiven storlek." : "Alla bilder har angiven storlek." : "Inga bilder på sidan.", "")
+      : check("imgsize", "seo", "Bildstorlekar", 1, unsized / images.length > 0.5 ? "fail" : "warn", `${images.length === 1 ? "Bilden har ingen angiven storlek" : `${unsized} av ${images.length} bilder har ingen angiven storlek`}. Då hoppar innehållet omkring medan sidan laddas, vilket är irriterande och ger sidan sämre betyg av Google.`, "Ange width och height på bilderna så sidan inte hoppar när de laddas — det är en del av Googles Core Web Vitals (CLS)."),
   );
 
   const host = new URL(input.url).hostname.replace(/^www\./, "");
@@ -247,7 +252,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
   checks.push(
     internalLinks >= 5
       ? check("internal", "seo", "Länkar mellan sidor", 1, "pass", `Sidan länkar vidare till andra sidor på sajten (${internalLinks} länkar).`, "")
-      : check("internal", "seo", "Länkar mellan sidor", 1, internalLinks >= 2 ? "warn" : "fail", `Det finns bara ${internalLinks} länkar till andra sidor på sajten. Fler länkar gör det lättare för besökare och Google att hitta resten av sajten.`, "Länka till relaterade sidor i texten och i menyn — interna länkar hjälper sökrobotar hitta sidor och fördelar styrka mellan dem."),
+      : check("internal", "seo", "Länkar mellan sidor", 1, internalLinks >= 2 ? "warn" : "fail", `${internalLinks === 0 ? "Det finns inga länkar" : "Det finns bara en länk"} till andra sidor på sajten. Fler länkar gör det lättare för besökare och Google att hitta resten av sajten.`, "Länka till relaterade sidor i texten och i menyn — interna länkar hjälper sökrobotar hitta sidor och fördelar styrka mellan dem."),
   );
 
   checks.push(
@@ -264,7 +269,7 @@ export function analyzePage(input: { url: string; html: string; ms: number; stat
 
   const speed: CheckStatus = input.ms < 800 ? "pass" : input.ms < 2000 ? "warn" : "fail";
   checks.push(
-    check("speed", "seo", "Laddningstid", 2, speed, speed === "pass" ? `Sidan svarar snabbt (${(input.ms / 1000).toFixed(1)} sekunder).` : `Sidan behöver ${(input.ms / 1000).toFixed(1)} sekunder för att svara. Det är långsamt, och både Google och besökare tappar tålamodet.`, speed === "pass" ? "" : "Snabba upp serverns svarstid med cache och CDN — långsamma sidor rankar och konverterar sämre."),
+    check("speed", "seo", "Laddningstid", 2, speed, speed === "pass" ? `Sidan svarar snabbt (${sv(input.ms / 1000)} sekunder).` : `Sidan behöver ${sv(input.ms / 1000)} sekunder för att svara. Det är långsamt, och både Google och besökare tappar tålamodet.`, speed === "pass" ? "" : "Snabba upp serverns svarstid med cache och CDN — långsamma sidor rankar och konverterar sämre."),
   );
 
   // GEO
@@ -423,7 +428,7 @@ export function siteChecks(input: {
             "Trasiga länkar",
             2,
             "fail",
-            `${input.broken.length} länkar leder till sidor som inte finns eller ger fel: ${input.broken.slice(0, 3).map((b) => `${pathOf(b.url)} (${b.status})`).join(", ")}. Besökaren hamnar i en återvändsgränd.`,
+            `${input.broken.length} ${plural(input.broken.length, "länk leder till en sida som inte finns eller ger fel", "länkar leder till sidor som inte finns eller ger fel")}: ${input.broken.slice(0, 3).map((b) => `${pathOf(b.url)} (${b.status})`).join(", ")}. Besökaren hamnar i en återvändsgränd.`,
             "Laga eller ta bort länkar till sidor som inte finns — de slösar sökrobotarnas tid och ger besökare en återvändsgränd.",
           ),
     );
@@ -476,7 +481,7 @@ export function siteChecks(input: {
     checks.push(
       blockedBots.length === 0
         ? check("aibots", "geo", "AI-robotar släpps in", 3, "pass", "AI-tjänster som ChatGPT och Claude får läsa sajten.", "")
-        : check("aibots", "geo", "AI-robotar släpps in", 3, "fail", `Sajten stoppar dessa AI-tjänster från att läsa den: ${blockedBots.join(", ")}. Då kan de inte använda sajten när de svarar på frågor.`, "Släpp in AI-robotarna i robots.txt om ni vill synas i ChatGPT, Claude, Perplexity och Googles AI-svar."),
+        : check("aibots", "geo", "AI-robotar släpps in", 3, "fail", `Sajten stoppar ${plural(blockedBots.length, "den här AI-tjänsten", "dessa AI-tjänster")} från att läsa den: ${blockedBots.join(", ")}. Då kan ${plural(blockedBots.length, "den", "de")} inte använda sajten när ${plural(blockedBots.length, "den", "de")} svarar på frågor.`, "Släpp in AI-robotarna i robots.txt om ni vill synas i ChatGPT, Claude, Perplexity och Googles AI-svar."),
     );
   } else {
     checks.push(check("aibots", "geo", "AI-robotar släpps in", 3, "pass", "Inget stoppar AI-tjänsterna från att läsa sajten.", ""));

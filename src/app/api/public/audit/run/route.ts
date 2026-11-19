@@ -15,7 +15,7 @@ const RUNS_PER_HOUR = 10;
  *  skonsamt mot sajten som granskas. */
 const CACHE_MS = 24 * HOUR;
 /** Granskningar lagrade före det här klockslaget har gamla förklaringstexter och återanvänds inte. */
-const CACHE_NOT_BEFORE = new Date("2026-11-19T15:48:00Z").getTime();
+const CACHE_NOT_BEFORE = new Date("2026-11-19T15:50:00Z").getTime();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
