@@ -74,7 +74,8 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const urlRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
-  const consentRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function run(e: React.FormEvent) {
     e.preventDefault();
@@ -136,7 +137,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
           synlighet i ChatGPT, Claude, Perplexity och Googles AI-svar.
         </p>
 
-        <form onSubmit={run} className="mt-8 space-y-3">
+        <form ref={formRef} onSubmit={run} className="mt-8 space-y-3">
           <div>
             <label htmlFor="audit-url" className="sr-only">
               Webbadress
@@ -170,23 +171,40 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               className="w-full bg-white text-gray-900 border-2 border-white px-4 py-3 text-lg focus:border-gray-900 disabled:bg-gray-100"
             />
           </div>
-          <label className="flex items-start justify-center gap-2 text-sm text-white/90 cursor-pointer">
-            <input
+          {/*
+            Kryssrutan och knappen är div-element med role och tabIndex, inte <input>/<button>.
+            Safari tabbar som standard inte till riktiga formulärkontroller (bara textfält), men väl till element med tabindex.
+          */}
+          <div className="flex items-start justify-center gap-2 text-sm text-white/90">
+            <div
               ref={consentRef}
-              type="checkbox"
-              checked={consent}
+              role="checkbox"
+              aria-checked={consent}
+              aria-labelledby="audit-consent-text"
+              tabIndex={running ? -1 : 0}
+              onClick={() => !running && setConsent((c) => !c)}
               onKeyDown={(e) => {
-                // Enter skickar inte formuläret från en kryssruta i alla webbläsare.
-                if (e.key === "Enter") {
+                if (e.key === " ") {
                   e.preventDefault();
-                  e.currentTarget.form?.requestSubmit();
+                  if (!running) setConsent((c) => !c);
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  formRef.current?.requestSubmit();
                 }
               }}
-              onChange={(e) => setConsent(e.target.checked)}
-              disabled={running}
-              className="mt-1 accent-milou-500"
-            />
-            <span>
+              className={`mt-0.5 w-5 h-5 shrink-0 border-2 flex items-center justify-center cursor-pointer ${
+                consent ? "bg-milou-500 border-milou-500 text-white" : "bg-transparent border-white"
+              }`}
+            >
+              {consent && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
+            </div>
+            <span
+              id="audit-consent-text"
+              onClick={(e) => {
+                if (!running && !(e.target as HTMLElement).closest("a")) setConsent((c) => !c);
+              }}
+              className="cursor-pointer"
+            >
               Jag godkänner att Milou lagrar mina uppgifter och kontaktar mig om resultatet, enligt Milous{" "}
               <a
                 href="https://milou.se/intergritetspolicy/"
@@ -198,14 +216,26 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
               </a>
               .
             </span>
-          </label>
-          <button
-            type="submit"
-            disabled={running}
-            className="w-full bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg disabled:opacity-50 transition-colors"
+          </div>
+          {/* Riktig skickaknapp, dold: behövs för att Enter i textfälten ska skicka formuläret. */}
+          <button type="submit" tabIndex={-1} aria-hidden="true" disabled={running} className="sr-only">
+            Granska
+          </button>
+          <div
+            role="button"
+            tabIndex={running ? -1 : 0}
+            aria-disabled={running}
+            onClick={() => formRef.current?.requestSubmit()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                formRef.current?.requestSubmit();
+              }
+            }}
+            className={`w-full bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg text-center cursor-pointer transition-colors ${running ? "opacity-50" : ""}`}
           >
             {running ? "Granskar…" : "Granska"}
-          </button>
+          </div>
         </form>
 
         {running && (
