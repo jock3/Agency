@@ -31,15 +31,22 @@ const STEPS = [
 
 /** Talar om sin höjd för förälderfönstret, så en iframe på milou.se kan växa
  *  med innehållet i stället för att få en egen rullist. */
-function useReportHeight() {
+function useReportHeight(root: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
-    if (window.parent === window) return;
-    const post = () => window.parent.postMessage({ type: "milou-audit-height", height: document.documentElement.scrollHeight }, "*");
+    const el = root.current;
+    if (window.parent === window || !el) return;
+    // Mät innehållet, inte dokumentet. Roten har min-h-screen, alltså iframens höjd, så dokumentets
+    // höjd krymper aldrig när innehållet blir mindre (t.ex. när bristerna döljs).
+    const children = Array.from(el.children);
+    const post = () => {
+      const height = Math.ceil(children.reduce((h, c) => h + c.getBoundingClientRect().height, 0));
+      window.parent.postMessage({ type: "milou-audit-height", height }, "*");
+    };
     const observer = new ResizeObserver(post);
-    observer.observe(document.body);
+    children.forEach((c) => observer.observe(c));
     post();
     return () => observer.disconnect();
-  }, []);
+  }, [root]);
 }
 
 /** Gradienten målas på hela dokumentet, så att ytan under verktyget i en iframe
@@ -62,7 +69,8 @@ function usePaintPage() {
 }
 
 export default function AuditTool({ demo = false }: { demo?: boolean }) {
-  useReportHeight();
+  const rootRef = useRef<HTMLDivElement>(null);
+  useReportHeight(rootRef);
   usePaintPage();
   const [url, setUrl] = useState("");
   const [email, setEmail] = useState("");
@@ -120,7 +128,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className="audit-public min-h-screen flex flex-col justify-center text-white">
+    <div ref={rootRef} className="audit-public min-h-screen flex flex-col justify-center text-white">
       {demo && (
         <p className="bg-gray-900 text-peach text-xs font-bold text-center px-4 py-2">
           Demoläge — granskningen är skarp, men inga e-postadresser sparas.
