@@ -53,7 +53,7 @@ export default function CheckGroups({
                   )}
                   <div className="min-w-0">
                     <p className="font-bold">{c.label}</p>
-                    <p className="text-gray-500 break-words">{c.detail}</p>
+                    <p className="text-gray-600 break-words">{c.detail}</p>
                   </div>
                 </li>
               ))}

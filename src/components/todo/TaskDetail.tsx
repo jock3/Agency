@@ -108,12 +108,12 @@ export default function TaskDetail({
       >
         <header className="flex items-center gap-2 border-b border-gray-100 px-5 py-4">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: list.color }} />
-          <span className="flex-1 truncate text-sm font-medium text-gray-500">{list.name}</span>
+          <span className="flex-1 truncate text-sm font-medium text-gray-600">{list.name}</span>
           <button
             type="button"
             onClick={close}
             aria-label="Stäng"
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={18} />
           </button>
@@ -217,7 +217,7 @@ export default function TaskDetail({
                   </button>
                   <span
                     className={`flex-1 text-sm ${
-                      sub.status === "done" ? "text-gray-400 line-through" : "text-gray-700"
+                      sub.status === "done" ? "text-gray-600 line-through" : "text-gray-700"
                     }`}
                   >
                     {sub.title}
@@ -259,7 +259,7 @@ export default function TaskDetail({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
                       <strong className="text-gray-800">{c.author}</strong>
-                      <span className="text-gray-400">{timeAgo(c.at)}</span>
+                      <span className="text-gray-600">{timeAgo(c.at)}</span>
                       <button
                         type="button"
                         onClick={() => onDeleteComment(task.id, c.id)}
@@ -274,7 +274,7 @@ export default function TaskDetail({
                 </div>
               ))}
               {comments.length === 0 && (
-                <p className="text-sm text-gray-400">Inga kommentarer än.</p>
+                <p className="text-sm text-gray-600">Inga kommentarer än.</p>
               )}
             </div>
 
@@ -306,7 +306,7 @@ export default function TaskDetail({
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 size={13} /> Ta bort objekt
             </button>
@@ -328,7 +328,7 @@ function Prop({
 }) {
   return (
     <div className={wide ? "col-span-2" : ""}>
-      <label className="mb-1 block text-xs font-bold text-gray-500">
+      <label className="mb-1 block text-xs font-bold text-gray-600">
         {label}
       </label>
       <div className="relative flex items-center">{children}</div>
@@ -353,7 +353,7 @@ function Section({
         {icon}
         {title}
         {count && (
-          <span className="bg-gray-100 px-1.5 text-[11px] font-medium text-gray-500">
+          <span className="bg-gray-100 px-1.5 text-[11px] font-medium text-gray-700">
             {count}
           </span>
         )}

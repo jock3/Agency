@@ -89,7 +89,7 @@ export default function GroupHeader({
         </button>
       )}
 
-      <span className="text-xs text-gray-400">
+      <span className="text-xs text-gray-600">
         {tasks.length} objekt{done > 0 ? `, ${done} klara` : ""}
       </span>
 
@@ -115,7 +115,7 @@ export default function GroupHeader({
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
         aria-label="Gruppmeny"
-        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+        className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-200 hover:text-gray-700"
       >
         <MoreHorizontal size={16} />
       </button>

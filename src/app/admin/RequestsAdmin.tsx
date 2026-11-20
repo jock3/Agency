@@ -35,7 +35,7 @@ function RequestRow({ r, lists, reload }: { r: ToolRequest; lists: ListOption[];
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="font-bold">{r.title}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-600 mt-0.5">
             {REQUEST_KINDS[r.kind]}
             {r.tool ? `: ${TOOL_NAMES[r.tool]}` : ""} · {r.author} · {date(r.created_at)} · {r.votes} {r.votes === 1 ? "röst" : "röster"}
           </p>
@@ -55,7 +55,7 @@ function RequestRow({ r, lists, reload }: { r: ToolRequest; lists: ListOption[];
       </div>
 
       <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{r.body}</p>
-      {r.why && <p className="mt-1 text-sm text-gray-500 whitespace-pre-wrap">Varför: {r.why}</p>}
+      {r.why && <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">Varför: {r.why}</p>}
 
       <div className="mt-3">
         <label htmlFor={`rp-${r.id}`} className="block text-sm text-gray-600 mb-1">
@@ -75,7 +75,7 @@ function RequestRow({ r, lists, reload }: { r: ToolRequest; lists: ListOption[];
         </button>
 
         {r.task_id ? (
-          <span className="text-sm text-gray-500">Finns som uppgift på tavlan</span>
+          <span className="text-sm text-gray-600">Finns som uppgift på tavlan</span>
         ) : lists.length > 0 ? (
           <>
             <label htmlFor={`ls-${r.id}`} className="sr-only">
@@ -106,7 +106,7 @@ function RequestRow({ r, lists, reload }: { r: ToolRequest; lists: ListOption[];
           onClick={() => {
             if (confirm(`Ta bort förslaget "${r.title}"? Det går inte att ångra.`)) call(`/api/forslag/${r.id}`, { method: "DELETE" }, "Kunde inte ta bort.");
           }}
-          className="ml-auto flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 px-2 py-1.5 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500"
+          className="ml-auto flex items-center gap-1.5 text-sm text-gray-600 hover:text-red-600 px-2 py-1.5 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500"
         >
           <Trash2 className="w-4 h-4" aria-hidden />
           Ta bort
@@ -168,8 +168,8 @@ export default function RequestsAdmin() {
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!items && !error && <p className="text-sm text-gray-500">Hämtar…</p>}
-      {items && shown.length === 0 && <p className="text-sm text-gray-500">Inga förslag med den statusen.</p>}
+      {!items && !error && <p className="text-sm text-gray-600">Hämtar…</p>}
+      {items && shown.length === 0 && <p className="text-sm text-gray-600">Inga förslag med den statusen.</p>}
       <ul className="space-y-3">
         {shown.map((r) => (
           <RequestRow key={r.id} r={r} lists={lists} reload={load} />

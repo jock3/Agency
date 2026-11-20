@@ -77,7 +77,7 @@ export default async function KundPage({ params }: { params: Promise<{ slug: str
         <div className="text-center">
           <div className="text-5xl mb-4">🔒</div>
           <h1 className="text-xl font-semibold text-gray-700">Länken är inte giltig</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-600 text-sm mt-1">
             Den kan ha gått ut eller så är projektet borttaget. Hör av dig till din kontakt på Milou.
           </p>
         </div>

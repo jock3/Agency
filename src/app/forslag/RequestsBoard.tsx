@@ -135,7 +135,7 @@ export default function RequestsBoard() {
 
         <div>
           <label htmlFor="req-why" className="block text-sm text-gray-600 mb-1">
-            Varför, och vad löser det? <span className="text-gray-400">(valfritt)</span>
+            Varför, och vad löser det? <span className="text-gray-600">(valfritt)</span>
           </label>
           <textarea id="req-why" maxLength={LIMITS.why} rows={3} value={why} onChange={(e) => setWhy(e.target.value)} className={field} />
         </div>
@@ -166,8 +166,8 @@ export default function RequestsBoard() {
         </div>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-        {!items && !error && <p className="mt-4 text-sm text-gray-500">Hämtar…</p>}
-        {items && shown.length === 0 && <p className="mt-4 text-sm text-gray-500">{onlyMine ? "Du har inte skickat något förslag än." : "Inga förslag än. Bli först!"}</p>}
+        {!items && !error && <p className="mt-4 text-sm text-gray-600">Hämtar…</p>}
+        {items && shown.length === 0 && <p className="mt-4 text-sm text-gray-600">{onlyMine ? "Du har inte skickat något förslag än." : "Inga förslag än. Bli först!"}</p>}
 
         <ul className="mt-4 space-y-3">
           {shown.map((r) => (
@@ -189,12 +189,12 @@ export default function RequestsBoard() {
                   <h3 className="font-bold">{r.title}</h3>
                   <span className={`text-xs font-bold px-2 py-0.5 ${statusStyle[r.status]}`}>{REQUEST_STATUSES[r.status]}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-600 mt-0.5">
                   {REQUEST_KINDS[r.kind]}
                   {r.tool ? `: ${TOOL_NAMES[r.tool]}` : ""} · {r.mine ? "du" : r.author} · {date(r.created_at)}
                 </p>
                 <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{r.body}</p>
-                {r.why && <p className="mt-1 text-sm text-gray-500 whitespace-pre-wrap">Varför: {r.why}</p>}
+                {r.why && <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">Varför: {r.why}</p>}
                 {r.admin_reply && (
                   <p className="mt-3 border-l-4 border-peach bg-gray-50 px-3 py-2 text-sm text-gray-800 whitespace-pre-wrap">
                     <span className="font-bold">Svar:</span> {r.admin_reply}

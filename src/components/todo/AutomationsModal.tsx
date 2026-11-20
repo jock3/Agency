@@ -86,13 +86,13 @@ export default function AutomationsModal({ automations, lists, onChange, onClose
           </span>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">Automatisera</h2>
-            <p className="text-sm text-gray-500">Reglerna körs direkt i tavlan när något ändras.</p>
+            <p className="text-sm text-gray-600">Reglerna körs direkt i tavlan när något ändras.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Stäng"
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={17} />
           </button>
@@ -108,7 +108,7 @@ export default function AutomationsModal({ automations, lists, onChange, onClose
             >
               <span
                 className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
-                  a.enabled ? "bg-amber-200 text-amber-700" : "bg-gray-100 text-gray-400"
+                  a.enabled ? "bg-amber-200 text-amber-700" : "bg-gray-100 text-gray-700"
                 }`}
               >
                 <Zap size={14} strokeWidth={2.25} />

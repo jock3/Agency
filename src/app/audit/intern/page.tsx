@@ -44,7 +44,7 @@ export default async function AuditProjectsPage() {
   return (
     <main className="max-w-6xl w-full mx-auto px-6 py-8">
       <h2 className="text-2xl font-bold">Internt verktyg</h2>
-      <p className="text-sm text-gray-500 mt-1">Projekt med betyg och datum för senaste granskningen.</p>
+      <p className="text-sm text-gray-600 mt-1">Projekt med betyg och datum för senaste granskningen.</p>
 
       {error && <p className="mt-6 text-milou-600">Kunde inte läsa projekten. Är migration 0010 körd?</p>}
 
@@ -55,10 +55,10 @@ export default async function AuditProjectsPage() {
       <section className="mt-8">
         <h2 className="font-bold mb-2">Projekt ({projects.length})</h2>
         {projects.length === 0 ? (
-          <p className="text-sm text-gray-400">Inga projekt ännu. Lägg till ett ovan.</p>
+          <p className="text-sm text-gray-600">Inga projekt ännu. Lägg till ett ovan.</p>
         ) : (
           <table className="w-full text-sm bg-white">
-            <thead className="text-left text-gray-500 border-b border-gray-200">
+            <thead className="text-left text-gray-600 border-b border-gray-200">
               <tr>
                 <th className="py-2 px-3 font-normal">Projekt</th>
                 <th className="py-2 px-3 font-normal">Domän</th>
@@ -77,9 +77,9 @@ export default async function AuditProjectsPage() {
                         {p.name}
                       </Link>
                     </td>
-                    <td className="py-2 px-3 text-gray-500">{p.domain}</td>
+                    <td className="py-2 px-3 text-gray-600">{p.domain}</td>
                     <td className="py-2 px-3 whitespace-nowrap tabular-nums">
-                      {run ? fmt.format(new Date(run.created_at)) : <span className="text-gray-400">Aldrig</span>}
+                      {run ? fmt.format(new Date(run.created_at)) : <span className="text-gray-600">Aldrig</span>}
                     </td>
                     <td className="py-2 px-3 text-right tabular-nums">{run?.seo_score ?? "–"}</td>
                     <td className="py-2 px-3 text-right tabular-nums">{run?.geo_score ?? "–"}</td>

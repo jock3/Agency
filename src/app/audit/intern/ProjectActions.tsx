@@ -77,10 +77,10 @@ export default function ProjectActions({
     <div className="mt-2">
       {mode === "idle" && (
         <div className="flex gap-1">
-          <button ref={editBtn} type="button" onClick={() => reset("edit")} className={`${small} text-gray-500 hover:text-milou-500`}>
+          <button ref={editBtn} type="button" onClick={() => reset("edit")} className={`${small} text-gray-600 hover:text-milou-500`}>
             <Pencil className="w-3 h-3" /> Redigera
           </button>
-          <button type="button" onClick={() => reset("delete")} className={`${small} text-gray-500 hover:text-milou-500`}>
+          <button type="button" onClick={() => reset("delete")} className={`${small} text-gray-600 hover:text-milou-500`}>
             <Trash2 className="w-3 h-3" /> Ta bort
           </button>
         </div>
@@ -112,7 +112,7 @@ export default function ProjectActions({
           <button type="submit" disabled={loading || !draft.trim() || !domainDraft.trim()} className={`${small} bg-milou-500 hover:bg-milou-600 text-white`}>
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Spara
           </button>
-          <button type="button" onClick={() => reset("idle")} className={`${small} text-gray-500 hover:text-gray-800`}>
+          <button type="button" onClick={() => reset("idle")} className={`${small} text-gray-600 hover:text-gray-800`}>
             <X className="w-3 h-3" /> Avbryt
           </button>
         </form>
@@ -124,7 +124,7 @@ export default function ProjectActions({
           <button type="button" onClick={() => send("DELETE")} disabled={loading} className={`${small} bg-milou-500 hover:bg-milou-600 text-white`}>
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Ja, ta bort
           </button>
-          <button type="button" autoFocus onClick={() => reset("idle")} className={`${small} text-gray-500 hover:text-gray-800`}>
+          <button type="button" autoFocus onClick={() => reset("idle")} className={`${small} text-gray-600 hover:text-gray-800`}>
             Avbryt
           </button>
         </div>

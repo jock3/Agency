@@ -63,7 +63,7 @@ export default function KanbanView({ lists, tasks, users, subtasksByTask, onUpda
           >
             <header className="flex items-center gap-2 border-b-[3px] px-1 pb-2.5" style={{ borderColor: cfg.color }}>
               <span className="font-display font-bold text-gray-900">{cfg.label}</span>
-              <span className="text-sm text-gray-400 tabular-nums">{cards.length}</span>
+              <span className="text-sm text-gray-600 tabular-nums">{cards.length}</span>
             </header>
 
             <ul className="flex flex-1 flex-col gap-2 py-3">
@@ -102,13 +102,13 @@ export default function KanbanView({ lists, tasks, users, subtasksByTask, onUpda
                       <button
                         type="button"
                         onClick={() => onOpen(t.id)}
-                        className={`min-w-0 flex-1 text-left text-sm leading-snug ${done ? "text-gray-400 line-through" : "text-gray-900"}`}
+                        className={`min-w-0 flex-1 text-left text-sm leading-snug ${done ? "text-gray-600 line-through" : "text-gray-900"}`}
                       >
                         {t.title}
                       </button>
                     </div>
 
-                    <div className="mt-2.5 flex items-center gap-2.5 whitespace-nowrap pl-[28px] text-xs text-gray-500">
+                    <div className="mt-2.5 flex items-center gap-2.5 whitespace-nowrap pl-[28px] text-xs text-gray-600">
                       <span className="min-w-0 flex-1 truncate">{list.name}</span>
                       {t.priority !== "none" && t.priority !== "low" && (
                         <Flag size={12} strokeWidth={2.5} style={{ color: PRIORITY_MAP[t.priority].color }} aria-label={`Prioritet ${PRIORITY_MAP[t.priority].label}`} />
@@ -132,7 +132,7 @@ export default function KanbanView({ lists, tasks, users, subtasksByTask, onUpda
                 );
               })}
               {cards.length === 0 && (
-                <li className="border-2 border-dashed border-gray-200 px-3 py-6 text-center text-sm text-gray-400">
+                <li className="border-2 border-dashed border-gray-200 px-3 py-6 text-center text-sm text-gray-600">
                   {dragId ? "Släpp här" : "Inget här"}
                 </li>
               )}

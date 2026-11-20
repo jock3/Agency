@@ -33,18 +33,18 @@ export default function ArchivePanel({
         className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700">
             <Archive size={17} />
           </span>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">Arkiv</h2>
-            <p className="text-sm text-gray-500">Arkiverade grupper med innehåll.</p>
+            <p className="text-sm text-gray-600">Arkiverade grupper med innehåll.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Stäng"
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={17} />
           </button>
@@ -52,7 +52,7 @@ export default function ArchivePanel({
 
         <div className="space-y-1.5 overflow-y-auto px-6 py-5">
           {archived.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-400">
+            <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-600">
               <Inbox size={20} strokeWidth={1.5} /> Arkivet är tomt
             </div>
           )}
@@ -61,7 +61,7 @@ export default function ArchivePanel({
               <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: l.color }} />
               <div className="min-w-0 flex-1">
                 <strong className="block truncate text-sm text-gray-800">{l.name}</strong>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-600">
                   {(tasksByList[l.id] ?? []).length} objekt
                   {l.archived_at && `, arkiverad ${fmtDate(l.archived_at.slice(0, 10))}`}
                 </span>

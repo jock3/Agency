@@ -46,7 +46,7 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
 
   if (!dated.length) {
     return (
-      <div className="flex flex-col items-center gap-3 px-6 py-24 text-center text-gray-400">
+      <div className="flex flex-col items-center gap-3 px-6 py-24 text-center text-gray-600">
         <GanttChart size={30} />
         <p className="max-w-sm text-sm">
           Inga objekt med tidslinje än. Sätt en start- och slutperiod på ett objekt i tabellvyn, så
@@ -80,11 +80,11 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
                 key={i}
                 className={`shrink-0 py-1 text-center text-[10px] ${
                   [0, 6].includes(d.getDay()) ? "bg-gray-100/70" : ""
-                } ${dkey(d) === todayK ? "font-semibold text-milou-600" : "text-gray-400"}`}
+                } ${dkey(d) === todayK ? "font-semibold text-milou-600" : "text-gray-600"}`}
                 style={{ width: DAY_W }}
               >
                 {(d.getDate() === 1 || i === 0) && (
-                  <span className="block text-[10px] text-gray-400">
+                  <span className="block text-[10px] text-gray-600">
                     {MON_SHORT[d.getMonth()]}
                   </span>
                 )}

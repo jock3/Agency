@@ -126,13 +126,13 @@ export default async function AuditProjectPage({
       {/* Projektets rubrikyta, mörk som sidhuvudena i resten av appen. */}
       <section className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 pt-8 pb-10">
-          <Link href="/audit/intern" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-peach transition-colors">
+          <Link href="/audit/intern" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-peach transition-colors">
             <ArrowLeft className="w-4 h-4" /> Alla projekt
           </Link>
           <div className="mt-4 flex flex-wrap items-start justify-between gap-6">
             <div className="min-w-0">
               <h1 className="font-display font-extrabold text-3xl sm:text-[40px] sm:leading-[45px]">{project.name}</h1>
-              <p className="mt-2 text-gray-400">
+              <p className="mt-2 text-gray-600">
                 <a href={run?.final_url ?? `https://${project.domain}`} target="_blank" rel="noreferrer" className="text-white underline decoration-peach decoration-2 underline-offset-4 hover:decoration-milou-500">
                   {run ? run.final_url.replace(/^https?:\/\//, "").replace(/\/$/, "") : project.domain}
                 </a>
@@ -163,7 +163,7 @@ export default async function AuditProjectPage({
               {PRIORITIES.map((p) => {
                 const n = actions.filter((a) => a.priority === p.key).length;
                 return (
-                  <li key={p.key} className={`flex items-center gap-2 h-8 pl-2 pr-3 bg-white border-l-4 ${p.accent} ${n === 0 ? "text-gray-400" : "text-gray-900"}`}>
+                  <li key={p.key} className={`flex items-center gap-2 h-8 pl-2 pr-3 bg-white border-l-4 ${p.accent} ${n === 0 ? "text-gray-600" : "text-gray-900"}`}>
                     <b className="tabular-nums">{n}</b> {p.label.toLowerCase()}
                   </li>
                 );
@@ -175,7 +175,7 @@ export default async function AuditProjectPage({
             <div className="mb-4 bg-white border-l-4 border-plum px-5 py-4">
               <h3 className="font-bold mb-2">Sammanfattning</h3>
               <p className="whitespace-pre-line max-w-[80ch]">{run.ai_summary}</p>
-              <p className="mt-2 text-xs text-gray-500">Skriven av AI utifrån fynden nedan. Betygen sätts av fasta kontroller.</p>
+              <p className="mt-2 text-xs text-gray-600">Skriven av AI utifrån fynden nedan. Betygen sätts av fasta kontroller.</p>
             </div>
           )}
 
@@ -183,11 +183,11 @@ export default async function AuditProjectPage({
             <div className="mb-4 bg-white px-5 py-4 text-sm grid gap-4 sm:grid-cols-2">
               <div>
                 <h3 className="font-bold mb-1.5">Åtgärdat sedan förra ({fixed.length})</h3>
-                {fixed.length === 0 ? <p className="text-gray-500">Inget ännu.</p> : <ul className="text-gray-700 space-y-0.5">{fixed.map((a) => <li key={a.id}>✓ {a.title}</li>)}</ul>}
+                {fixed.length === 0 ? <p className="text-gray-600">Inget ännu.</p> : <ul className="text-gray-700 space-y-0.5">{fixed.map((a) => <li key={a.id}>✓ {a.title}</li>)}</ul>}
               </div>
               <div>
                 <h3 className="font-bold mb-1.5">Nytt sedan förra ({added.length})</h3>
-                {added.length === 0 ? <p className="text-gray-500">Inget nytt.</p> : <ul className="text-gray-700 space-y-0.5">{added.map((a) => <li key={a.id}>! {a.title}</li>)}</ul>}
+                {added.length === 0 ? <p className="text-gray-600">Inget nytt.</p> : <ul className="text-gray-700 space-y-0.5">{added.map((a) => <li key={a.id}>! {a.title}</li>)}</ul>}
               </div>
             </div>
           )}
@@ -211,9 +211,9 @@ export default async function AuditProjectPage({
                     <div className="flex items-baseline justify-between gap-4 px-5 pt-4 pb-3 border-b border-gray-100">
                       <div>
                         <h3 className="font-bold text-lg">{p.label}</h3>
-                        <p className="text-sm text-gray-500">{p.hint}</p>
+                        <p className="text-sm text-gray-600">{p.hint}</p>
                       </div>
-                      <span className="text-sm font-bold tabular-nums text-gray-500">{items.length}</span>
+                      <span className="text-sm font-bold tabular-nums text-gray-600">{items.length}</span>
                     </div>
                     <ul>
                       {items.map((a) => (
@@ -224,7 +224,7 @@ export default async function AuditProjectPage({
                             </span>
                             <span className="font-bold">{a.title}</span>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1.5">{a.detail}</p>
+                          <p className="text-sm text-gray-600 mt-1.5">{a.detail}</p>
                           {a.fix && <p className="mt-1 max-w-[80ch]">{a.fix}</p>}
                           <SuggestButton projectId={project.id} checkId={a.id} enabled={assistantEnabled()} />
                         </li>
@@ -243,10 +243,10 @@ export default async function AuditProjectPage({
             <PageAudit projectId={project.id} />
           </div>
           {auditedPages.length + extraPages.length === 0 ? (
-            <p className="text-sm text-gray-500">Inga sidor granskade ännu.</p>
+            <p className="text-sm text-gray-600">Inga sidor granskade ännu.</p>
           ) : (
             <table className="w-full text-sm bg-white">
-              <thead className="text-left text-gray-500 border-b border-gray-200">
+              <thead className="text-left text-gray-600 border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4 font-normal">Sida</th>
                   <th className="py-3 px-4 font-normal text-right">Brister</th>
@@ -266,7 +266,7 @@ export default async function AuditProjectPage({
                         <Link href={`/audit/intern/${project.id}/sida?url=${encodeURIComponent(p.url)}`} className="font-bold hover:text-milou-500 block truncate">
                           {p.title || pathOf(p.url)}
                         </Link>
-                        <span className="text-gray-500 text-xs">{pathOf(p.url)}</span>
+                        <span className="text-gray-600 text-xs">{pathOf(p.url)}</span>
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums font-bold">{p.issues}</td>
                       <td className="py-3 px-4 text-right tabular-nums">{seo ?? "–"}</td>
@@ -280,9 +280,9 @@ export default async function AuditProjectPage({
                       <Link href={`/audit/intern/${project.id}/sida?url=${encodeURIComponent(u)}`} className="font-bold hover:text-milou-500 block truncate">
                         {r.title || pathOf(u)}
                       </Link>
-                      <span className="text-gray-500 text-xs">{pathOf(u)} · egen granskning</span>
+                      <span className="text-gray-600 text-xs">{pathOf(u)} · egen granskning</span>
                     </td>
-                    <td className="py-3 px-4 text-right text-gray-400">–</td>
+                    <td className="py-3 px-4 text-right text-gray-600">–</td>
                     <td className="py-3 px-4 text-right tabular-nums">{r.seo_score}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{r.geo_score}</td>
                   </tr>
@@ -290,7 +290,7 @@ export default async function AuditProjectPage({
               </tbody>
             </table>
           )}
-          <p className="mt-2 text-xs text-gray-500">Fulla auditen granskar ett urval på upp till 10 sidor. Lägg till fler genom att granska dem här.</p>
+          <p className="mt-2 text-xs text-gray-600">Fulla auditen granskar ett urval på upp till 10 sidor. Lägg till fler genom att granska dem här.</p>
         </section>
 
         <section className="mt-12">
@@ -303,10 +303,10 @@ export default async function AuditProjectPage({
         <section className="mt-12">
           <h2 className="font-display font-extrabold text-2xl mb-4">Historik</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-gray-500">Inga körningar ännu.</p>
+            <p className="text-sm text-gray-600">Inga körningar ännu.</p>
           ) : (
             <table className="w-full text-sm bg-white">
-              <thead className="text-left text-gray-500 border-b border-gray-200">
+              <thead className="text-left text-gray-600 border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4 font-normal">Tid</th>
                   <th className="py-3 px-4 font-normal">URL</th>
@@ -326,7 +326,7 @@ export default async function AuditProjectPage({
                     <td className="py-3 px-4 max-w-xs truncate text-gray-600">{h.final_url}</td>
                     <td className="py-3 px-4 text-right tabular-nums font-bold">{h.seo_score}</td>
                     <td className="py-3 px-4 text-right tabular-nums font-bold">{h.geo_score}</td>
-                    <td className="py-3 px-4 text-gray-500">{h.created_by ?? "–"}</td>
+                    <td className="py-3 px-4 text-gray-600">{h.created_by ?? "–"}</td>
                   </tr>
                 ))}
               </tbody>

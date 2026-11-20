@@ -11,7 +11,7 @@ export default function EmptyState({ onCreate }: { onCreate: () => void }) {
         <span className="block h-2.5 w-36 bg-gray-200" />
       </div>
       <h2 className="text-xl font-semibold text-gray-900">En tom tavla, full av möjligheter</h2>
-      <p className="mt-2 max-w-md text-sm text-gray-500">
+      <p className="mt-2 max-w-md text-sm text-gray-600">
         Skapa din första grupp och börja lägga in objekt — statusar, personer och tidslinjer följer
         med på köpet.
       </p>

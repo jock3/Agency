@@ -95,13 +95,13 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
                 <div className={m.role === "user" ? "bg-gray-900 text-white px-4 py-2.5 max-w-[80%]" : "max-w-[80ch]"}>
                   <p className="whitespace-pre-line">{m.content}</p>
                   {m.used && m.used.length > 0 && (
-                    <p className="mt-2 text-xs text-gray-400">Underlag: {m.used.map((u) => TOOL_LABELS[u] ?? u).join(", ")}</p>
+                    <p className="mt-2 text-xs text-gray-600">Underlag: {m.used.map((u) => TOOL_LABELS[u] ?? u).join(", ")}</p>
                   )}
                 </div>
               </li>
             ))}
             {loading && (
-              <li className="flex items-center gap-2 text-sm text-gray-500">
+              <li className="flex items-center gap-2 text-sm text-gray-600">
                 <Loader2 className="w-4 h-4 animate-spin" /> Läser resultaten …
               </li>
             )}
@@ -132,7 +132,7 @@ export default function Assistant({ projectId, domain, enabled }: { projectId: s
         </form>
         {error && <p role="alert" className="px-5 pb-4 -mt-2 text-sm text-milou-600">{error}</p>}
       </div>
-      <p className="mt-2 text-xs text-gray-500">Svaren skrivs av AI utifrån projektets audits och webbsökning. Läs igenom innan de används. Sökvolymer och ranking finns inte i underlaget.</p>
+      <p className="mt-2 text-xs text-gray-600">Svaren skrivs av AI utifrån projektets audits och webbsökning. Läs igenom innan de används. Sökvolymer och ranking finns inte i underlaget.</p>
     </section>
   );
 }

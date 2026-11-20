@@ -7,7 +7,7 @@ interface Point {
 /** Betygens utveckling över körningarna, äldst till vänster. SEO och GEO som
  *  var sin linje på skalan 1–10. */
 export default function TrendChart({ points }: { points: Point[] }) {
-  if (points.length < 2) return <p className="text-sm text-gray-500">Kör fler audits för att se utvecklingen över tid.</p>;
+  if (points.length < 2) return <p className="text-sm text-gray-600">Kör fler audits för att se utvecklingen över tid.</p>;
 
   const W = 640;
   const H = 160;

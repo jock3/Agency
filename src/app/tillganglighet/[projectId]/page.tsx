@@ -109,13 +109,13 @@ export default async function A11yProjectPage({
     <main className="flex-1">
       <section className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 pt-8 pb-10">
-          <Link href="/tillganglighet" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-peach transition-colors">
+          <Link href="/tillganglighet" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-peach transition-colors">
             <ArrowLeft className="w-4 h-4" /> Alla projekt
           </Link>
           <div className="mt-4 flex flex-wrap items-start justify-between gap-6">
             <div className="min-w-0">
               <h1 className="font-display font-extrabold text-3xl sm:text-[40px] sm:leading-[45px]">{project.name}</h1>
-              <p className="mt-2 text-gray-400">
+              <p className="mt-2 text-gray-600">
                 <a
                   href={run?.final_url ?? `https://${project.domain}`}
                   target="_blank"
@@ -182,7 +182,7 @@ export default async function A11yProjectPage({
               {PRIORITIES.map((p) => {
                 const n = findings.filter((f) => f.priority === p.key).length;
                 return (
-                  <li key={p.key} className={`flex items-center gap-2 h-8 pl-2 pr-3 bg-white border-l-4 ${p.accent} ${n === 0 ? "text-gray-500" : "text-gray-900"}`}>
+                  <li key={p.key} className={`flex items-center gap-2 h-8 pl-2 pr-3 bg-white border-l-4 ${p.accent} ${n === 0 ? "text-gray-600" : "text-gray-900"}`}>
                     <b className="tabular-nums">{n}</b> {p.label.toLowerCase()}
                   </li>
                 );
@@ -194,7 +194,7 @@ export default async function A11yProjectPage({
             <div className="mb-4 bg-white border-l-4 border-plum px-5 py-4">
               <h3 className="font-bold mb-2">Sammanfattning</h3>
               <p className="whitespace-pre-line max-w-[80ch]">{run.ai_summary}</p>
-              <p className="mt-2 text-xs text-gray-500">Skriven av AI utifrån fynden nedan. Betyget sätts av automatiska kontroller.</p>
+              <p className="mt-2 text-xs text-gray-600">Skriven av AI utifrån fynden nedan. Betyget sätts av automatiska kontroller.</p>
             </div>
           )}
 
@@ -216,9 +216,9 @@ export default async function A11yProjectPage({
                     <div className="flex items-baseline justify-between gap-4 px-5 pt-4 pb-3 border-b border-gray-100">
                       <div>
                         <h3 className="font-bold text-lg">{p.label}</h3>
-                        <p className="text-sm text-gray-500">{p.hint}</p>
+                        <p className="text-sm text-gray-600">{p.hint}</p>
                       </div>
-                      <span className="text-sm font-bold tabular-nums text-gray-500">{items.length}</span>
+                      <span className="text-sm font-bold tabular-nums text-gray-600">{items.length}</span>
                     </div>
                     <ul>
                       {items.map((f) => (
@@ -236,20 +236,20 @@ export default async function A11yProjectPage({
           <div>
             <h2 className="font-display font-extrabold text-2xl mb-4">Behöver manuell kontroll</h2>
             {!run || run.manual.length === 0 ? (
-              <p className="text-sm text-gray-500">{run ? "Inget som verktyget lämnade osäkert." : "Ingen granskning ännu."}</p>
+              <p className="text-sm text-gray-600">{run ? "Inget som verktyget lämnade osäkert." : "Ingen granskning ännu."}</p>
             ) : (
               <ul className="bg-white divide-y divide-gray-100 text-sm">
                 {run.manual.map((m) => (
                   <li key={m.id} className="px-4 py-3 flex justify-between gap-4">
                     <span>{m.title}</span>
-                    <span className="text-gray-500 whitespace-nowrap tabular-nums">
+                    <span className="text-gray-600 whitespace-nowrap tabular-nums">
                       {m.pages} {m.pages === 1 ? "sida" : "sidor"}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-2 text-xs text-gray-500">Här kunde verktyget inte avgöra själv, ofta kontrast mot bakgrundsbilder eller dolt innehåll.</p>
+            <p className="mt-2 text-xs text-gray-600">Här kunde verktyget inte avgöra själv, ofta kontrast mot bakgrundsbilder eller dolt innehåll.</p>
           </div>
           <div>
             <h2 className="font-display font-extrabold text-2xl mb-4">Testa själv</h2>
@@ -266,10 +266,10 @@ export default async function A11yProjectPage({
         <section className="mt-12">
           <h2 className="font-display font-extrabold text-2xl mb-4">Sidor</h2>
           {!run || run.pages.length === 0 ? (
-            <p className="text-sm text-gray-500">Inga sidor granskade ännu.</p>
+            <p className="text-sm text-gray-600">Inga sidor granskade ännu.</p>
           ) : (
             <table className="w-full text-sm bg-white">
-              <thead className="text-left text-gray-500 border-b border-gray-200">
+              <thead className="text-left text-gray-600 border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4 font-normal">Sida</th>
                   <th className="py-3 px-4 font-normal text-right">Regler som bryts</th>
@@ -284,7 +284,7 @@ export default async function A11yProjectPage({
                       <a href={p.url} target="_blank" rel="noreferrer" className="font-bold hover:text-milou-500 block truncate">
                         {p.title || pathOf(p.url)}
                       </a>
-                      <span className="text-gray-500 text-xs">{pathOf(p.url)}</span>
+                      <span className="text-gray-600 text-xs">{pathOf(p.url)}</span>
                     </td>
                     <td className="py-3 px-4 text-right tabular-nums font-bold">{p.issues}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{p.elements}</td>
@@ -299,10 +299,10 @@ export default async function A11yProjectPage({
         <section className="mt-12">
           <h2 className="font-display font-extrabold text-2xl mb-4">Historik</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-gray-500">Inga körningar ännu.</p>
+            <p className="text-sm text-gray-600">Inga körningar ännu.</p>
           ) : (
             <table className="w-full text-sm bg-white">
-              <thead className="text-left text-gray-500 border-b border-gray-200">
+              <thead className="text-left text-gray-600 border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4 font-normal">Tid</th>
                   <th className="py-3 px-4 font-normal">URL</th>
@@ -320,7 +320,7 @@ export default async function A11yProjectPage({
                     </td>
                     <td className="py-3 px-4 max-w-xs truncate text-gray-600">{h.final_url}</td>
                     <td className="py-3 px-4 text-right tabular-nums font-bold">{h.score}</td>
-                    <td className="py-3 px-4 text-gray-500">{h.created_by ?? "–"}</td>
+                    <td className="py-3 px-4 text-gray-600">{h.created_by ?? "–"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -336,7 +336,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <dd className="font-display font-extrabold text-3xl tabular-nums">{value}</dd>
-      <dt className="text-sm text-gray-400 mt-1">{label}</dt>
+      <dt className="text-sm text-gray-600 mt-1">{label}</dt>
     </div>
   );
 }
@@ -349,7 +349,7 @@ function FindingItem({ finding: f, pageCount, projectId, runId, aiOn }: { findin
         <span className="font-bold">{f.title}</span>
       </div>
       <p className="text-sm text-gray-600 mt-1.5 max-w-[80ch]">{f.description}.</p>
-      <p className="text-sm text-gray-500 mt-1">
+      <p className="text-sm text-gray-600 mt-1">
         {f.criteria.map((c, i) => (
           <span key={c}>
             {i > 0 && " · "}
@@ -366,7 +366,7 @@ function FindingItem({ finding: f, pageCount, projectId, runId, aiOn }: { findin
         <ul className="mt-2 space-y-3">
           {f.examples.map((e, i) => (
             <li key={i} className="bg-gray-50 px-3 py-2">
-              <p className="text-xs text-gray-500">{pathOf(e.url)}</p>
+              <p className="text-xs text-gray-600">{pathOf(e.url)}</p>
               <code className="block mt-1 text-xs break-all text-gray-900">{e.html}</code>
               {e.summary && <p className="mt-1 text-xs text-gray-600 whitespace-pre-line">{e.summary}</p>}
             </li>

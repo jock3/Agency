@@ -38,7 +38,7 @@ export default function FocusLane({ items, onComplete, onOpen }: Props) {
     <div className="mt-7">
       <h2 className="flex items-baseline gap-2">
         <span className="font-display font-bold text-base">Fokus nu</span>
-        <span className="text-sm text-gray-500">det som brinner mest</span>
+        <span className="text-sm text-gray-400">det som brinner mest</span>
       </h2>
 
       {items.length === 0 ? (
@@ -77,7 +77,7 @@ export default function FocusLane({ items, onComplete, onOpen }: Props) {
                         {overdue ? `Försenad, ${dueLabel(due).toLowerCase()}` : dueLabel(due)}
                       </span>
                     )}
-                    <span className="truncate text-gray-500">{list.name}</span>
+                    <span className="truncate text-gray-400">{list.name}</span>
                     {task.priority === "high" && (
                       <span className="flex items-center gap-1 text-gray-300">
                         <Flag size={11} strokeWidth={2.5} /> Hög

@@ -63,7 +63,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                 >
                   <div className="flex items-center justify-between">
                     <span className="milou-num border border-milou-700 text-milou-700">{String(i + 1).padStart(2, "0")}</span>
-                    <t.Icon aria-hidden className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
+                    <t.Icon aria-hidden className="w-7 h-7 text-gray-600" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-display font-extrabold text-2xl leading-tight text-gray-900">{t.label}</h3>

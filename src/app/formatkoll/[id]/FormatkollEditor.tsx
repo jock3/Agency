@@ -110,7 +110,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
       <div className="flex-1 flex items-center justify-center text-center p-8">
         <div>
           <h1 className="text-lg font-semibold text-gray-700">Kunde inte öppna projektet</h1>
-          <p className="text-sm text-gray-400 mt-1">{error}</p>
+          <p className="text-sm text-gray-600 mt-1">{error}</p>
           <Link href="/formatkoll" className="text-sm text-milou-500 mt-4 inline-block">
             Till projektlistan
           </Link>
@@ -120,7 +120,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
   }
 
   if (!project) {
-    return <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Laddar…</div>;
+    return <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">Laddar…</div>;
   }
 
   const expiry = expiryText(project.expires_at);
@@ -139,7 +139,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
         <h1 className="font-display font-extrabold text-xl leading-tight truncate">{project.title}</h1>
         <p className="text-[13px] text-gray-600 truncate">
           {clientName || "Ingen kund angiven"}
-          <span className="text-gray-400">, {uploaded} av 3 format</span>
+          <span className="text-gray-600">, {uploaded} av 3 format</span>
         </p>
       </div>
     </div>
@@ -149,7 +149,7 @@ export default function FormatkollEditor({ projectId }: { projectId: string }) {
 
   const header = (
     <div className="flex items-center gap-4 text-[13px]">
-      {status && <span className="text-gray-500">{status}</span>}
+      {status && <span className="text-gray-600">{status}</span>}
       {error && <span className="text-milou-600">{error}</span>}
       <div className="flex items-center gap-2">
         <span className={expiry.expired ? "text-milou-600 font-bold" : "text-gray-600"}>{expiry.text}</span>

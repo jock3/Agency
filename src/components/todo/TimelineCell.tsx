@@ -43,7 +43,7 @@ export default function TimelineCell({ start, end, color, onChange }: Props) {
       {open && (
         <Popover anchorRef={ref} onClose={() => setOpen(false)} width={232}>
           <div className="space-y-2 p-2">
-            <label className="block text-xs font-medium text-gray-500">
+            <label className="block text-xs font-medium text-gray-600">
               Start
               <input
                 type="date"
@@ -52,7 +52,7 @@ export default function TimelineCell({ start, end, color, onChange }: Props) {
                 className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-800 outline-none focus:border-milou-300"
               />
             </label>
-            <label className="block text-xs font-medium text-gray-500">
+            <label className="block text-xs font-medium text-gray-600">
               Slut
               <input
                 type="date"

@@ -49,7 +49,7 @@ export default function TodoSidebar({
         type="button"
         onClick={onToggleCollapse}
         aria-label={collapsed ? "Visa sidopanel" : "Dölj sidopanel"}
-        className="flex items-center border-b border-gray-100 px-3 py-3 text-gray-400 transition-colors hover:text-gray-600"
+        className="flex items-center border-b border-gray-100 px-3 py-3 text-gray-600 transition-colors hover:text-gray-600"
         style={{ justifyContent: collapsed ? "center" : "flex-end" }}
       >
         <ChevronLeft size={14} className={`transition-transform ${collapsed ? "rotate-180" : ""}`} />
@@ -77,7 +77,7 @@ export default function TodoSidebar({
                   {counts[id] > 0 && (
                     <span
                       className={`px-1.5 py-0.5 text-xs font-medium ${
-                        active ? "bg-milou-100 text-milou-600" : "bg-gray-100 text-gray-500"
+                        active ? "bg-milou-100 text-milou-600" : "bg-gray-100 text-gray-700"
                       }`}
                     >
                       {counts[id]}
@@ -92,7 +92,7 @@ export default function TodoSidebar({
 
       {!collapsed && (
         <div className="px-4 pb-1.5 pt-4">
-          <span className="text-xs font-bold text-gray-500">
+          <span className="text-xs font-bold text-gray-600">
             Grupper
           </span>
         </div>
@@ -118,7 +118,7 @@ export default function TodoSidebar({
           <button
             type="button"
             onClick={onCreateGroup}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-400 transition-colors hover:text-milou-500"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition-colors hover:text-milou-500"
           >
             <Plus size={15} className="shrink-0" />
             Ny grupp
@@ -131,7 +131,7 @@ export default function TodoSidebar({
           type="button"
           onClick={onOpenArchive}
           title="Arkiv"
-          className={`flex items-center gap-2.5 border-t border-gray-100 py-3 text-sm text-gray-500 transition-colors hover:text-gray-800 ${
+          className={`flex items-center gap-2.5 border-t border-gray-100 py-3 text-sm text-gray-600 transition-colors hover:text-gray-800 ${
             collapsed ? "justify-center px-0" : "px-5"
           }`}
         >

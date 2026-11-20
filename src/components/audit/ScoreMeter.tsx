@@ -19,7 +19,7 @@ export default function ScoreMeter({
         <h2 className="font-display font-extrabold text-xl pb-2 w-14">{label}</h2>
         <p className="font-display font-extrabold text-[64px] leading-none tabular-nums">
           {score ?? "–"}
-          <span className="text-2xl text-gray-500">/10</span>
+          <span className="text-2xl text-gray-600">/10</span>
         </p>
         {delta !== null && (
           <span
@@ -36,7 +36,7 @@ export default function ScoreMeter({
           <span key={i} className={`h-3 ${score !== null && i < score ? tone : "bg-gray-800"}`} />
         ))}
       </div>
-      <p className="text-sm text-gray-400 mt-3">{score === null ? "Ingen granskning ännu." : description}</p>
+      <p className="text-sm text-gray-600 mt-3">{score === null ? "Ingen granskning ännu." : description}</p>
     </div>
   );
 }

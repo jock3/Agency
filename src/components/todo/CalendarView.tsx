@@ -53,7 +53,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
           type="button"
           onClick={() => setMonth(new Date(y, mo - 1, 1))}
           aria-label="Föregående månad"
-          className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
+          className="rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
         >
           <ChevronLeft size={18} />
         </button>
@@ -64,7 +64,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
           type="button"
           onClick={() => setMonth(new Date(y, mo + 1, 1))}
           aria-label="Nästa månad"
-          className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
+          className="rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
         >
           <ChevronRight size={18} />
         </button>
@@ -87,7 +87,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="border-b border-gray-200 bg-gray-50 py-1.5 text-center text-xs font-bold text-gray-500"
+            className="border-b border-gray-200 bg-gray-50 py-1.5 text-center text-xs font-bold text-gray-600"
           >
             {d}
           </div>
@@ -105,7 +105,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
             >
               <span
                 className={`mb-1 inline-block text-xs ${
-                  k === todayK ? "font-semibold text-milou-600" : "text-gray-400"
+                  k === todayK ? "font-semibold text-milou-600" : "text-gray-600"
                 }`}
               >
                 {d.getDate()}
@@ -118,7 +118,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
                     onClick={() => onOpen(t.id)}
                     title={t.title}
                     className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[11px] transition-colors hover:bg-gray-100 ${
-                      t.status === "done" ? "text-gray-400 line-through" : "text-gray-700"
+                      t.status === "done" ? "text-gray-600 line-through" : "text-gray-700"
                     }`}
                   >
                     <span
@@ -129,7 +129,7 @@ export default function CalendarView({ lists, tasks, onOpen }: Props) {
                   </button>
                 ))}
                 {items.length > 4 && (
-                  <span className="block px-1 text-[10px] text-gray-400">
+                  <span className="block px-1 text-[10px] text-gray-600">
                     +{items.length - 4} till
                   </span>
                 )}

@@ -144,7 +144,7 @@ export default function Toolbar({
             aria-selected={view === v}
             onClick={() => setView(v)}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              view === v ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
+              view === v ? "bg-white text-gray-900 shadow-sm" : "text-gray-700 hover:text-gray-900"
             }`}
           >
             <Icon size={14} /> <span>{label}</span>

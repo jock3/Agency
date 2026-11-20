@@ -35,7 +35,7 @@ export default function ResourceBrowser() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="relative max-w-xl">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" aria-hidden />
         <input
           type="search"
           value={query}
@@ -47,7 +47,7 @@ export default function ResourceBrowser() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrera på typ">
-        <span className="text-sm text-gray-500 mr-1">Typ</span>
+        <span className="text-sm text-gray-600 mr-1">Typ</span>
         <button type="button" aria-pressed={type === null} onClick={() => setType(null)} className={chip(type === null)}>
           Alla
         </button>
@@ -59,7 +59,7 @@ export default function ResourceBrowser() {
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrera på ämne">
-        <span className="text-sm text-gray-500 mr-1">Ämne</span>
+        <span className="text-sm text-gray-600 mr-1">Ämne</span>
         {CATEGORIES.map((c) => (
           <button key={c.id} type="button" aria-pressed={tag === c.title} onClick={() => setTag(tag === c.title ? null : c.title)} className={chip(tag === c.title)}>
             {c.title}
@@ -67,7 +67,7 @@ export default function ResourceBrowser() {
         ))}
       </div>
 
-      <p className="mt-4 text-sm text-gray-500" aria-live="polite">
+      <p className="mt-4 text-sm text-gray-600" aria-live="polite">
         {shown.length} av {RESOURCES.length} resurser
         {filtered && (
           <>
@@ -87,20 +87,20 @@ export default function ResourceBrowser() {
         )}
       </p>
 
-      {groups.length === 0 && <p className="mt-10 text-gray-500">Inga resurser matchar. Prova ett annat ord eller rensa filtren.</p>}
+      {groups.length === 0 && <p className="mt-10 text-gray-600">Inga resurser matchar. Prova ett annat ord eller rensa filtren.</p>}
 
       {groups.map((g) => (
         <section key={g.id} aria-labelledby={`cat-${g.id}`} className="mt-10">
           <h2 id={`cat-${g.id}`} className="font-display font-extrabold text-xl">
             {g.title}
           </h2>
-          <p className="mt-1 text-sm text-gray-500 max-w-[70ch]">{g.description}</p>
+          <p className="mt-1 text-sm text-gray-600 max-w-[70ch]">{g.description}</p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {g.items.map((r) => (
               <li key={r.id} className="bg-white border border-gray-200 p-4 flex flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="font-bold">{r.title}</h3>
-                  <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-gray-500">{RESOURCE_TYPES[r.type]}</span>
+                  <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-gray-600">{RESOURCE_TYPES[r.type]}</span>
                 </div>
                 <p className="mt-2 text-sm text-gray-600 flex-1">{r.description}</p>
                 {r.tags.length > 0 && (

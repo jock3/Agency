@@ -89,7 +89,7 @@ export default function TaskBoard({
           <button
             type="button"
             onClick={onOpenArchive}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 transition-colors hover:text-gray-700"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 transition-colors hover:text-gray-700"
           >
             <Archive size={13} /> Arkiv ({archivedCount})
           </button>

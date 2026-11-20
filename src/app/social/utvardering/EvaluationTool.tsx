@@ -333,10 +333,10 @@ function ResultView({ result }: { result: Result }) {
         <div className="bg-gray-900 text-white px-6 py-6">
           <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
             <div>
-              <h2 className="text-sm text-gray-400">Betyg</h2>
+              <h2 className="text-sm text-gray-600">Betyg</h2>
               <p className="font-display font-extrabold text-[64px] leading-none tabular-nums">
                 {score ?? "–"}
-                <span className="text-2xl text-gray-400">/10</span>
+                <span className="text-2xl text-gray-600">/10</span>
               </p>
             </div>
             <div className="grid grid-cols-10 gap-1 w-48 mb-3" role="img" aria-label={`Betyg ${score ?? "saknas"} av 10`}>
@@ -346,7 +346,7 @@ function ResultView({ result }: { result: Result }) {
             </div>
           </div>
           {review.summary && <p className="mt-5 max-w-[70ch]">{review.summary}</p>}
-          <p className="mt-4 text-xs text-gray-400 max-w-[70ch]">
+          <p className="mt-4 text-xs text-gray-600 max-w-[70ch]">
             Bedömningarna är skrivna av AI och kan variera mellan körningar. Betyget räknas i kod ur dem och ur de uppmätta kontrollerna, med vikter satta för hand.
             Det säger inget om hur inlägget kommer att prestera.
           </p>

@@ -26,7 +26,7 @@ export default function KundView({ preview }: { preview: Preview }) {
   const header = (
     <div className="flex items-center gap-3 text-[13px]">
       <span className="font-semibold">{preview.title}</span>
-      {preview.clientName && <span className="text-gray-400">{preview.clientName}</span>}
+      {preview.clientName && <span className="text-gray-600">{preview.clientName}</span>}
       <MilouLogo className="h-3.5 w-auto text-white opacity-70" />
     </div>
   );

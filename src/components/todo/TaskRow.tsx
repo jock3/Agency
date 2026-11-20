@@ -148,7 +148,7 @@ export default function TaskRow({
             onClick={() => onToggleExpand()}
             aria-label={expanded ? "Dölj underobjekt" : "Visa underobjekt"}
             title={subtasks.length ? `${doneSubs}/${subtasks.length} underobjekt klara` : "Underobjekt"}
-            className={`flex shrink-0 items-center gap-0.5 rounded px-0.5 py-0.5 text-gray-400 transition-colors hover:bg-gray-200 ${
+            className={`flex shrink-0 items-center gap-0.5 rounded px-0.5 py-0.5 text-gray-600 transition-colors hover:bg-gray-200 ${
               subtasks.length ? "" : "opacity-0 group-hover:opacity-100"
             }`}
           >
@@ -187,7 +187,7 @@ export default function TaskRow({
               onClick={onStartEdit}
               title={task.title}
               className={`min-w-0 flex-1 truncate text-left text-sm ${
-                task.status === "done" ? "text-gray-400 line-through" : "text-gray-800"
+                task.status === "done" ? "text-gray-600 line-through" : "text-gray-800"
               }`}
             >
               {task.title}
@@ -196,7 +196,7 @@ export default function TaskRow({
 
           {task.repeat && (
             <span
-              className="shrink-0 text-gray-400"
+              className="shrink-0 text-gray-600"
               title={"Upprepas: " + REPEAT_LABEL[task.repeat]}
             >
               <Repeat size={11} />
@@ -437,7 +437,7 @@ function SubtaskRow({
             onClick={() => setEditing(true)}
             title={sub.title}
             className={`min-w-0 flex-1 truncate text-left text-xs ${
-              sub.status === "done" ? "text-gray-400 line-through" : "text-gray-600"
+              sub.status === "done" ? "text-gray-600 line-through" : "text-gray-600"
             }`}
           >
             {sub.title}

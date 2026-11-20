@@ -39,7 +39,7 @@ export default async function AuditExternPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Externt verktyg</h2>
-          <p className="text-sm text-gray-500 mt-1">Granskningar från det publika verktyget, med besökarens e-post. Senaste 200 körningarna.</p>
+          <p className="text-sm text-gray-600 mt-1">Granskningar från det publika verktyget, med besökarens e-post. Senaste 200 körningarna.</p>
         </div>
         <Link href="/share/audit" target="_blank" className="flex items-center gap-1.5 text-sm font-bold bg-milou-500 hover:bg-milou-600 text-white px-4 py-2">
           Öppna verktyget <ExternalLink className="w-4 h-4" />
@@ -51,7 +51,7 @@ export default async function AuditExternPage() {
       <section className="mt-8">
         <h2 className="font-bold mb-2">Alla granskningar ({rows.length})</h2>
         <table className="w-full text-sm bg-white">
-          <thead className="text-left text-gray-500 border-b border-gray-200">
+          <thead className="text-left text-gray-600 border-b border-gray-200">
             <tr>
               <th className="py-2 px-3 font-normal">Tid</th>
               <th className="py-2 px-3 font-normal">URL</th>

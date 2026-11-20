@@ -77,8 +77,8 @@ export default function SuggestButton({
         <div className="mt-3 space-y-4">
           {results.map((r) => (
             <div key={r.url} className="border-l-2 border-peach pl-4">
-              {(results.length > 1 || !url) && <p className="text-xs font-bold text-gray-500 mb-2">{pathOf(r.url)}</p>}
-              {r.error && <p className="text-sm text-gray-500">{r.error}</p>}
+              {(results.length > 1 || !url) && <p className="text-xs font-bold text-gray-600 mb-2">{pathOf(r.url)}</p>}
+              {r.error && <p className="text-sm text-gray-600">{r.error}</p>}
               <ul className="space-y-3">
                 {r.items.map((item, i) => (
                   <Item key={i} item={item} />
@@ -86,7 +86,7 @@ export default function SuggestButton({
               </ul>
             </div>
           ))}
-          <p className="text-xs text-gray-500">Skrivet av AI från sidans innehåll. Läs igenom och komplettera [fyll i] innan det används.</p>
+          <p className="text-xs text-gray-600">Skrivet av AI från sidans innehåll. Läs igenom och komplettera [fyll i] innan det används.</p>
         </div>
       )}
     </div>
@@ -107,20 +107,20 @@ function Item({ item }: { item: SuggestionItem }) {
   return (
     <li>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs text-gray-500 break-all">
+        <p className="text-xs text-gray-600 break-all">
           {item.target}
-          {item.kind === "text" && item.value && <span className="ml-2 tabular-nums text-gray-400">{item.value.length} tecken</span>}
+          {item.kind === "text" && item.value && <span className="ml-2 tabular-nums text-gray-600">{item.value.length} tecken</span>}
         </p>
-        <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-500 hover:text-milou-500">
+        <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-600 hover:text-milou-500">
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copied ? "Kopierat" : "Kopiera"}
         </button>
       </div>
       {item.kind === "code" ? (
         <pre className="mt-1 p-3 bg-gray-900 text-gray-100 text-xs overflow-x-auto max-h-72">{item.value}</pre>
       ) : (
-        <p className="mt-0.5 max-w-[80ch] whitespace-pre-line">{item.value || <span className="text-gray-400">(lämna alt-texten tom)</span>}</p>
+        <p className="mt-0.5 max-w-[80ch] whitespace-pre-line">{item.value || <span className="text-gray-600">(lämna alt-texten tom)</span>}</p>
       )}
-      {item.note && <p className="mt-0.5 text-xs text-gray-400 max-w-[80ch]">{item.note}</p>}
+      {item.note && <p className="mt-0.5 text-xs text-gray-600 max-w-[80ch]">{item.note}</p>}
     </li>
   );
 }

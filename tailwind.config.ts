@@ -46,6 +46,12 @@ const config: Config = {
         beige: "#FFDED0",
         blush: "#FF999C",
         plum: { DEFAULT: "#5B173C", dark: "#35132B" },
+        // Definierade på milou.se. Teal i platta och ljusglöd, mörk turkos som vald knapp.
+        teal: { DEFAULT: "#16917A", light: "#C2EDE5", dark: "#052D28" },
+        // Halvtransparenta varianter ur sajtens stilmall.
+        "light-black": "#1C1C1CBF",
+        "light-gray-60": "#F2F2F2A6",
+        "peach-20": "#FFBFB633",
       },
       // Webbplatsen har raka hörn överallt. Alla steg utom full nollas, så
       // runda prickar, avatarer och reglage behåller sin form.
@@ -65,6 +71,7 @@ const config: Config = {
         "plate-beige": "1.25rem -2rem 0 0 #FFDED0",
         "plate-blush": "-1.5rem -1.25rem 0 0 #FF999C",
         glow: "0 32px 64px -24px #E6033059",
+        "plate-teal": "-1.5rem -1.25rem 0 0 #16917A",
       },
       backgroundImage: {
         "red-fade":

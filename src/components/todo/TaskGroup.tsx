@@ -145,7 +145,7 @@ export default function TaskGroup(props: Props) {
 
           {shown.length === 0 && tasks.length > 0 && (
             <div
-              className="border-b border-l-4 border-gray-100 px-4 py-2.5 text-xs italic text-gray-400"
+              className="border-b border-l-4 border-gray-100 px-4 py-2.5 text-xs italic text-gray-600"
               style={{ borderLeftColor: list.color }}
             >
               Inga objekt matchar filtren i den här gruppen
@@ -211,7 +211,7 @@ function ColumnHeaderRow({
       <button
         type="button"
         onClick={() => onSort("title")}
-        className="flex items-center gap-1 text-left text-xs font-bold text-gray-500 hover:text-gray-600"
+        className="flex items-center gap-1 text-left text-xs font-bold text-gray-600 hover:text-gray-600"
       >
         Objekt {sortIcon("title")}
       </button>
@@ -219,7 +219,7 @@ function ColumnHeaderRow({
         col.key === "group" ? (
           <div
             key={col.key}
-            className="text-center text-xs font-bold text-gray-500"
+            className="text-center text-xs font-bold text-gray-600"
           >
             {col.label}
           </div>
@@ -228,7 +228,7 @@ function ColumnHeaderRow({
             key={col.key}
             type="button"
             onClick={() => onSort(col.key)}
-            className="flex items-center justify-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-600"
+            className="flex items-center justify-center gap-1 text-xs font-bold text-gray-600 hover:text-gray-600"
           >
             {col.label} {sortIcon(col.key)}
           </button>
@@ -318,7 +318,7 @@ function SummaryRow({
       style={{ gridTemplateColumns: gridTemplate(visibleCols), borderLeftColor: list.color }}
     >
       <div />
-      <div className="py-2 text-xs text-gray-400">{tasks.length} objekt</div>
+      <div className="py-2 text-xs text-gray-600">{tasks.length} objekt</div>
       {visibleCols.map((col) => (
         <div key={col.key} className="flex min-w-0 items-center justify-center">
           {col.key === "person" && <AvatarStack names={names} />}

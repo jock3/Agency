@@ -116,7 +116,7 @@ const CommandDeck = forwardRef<HTMLInputElement, Props>(function CommandDeck(
                 {boardTitle}
               </button>
             )}
-            <span role="status" className={`ml-2 text-xs ${saveState === "error" ? "text-milou-300" : "text-gray-500"}`}>
+            <span role="status" className={`ml-2 text-xs ${saveState === "error" ? "text-milou-300" : "text-gray-400"}`}>
               {saveState === "saving" ? "Sparar…" : saveState === "error" ? "Fel vid sparning" : ""}
             </span>
           </p>
@@ -149,7 +149,7 @@ const CommandDeck = forwardRef<HTMLInputElement, Props>(function CommandDeck(
           <div className="min-w-[200px] bg-white/[0.06] px-4 py-3">
             <span className="block font-display font-extrabold text-3xl leading-none tabular-nums">
               {week.done}
-              <span className="text-gray-500 text-xl"> av {week.total}</span>
+              <span className="text-gray-400 text-xl"> av {week.total}</span>
             </span>
             <span className="mt-1.5 block text-sm text-gray-400">klara den här veckan</span>
             {segments > 0 && (
@@ -219,7 +219,7 @@ const CommandDeck = forwardRef<HTMLInputElement, Props>(function CommandDeck(
               {person && <Token icon={<User size={13} />}>{person.name}</Token>}
             </>
           ) : (
-            <span className="text-gray-500">
+            <span className="text-gray-400">
               Skriv datum som <Hint>imorgon</Hint>, <Hint>fre</Hint> eller <Hint>12/11</Hint>, prioritet med{" "}
               <Hint>!hög</Hint>, person med <Hint>@namn</Hint> och grupp med <Hint>#grupp</Hint>.
             </span>

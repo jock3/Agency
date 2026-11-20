@@ -160,19 +160,11 @@ relaterade case → röd gradient-CTA "Hör av dig!".
 
 Röda pilrutor (57 px) finns kvar under korten.
 
-## Direkt användbart i Agency-repot
+## Så ligger det i Agency-repot (uppdaterat 2026-11-20)
 
-Stämmer redan: Komet, `milou-500 = #E60330`, `#1C1C1C` i toppraden och `#2B2B2B`.
-
-Saknas i `tailwind.config.ts`, förslag:
-
-```ts
-milou: { ... },          // befintlig
-peach:  { DEFAULT: "#FFBFB6", dark: "#CC9992" },
-beige:  "#FFDED0",
-"light-red": "#FF999C",
-plum:   { DEFAULT: "#5B173C", dark: "#35132B" }, // finns redan som milou-800 och milou-900
-```
-
-Skillnader mot sajten: appen använder rundade hörn (`rounded-lg`, `rounded-xl`) och Tailwinds
-kalla grå (#F3F4F6, #E5E7EB). Sajten har raka hörn och neutrala grå (#F2F2F2).
+- `tailwind.config.ts`: färgerna milou/red, gray, peach, beige, blush, plum, teal (+ light, dark), halvtransparenta
+  `light-black`, `light-gray-60`, `peach-20`; skuggorna `plate-peach/beige/blush/teal` och `glow`; raka hörn.
+- `src/app/globals.css`: `milou-plate`, `milou-kicker`, `milou-display(-sm)`, `milou-btn-*`, `milou-num`, `milou-ticker`.
+- Komponenter: `PageHeader`, `Ticker`.
+- Text på ljus botten: gray-600 eller mörkare. gray-400 och gray-500 når inte 4,5:1 och används bara på mörk botten.
+- Samma resurser, för nya appar: `~/.claude/skills/design/milou/` (kör `refresh.sh` för att jämföra mot milou.se).

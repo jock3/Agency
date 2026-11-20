@@ -439,7 +439,7 @@ export default function Composer({ companyId, photos: initialPhotos, templates }
                   ) : state === "failed" ? (
                     <X className="w-4 h-4 text-milou-600" aria-label="underkänt eller misslyckat" />
                   ) : state === "skipped" ? (
-                    <Minus className="w-4 h-4 text-gray-500" aria-label="hoppades över" />
+                    <Minus className="w-4 h-4 text-gray-600" aria-label="hoppades över" />
                   ) : (
                     <Circle className="w-4 h-4 text-gray-300" aria-label="väntar" />
                   )}

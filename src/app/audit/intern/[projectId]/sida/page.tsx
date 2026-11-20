@@ -94,13 +94,13 @@ export default async function AuditPagePage({
     <main className="flex-1">
       <section className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 pt-8 pb-10">
-          <Link href={`/audit/intern/${project.id}`} className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-peach transition-colors">
+          <Link href={`/audit/intern/${project.id}`} className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-peach transition-colors">
             <ArrowLeft className="w-4 h-4" /> {project.name}
           </Link>
           <div className="mt-4 flex flex-wrap items-start justify-between gap-6">
             <div className="min-w-0">
               <h1 className="font-display font-extrabold text-3xl sm:text-[40px] sm:leading-[45px] break-words">{current?.title || pathOf(url)}</h1>
-              <p className="mt-2 text-gray-400">
+              <p className="mt-2 text-gray-600">
                 <a href={url} target="_blank" rel="noreferrer" className="text-white underline decoration-peach decoration-2 underline-offset-4 hover:decoration-milou-500 break-all">
                   {url.replace(/^https?:\/\//, "")}
                 </a>
@@ -115,9 +115,9 @@ export default async function AuditPagePage({
               const p = prev ? prev[`${g}_score`] : null;
               return (
                 <div key={g}>
-                  <p className="text-sm text-gray-400 uppercase font-bold">{g}</p>
+                  <p className="text-sm text-gray-600 uppercase font-bold">{g}</p>
                   <p className="font-display font-extrabold text-[56px] leading-none tabular-nums">
-                    {v ?? "–"}<span className="text-2xl text-gray-500">/10</span>
+                    {v ?? "–"}<span className="text-2xl text-gray-600">/10</span>
                     {v !== null && p !== null && v !== p && (
                       <span className={`ml-3 align-middle text-sm px-2 py-0.5 ${v > p ? "bg-[#C2EDE5] text-[#052D28]" : "bg-milou-500 text-white"}`}>{v > p ? `+${v - p}` : v - p}</span>
                     )}
@@ -141,7 +141,7 @@ export default async function AuditPagePage({
             if (items.length === 0) return null;
             return (
               <div key={p.key} className={`bg-white border-l-4 ${p.accent}`}>
-                <h3 className="font-bold text-lg px-5 pt-4 pb-3 border-b border-gray-100">{p.label} <span className="text-gray-400 text-sm tabular-nums">{items.length}</span></h3>
+                <h3 className="font-bold text-lg px-5 pt-4 pb-3 border-b border-gray-100">{p.label} <span className="text-gray-600 text-sm tabular-nums">{items.length}</span></h3>
                 <ul>
                   {items.map((a) => (
                     <li key={a.id} className="px-5 py-4 border-b border-gray-100 last:border-b-0">
@@ -149,7 +149,7 @@ export default async function AuditPagePage({
                         <span className={`text-xs font-bold px-2 py-0.5 ${a.group === "geo" ? "bg-peach text-gray-900" : "bg-plum text-white"}`}>{a.group === "geo" ? "GEO" : "SEO"}</span>
                         <span className="font-bold">{a.title}</span>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1.5">{a.detail}</p>
+                      <p className="text-sm text-gray-600 mt-1.5">{a.detail}</p>
                       {a.fix && <p className="mt-1 max-w-[80ch]">{a.fix}</p>}
                       <SuggestButton projectId={project.id} checkId={a.id} url={url} enabled={assistantEnabled()} />
                     </li>
@@ -159,7 +159,7 @@ export default async function AuditPagePage({
             );
           })
         )}
-        <p className="text-xs text-gray-500">Enskilda sidor granskas med sidkontrollerna. Sajtövergripande saker som robots.txt och sitemap finns bara i projektets fulla audit.</p>
+        <p className="text-xs text-gray-600">Enskilda sidor granskas med sidkontrollerna. Sajtövergripande saker som robots.txt och sitemap finns bara i projektets fulla audit.</p>
       </div>
     </main>
   );
@@ -184,7 +184,7 @@ function AiPanel({ ai, enabled }: { ai: PageAi | null; enabled: boolean }) {
           <h3 className="text-sm font-bold mb-1.5">Titelförslag</h3>
           <ul className="space-y-1">
             {ai.titles.map((t) => (
-              <li key={t}>{t} <span className="text-xs text-gray-400 tabular-nums">{t.length} tecken</span></li>
+              <li key={t}>{t} <span className="text-xs text-gray-600 tabular-nums">{t.length} tecken</span></li>
             ))}
           </ul>
         </div>
@@ -192,7 +192,7 @@ function AiPanel({ ai, enabled }: { ai: PageAi | null; enabled: boolean }) {
       {ai.description && (
         <div>
           <h3 className="text-sm font-bold mb-1.5">Metabeskrivning</h3>
-          <p className="max-w-[80ch]">{ai.description} <span className="text-xs text-gray-400 tabular-nums">{ai.description.length} tecken</span></p>
+          <p className="max-w-[80ch]">{ai.description} <span className="text-xs text-gray-600 tabular-nums">{ai.description.length} tecken</span></p>
         </div>
       )}
       {ai.contentTips.length > 0 && (
@@ -207,7 +207,7 @@ function AiPanel({ ai, enabled }: { ai: PageAi | null; enabled: boolean }) {
           <ul className="list-disc pl-5 space-y-1 max-w-[80ch]">{ai.geoTips.map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
       )}
-      <p className="text-xs text-gray-500">Skrivet av AI från sidans innehåll. Läs igenom innan det används. Betygen påverkas inte.</p>
+      <p className="text-xs text-gray-600">Skrivet av AI från sidans innehåll. Läs igenom innan det används. Betygen påverkas inte.</p>
     </section>
   );
 }
