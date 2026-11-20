@@ -1,7 +1,8 @@
 # Milou Verktyg
 
-Next.js-app med fem verktyg: **Mediaplaner**, **Kampanjer**, **Uppgifter**,
-**Formatkoll** och **SEO/GEO-audit**.
+Next.js-app med Milous verktyg: bland annat **Uppgifter**, **Formatkoll** och
+**SEO/GEO-audit**. Mediaplaner och Kampanjer finns i en egen app,
+https://mediaplan.milou.se; gamla adresser hit skickas dit (`next.config.mjs`).
 
 ## Stack
 
@@ -41,13 +42,11 @@ Det finns ingen öppen registrering. En admin lägger till användare på `/admi
 som anropar `app_signup` från servern med service-role-nyckeln. Anon-rollen får
 inte köra `app_signup` (migration 0011).
 
-## Mediaplaner och kampanjer
+## Gamla delningslänkar
 
-Tabellerna `media_*` och `campaign_*` nekar anon-rollen helt (migration 0011).
-Webbläsaren når dem bara via Server Functions i `src/lib/api/*.ts`, som börjar
-med `authedDb()`: ingen giltig sessionskaka, ingen databas. Uppdateringar
-filtreras genom en lista över tillåtna kolumner per tabell. Kundlänkarna
-`/share/[token]` och `/share/kampanj/[token]` läser med service-role.
+`/share/[token]` skickar vidare till Mediaplan-appen. `/share/kampanj/[token]`
+visar fortfarande gamla kampanjplaner (tabellerna `campaign_*`, som den nya
+appen inte läser) med service-role.
 
 ## Uppgiftstavlan
 

@@ -9,7 +9,7 @@ const rem = REM({ subsets: ["latin"], variable: "--font-rem", display: "swap" })
 
 export const metadata: Metadata = {
   title: "Milou AI-hub",
-  description: "Milous verktyg för mediaplaner, kampanjer, annonsformat och synlighet i sök och AI-svar",
+  description: "Milous verktyg för annonsformat, sociala medier och synlighet i sök och AI-svar",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
