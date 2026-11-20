@@ -47,7 +47,7 @@ async function launch(proxyPort: number): Promise<Browser> {
   return puppeteer.launch({
     executablePath: await chromium.executablePath(),
     headless: "shell",
-    args: puppeteer.defaultArgs({ args: [...chromium.args, ...guard], headless: "shell" }),
+    args: await puppeteer.defaultArgs({ args: [...chromium.args, ...guard], headless: "shell" }),
   });
 }
 
