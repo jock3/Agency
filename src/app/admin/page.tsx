@@ -3,6 +3,7 @@ import PageHeader from "@/components/PageHeader";
 import { currentUserWithTools } from "@/lib/access/current";
 import { listControlUsers } from "@/lib/admin/control";
 import NewUserForm from "./NewUserForm";
+import RequestsAdmin from "./RequestsAdmin";
 import UserCard from "./UserCard";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export default async function ControlCenterPage() {
             <UserCard key={u.id} user={u} isMe={u.id === me.user_id} />
           ))}
         </ul>
+        <RequestsAdmin />
       </div>
     </main>
   );
