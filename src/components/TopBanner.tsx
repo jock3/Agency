@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SlidersHorizontal } from "lucide-react";
+import { Library, SlidersHorizontal } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import MilouLogo from "./MilouLogo";
 import { TOOLS, type ToolLink } from "./tools";
@@ -65,6 +65,20 @@ export default function TopBanner() {
           <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
         ))}
       </nav>
+      {user && (
+        <Link
+          href="/resurser"
+          aria-current={pathname.startsWith("/resurser") ? "page" : undefined}
+          aria-label="Resurser"
+          title="Resurser"
+          className={`shrink-0 h-8 px-2.5 flex items-center gap-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach ${
+            pathname.startsWith("/resurser") ? "bg-peach text-gray-800" : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <Library className="w-4 h-4" aria-hidden />
+          <span className="hidden lg:inline">Resurser</span>
+        </Link>
+      )}
       {user?.isAdmin && (
         <Link
           href="/admin"
