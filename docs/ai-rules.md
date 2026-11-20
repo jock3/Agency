@@ -22,6 +22,8 @@ Gäller alla AI-anrop i Agency (SEO/GEO-auditen, tillgänglighetsverktyget, Soci
 
 - Bildgenerering (ArtCraft, `lib/ads/artcraft.ts`): prompten får aldrig be om text i bilden, och servern lägger alltid till att bilden ska vara utan text, bokstäver, logotyper och vattenstämplar. Bilden hämtas bara från ArtCrafts egna adresser (tillåtelselista), kontrolleras (verklig filtyp, 15 MB, lagringstak) och sparas i företagets bildbank som en genererad bild med taggen `ai-genererad` och beskrivningen som prompten. Nyckeln `ARTCRAFT_API_KEY` används bara på servern. `ARTCRAFT_BASE_URL` är bara en testkrok mot en falsk server och ska aldrig sättas i Vercel.
 
+- Designkoll (`lib/a11y/design.ts`, `lib/a11y/figma.ts`, `/tillganglighet/design`): färgkontrast, textstorlek och klickytor mäts i kod ur Figmas data, och färgförslag räknas i kod. Claude ser en bild av framen och ger status (bra, kan bli bättre, åtgärda, går inte att avgöra) för områden som inte går att mäta, aldrig ett tal, en färgkod eller ett mått. Kan något inte avgöras ur bilden ska svaret vara "går inte att avgöra". Designen är inget betyg och inget godkännande. Bara api.figma.com anropas, med filnyckeln ur länken; `FIGMA_TOKEN` används bara på servern. Bild och texter från designen skickas till Anthropic och sparas inte i Agency.
+
 ## Betyg
 - Betygen sätts av fasta kontroller i `checks.ts` (SEO/GEO) och av axe-core med `lib/a11y/score.ts` (tillgänglighet). I Social media-utvärderingen ger AI:n en status per område (bra, kan bli bättre, åtgärda, ej bedömd) men aldrig ett tal: betyget räknas i `scoreOf` i `lib/social/review.ts`, ur statusarna och de uppmätta kontrollerna. AI:n ändrar, kommenterar eller höjer aldrig ett betyg.
 

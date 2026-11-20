@@ -41,6 +41,12 @@ export default async function A11yProjectsPage() {
       <main className="max-w-6xl w-full mx-auto px-6 py-8">
         {error && <p className="mb-6 text-milou-600">Kunde inte läsa projekten. Är migration 0014 körd?</p>}
 
+        <p className="mb-6 text-sm">
+          <Link href="/tillganglighet/design" className="font-bold underline decoration-peach decoration-2 underline-offset-4 hover:decoration-milou-500">
+            Designkoll: granska en Figma-design före bygget
+          </Link>
+        </p>
+
         <section>
           <NewProjectForm apiBase="/api/tillganglighet" pageBase="/tillganglighet" />
         </section>
