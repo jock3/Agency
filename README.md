@@ -38,6 +38,9 @@ nyckeln svarar tavlan med fel i stället för att tyst visa en tom tavla.
 Inloggning sker med namn + 6-siffrig PIN mot Supabase-funktionen `app_login`.
 PIN-koder lagras bcrypt-hashade; fem felaktiga försök låser kontot i 15 minuter.
 
+Listan över användarnamn (`app_list_users_public`) går bara att anropa med
+service-role-nyckeln (migration 0029), så namnen syns inte utan inloggning.
+
 Det finns ingen öppen registrering. En admin lägger till användare på `/admin`,
 som anropar `app_signup` från servern med service-role-nyckeln. Anon-rollen får
 inte köra `app_signup` (migration 0011).
@@ -125,19 +128,25 @@ påverkar aldrig den vanliga renderingen.
 
 Publikt säljverktyg på `/share/audit`, tänkt att bäddas in på milou.se med
 iframe. Besökaren anger en webbadress och får ett betyg 1–10 (plus delbetyg för
-SEO och GEO), kontrollernas utfall och en lista över granskade sidor. Under
+SEO och GEO), kontrollernas utfall och en lista över granskade sidor. Före
+granskningen anger besökaren sin e-post och godkänner att Milou kontaktar
+henne enligt Milous integritetspolicy. Under
 resultatet leder "Kontakta oss" till milou.se/vara-kontor. Alla körningar syns
 internt på `/audit`.
 
 | Tabell | Roll |
 | --- | --- |
 | `audit_runs` | en rad per granskning: betyg, kontroller, granskade sidor |
+| `audit_leads` | besökarens e-post och samtycke, kopplat till körningen |
 
-Tabellen nekar anon-rollen. Den publika sidan pratar bara med
+Tabellerna nekar anon-rollen. Den publika sidan pratar bara med
 `/api/public/audit/run`, som är undantagen från inloggningen i `src/proxy.ts`
 och skriver med service-role-nyckeln. Kolumnerna `extract`, `summary` och
-`actions` samt tabellen `audit_leads` är rester från en tidigare e-postspärr
-med AI-skrivna åtgärder och används inte (se migration 0008).
+`actions` är rester från en tidigare version med AI-skrivna åtgärder och
+används inte (se migration 0008).
+
+`audit_leads` innehåller personuppgifter (e-post). Hantering och gallring
+följer Milous interna integritetspolicy.
 
 **Flera sidor.** `src/lib/audit/crawl.ts` granskar startsidan plus upp till nio
 undersidor: menylänkar först, sedan sitemap, högst två per sektion, aldrig
@@ -162,7 +171,8 @@ cache och ingen hastighetsbegränsning. Bara för lokala visningar.
 hash) får göra 10 nya körningar per timme.
 
 **Inbäddning.** `next.config.mjs` tillåter att `/share/audit` ramas in från
-milou.se och dess subdomäner. Sidan skickar sin höjd till förälderfönstret:
+milou.se och dess subdomäner. Alla andra sidor, också kundlänkarna, får bara
+ramas in av appen själv (skydd mot klickkapning). Sidan skickar sin höjd till förälderfönstret:
 
 ```html
 <iframe id="milou-audit" src="https://<appens-domän>/share/audit"

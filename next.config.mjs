@@ -19,6 +19,17 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Ingen annan sajt får rama in appen (skydd mot klickkapning).
+        // /share/audit undantas här och får egna regler nedan; två
+        // frame-ancestors-huvuden på samma sida skulle stoppa inbäddningen.
+        source: "/((?!share/audit).*)",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+      {
         // Auditverktyget bäddas in på milou.se med iframe. Bara de domänerna
         // (och appen själv) får rama in sidan.
         source: "/share/audit",
