@@ -1,92 +1,47 @@
 import Link from "next/link";
-import { connection } from "next/server";
+import { ArrowRight, Globe, PenTool } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import NewProjectForm from "@/app/audit/intern/NewProjectForm";
 
-interface Project {
-  id: string;
-  name: string;
-  domain: string;
-}
+const CARDS = [
+  {
+    href: "/tillganglighet/sajt",
+    label: "Testa sajt",
+    does: "Granska en färdig sajt mot WCAG 2.2 AA i en riktig webbläsare, med betyg och åtgärder i prioritetsordning.",
+    Icon: Globe,
+  },
+  {
+    href: "/tillganglighet/design",
+    label: "Testa design",
+    does: "Klistra in en Figma-länk och kolla kontrast, storlekar och läsbarhet innan något är byggt.",
+    Icon: PenTool,
+  },
+];
 
-interface LatestRun {
-  project_id: string;
-  score: number;
-  created_at: string;
-}
-
-const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Stockholm" });
-
-/** Projektlistan i tillgänglighetsverktyget, med betyg och datum för senaste granskningen. */
-export default async function A11yProjectsPage() {
-  await connection();
-  const sb = getSupabaseAdminClient();
-
-  const [{ data: projectData, error }, { data: runData }] = await Promise.all([
-    sb.from("a11y_projects").select("id, name, domain").order("name"),
-    sb.from("a11y_runs").select("project_id, score, created_at").order("created_at", { ascending: false }).limit(2000),
-  ]);
-  const projects = (projectData ?? []) as Project[];
-
-  const latest = new Map<string, LatestRun>();
-  for (const r of (runData ?? []) as LatestRun[]) if (!latest.has(r.project_id)) latest.set(r.project_id, r);
-
+/** Startsidan i tillgänglighetsverktyget: välj mellan att testa en färdig sajt eller en design. */
+export default function A11yStartPage() {
   return (
     <>
-      <PageHeader
-        title="Tillgänglighet"
-        description="Automatisk kontroll mot WCAG 2.2 nivå AA i en riktig webbläsare, med betyg och åtgärder i prioritetsordning."
-      />
-      <main className="max-w-6xl w-full mx-auto px-6 py-8">
-        {error && <p className="mb-6 text-milou-600">Kunde inte läsa projekten. Är migration 0014 körd?</p>}
-
-        <p className="mb-6 text-sm">
-          <Link href="/tillganglighet/design" className="font-bold underline decoration-peach decoration-2 underline-offset-4 hover:decoration-milou-500">
-            Designkoll: granska en Figma-design före bygget
-          </Link>
-        </p>
-
-        <section>
-          <NewProjectForm apiBase="/api/tillganglighet" pageBase="/tillganglighet" />
-        </section>
-
-        <section className="mt-8">
-          <h2 className="font-bold mb-2">Projekt ({projects.length})</h2>
-          {projects.length === 0 ? (
-            <p className="text-sm text-gray-600">Inga projekt ännu. Lägg till ett ovan.</p>
-          ) : (
-            <table className="w-full text-sm bg-white">
-              <thead className="text-left text-gray-600 border-b border-gray-200">
-                <tr>
-                  <th className="py-2 px-3 font-normal">Projekt</th>
-                  <th className="py-2 px-3 font-normal">Domän</th>
-                  <th className="py-2 px-3 font-normal">Senaste granskning</th>
-                  <th className="py-2 px-3 font-normal text-right">Betyg</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((p) => {
-                  const run = latest.get(p.id);
-                  return (
-                    <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-2 px-3 font-bold">
-                        <Link href={`/tillganglighet/${p.id}`} className="hover:text-milou-500">
-                          {p.name}
-                        </Link>
-                      </td>
-                      <td className="py-2 px-3 text-gray-600">{p.domain}</td>
-                      <td className="py-2 px-3 whitespace-nowrap tabular-nums">
-                        {run ? fmt.format(new Date(run.created_at)) : <span className="text-gray-600">Aldrig</span>}
-                      </td>
-                      <td className="py-2 px-3 text-right tabular-nums">{run?.score ?? "–"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </section>
+      <PageHeader title="Tillgänglighet" description="Testa en färdig sajt eller en design i Figma." />
+      <main className="max-w-6xl w-full mx-auto px-6 py-14">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-14 gap-y-16 max-w-3xl">
+          {CARDS.map((c) => (
+            <li key={c.href} className="milou-plate bg-white">
+              <Link
+                href={c.href}
+                className="group h-full flex flex-col gap-5 p-7 md:p-8 focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-milou-500"
+              >
+                <c.Icon aria-hidden className="w-7 h-7 text-gray-600" strokeWidth={1.5} />
+                <div className="flex-1">
+                  <h2 className="font-display font-extrabold text-2xl leading-tight text-gray-900">{c.label}</h2>
+                  <p className="mt-2 text-gray-600 leading-6">{c.does}</p>
+                </div>
+                <span aria-hidden className="w-14 h-14 bg-milou-500 group-hover:bg-milou-600 transition-colors flex items-center justify-center">
+                  <ArrowRight className="w-6 h-6 text-white transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </main>
     </>
   );

@@ -109,7 +109,7 @@ export default async function A11yProjectPage({
     <main className="flex-1">
       <section className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 pt-8 pb-10">
-          <Link href="/tillganglighet" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-peach transition-colors">
+          <Link href="/tillganglighet/sajt" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-peach transition-colors">
             <ArrowLeft className="w-4 h-4" /> Alla projekt
           </Link>
           <div className="mt-4 flex flex-wrap items-start justify-between gap-6">
@@ -132,7 +132,7 @@ export default async function A11yProjectPage({
                 name={project.name}
                 domain={project.domain}
                 apiBase="/api/tillganglighet"
-                pageBase="/tillganglighet"
+                pageBase="/tillganglighet/sajt"
               />
             </div>
             <AuditButton
