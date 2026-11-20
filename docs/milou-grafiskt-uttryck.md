@@ -1,6 +1,7 @@
 # Milou – grafiskt uttryck (skrapat från milou.se)
 
-Källa: milou.se, 2026-09-17. Startsidan, /vad-vi-gor/, /vad-vi-gor/varumarke/, /vara-case/,
+Källa: milou.se, 2026-09-17, kompletterat 2026-11-20 med /creative-digital/, /marketing-partner/ och
+/vad-vi-gor/ai-solutions/ (se "Tjänstesidor 2026-11" nedan). Startsidan, /vad-vi-gor/, /vad-vi-gor/varumarke/, /vara-case/,
 /case/fenomenalen/, /nyheter/, /vilka-vi-ar/, /filosofi/, /vara-kontor/.
 Mätt i Chrome med beräknade stilar i desktopbredd (~1100 px). Hover-lägen och mobilvy är inte mätta.
 
@@ -31,9 +32,9 @@ Sajtens egna CSS-variabler från `:root`, ordagrant:
 | `--color-peach-darkened` | `#CC9992` | |
 | `--color-light-red` | `#FF999C` | Tjänstekapsel, kortskugga, sektion |
 | `--color-light-beige` | `#FFDED0` | Sektioner, text på mörklila, kortskugga |
-| `--color-teal` | `#16917A` | Definierad, syns inte på de besökta sidorna |
+| `--color-teal` | `#16917A` | Platta och ljusglöd på tjänstesidorna (2026-11) |
 | `--color-light-teal` | `#C2EDE5` | Definierad, syns inte på de besökta sidorna |
-| `--color-dark-turqoise` | `#052D28` | Definierad, syns inte på de besökta sidorna |
+| `--color-dark-turqoise` | `#052D28` | Vald/nedtryckt knapp (2026-11) |
 
 **Gradient** `--gradient-red-fade` (Kontakta-blocket "Hör av dig!" och "Do good" på /filosofi/):
 
@@ -53,7 +54,8 @@ persika/beige/ljusröd som de stora mjuka ytorna.
 ## Typografi
 
 **Ett typsnitt: Komet** (`komet, sans-serif`) i alla texter. Laddade vikter: 400, 500, 700, 800
-(plus kursiv 400 och 700). Ingen bokstavsspärrning och inga versaler.
+(plus kursiv 400 och 700). Brödtext och rubriker har inga versaler. Undantag sedan 2026-11: små
+etiketter (kicker) och den rullande remsan står i versaler med spärrning (se nedan).
 
 | Roll | Storlek / radhöjd | Vikt | Exempel |
 |---|---|---|---|
@@ -121,6 +123,42 @@ vit text) och #FFBFB6 (med mörk text), som markerad text.
   ibland i handskrivet typsnitt (inbränt i bilden, inte webbtext), plus en vit MILOU-logga.
 - Case-bilder visas i helbredd eller brett, med rundade hörn bara på vissa inbäddade bilder.
 - Illustrationer förekommer i case (platt, varm vektorstil).
+
+## Tjänstesidor 2026-11 (`mc-page-ai-*`)
+
+/creative-digital/, /marketing-partner/ och /vad-vi-gor/ai-solutions/ delar en ny sidmall. Samma
+stylesheet som resten av sajten (`tailwind.BkW34a-B.css`), samma färgvariabler.
+
+**Sidans gång:** mörk hero med bild och toning → rullande remsa i röd gradient → mörk sektion
+med numrerade fördelar → ljusgrå sektion med tjänster → mörklila "Varför Milou" med stora ord →
+relaterade case → röd gradient-CTA "Hör av dig!".
+
+| Del | Mått |
+|---|---|
+| Hero | `#1C1C1C`, bild under toning `#1c1c1c4d → #1c1c1c99 → #1C1C1C`. Varianter: mörklila (`#35132bcc–e6` över bilden) och röd gradient (80 % över bilden). |
+| Kicker | Versaler, 14 px, vikt 700, spärrning 0,2em, persika (beige på röd hero). |
+| Rubrik (display) | `clamp(42px, 6vw, 64px)`, vikt 800, radhöjd 1,05, spärrning -0,02em. XL: `clamp(48px, 8.5vw, 94px)`, radhöjd 0,98, spärrning -0,025em. |
+| Tvåfärgad rubrik | Första meningen vit, andra i ljusröd/persika (på mörkt). Gradienttext (`background-clip: text`) finns, men röd gradient på `#1C1C1C` når bara 2,7–3,6:1 i kontrast, så i Agency används den bara på ljus botten. |
+| Ingress | Vit 90 % (`#ffffffe6`). |
+| Rund stämpel | Cirkel i ljusröd/persika med text runt kanten och ett nummer ("01"), skugga åt höger nedåt. Döljs under 1024 px. |
+| Faktarutor i hero | Mörka rutor (`#ffffff0a`) med rund ikon i ljusröd kant. |
+| Remsa (ticker) | Röd gradient, versaler 20/24 px, vikt 800, spärrning 0,14em, `+` som avdelare, rullar på 26 s. Rund paus-knapp (`#00000080`). Står still vid `prefers-reduced-motion`. |
+| Numrerade fördelar | 80 px cirkel med vit kant, siffra vikt 800; avdelare `#f2f2f259`. Små nummer: 48 px cirkel med persikakant. |
+| Kort på ljust | Skuggplattor som roterar per kort: `-1.5rem -1.25rem` ljusröd, `1.25rem -2rem` beige, `-1.25rem 1.25rem` persika. |
+| Case-kort på mörkt | Kant `#ffbfb629`, **rundade hörn 1rem** (enda rundningen), lyfter 4 px med röd glöd `0 32px 64px -24px #e6033059`. |
+| Ljusglöd (orb) | Radial gradient 9rem i persika, röd eller teal, bakom kort. |
+
+**Knappar**
+
+| Variant | Utseende |
+|---|---|
+| `mc-button` | Persika, mörk text, vikt 700, padding 1rem; hover ljusröd; nedtryckt mörk turkos med vit text. |
+| `--secondary` | Genomskinlig med 1 px persikakant och vit text (på mörkt). |
+| `--outline` | 1 px kant och text `#931644`, 14 px; hover lila `#5B173C` med vit text (på ljust). |
+| `--beige` | Beige med mörk text (på röd gradient). |
+| På tjänstesidorna | Större: padding 1.25rem 2.25rem, 18 px. |
+
+Röda pilrutor (57 px) finns kvar under korten.
 
 ## Direkt användbart i Agency-repot
 
