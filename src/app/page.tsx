@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowRight } from "lucide-react";
 import { TOOLS } from "@/components/tools";
 import Ticker from "@/components/Ticker";
 import { currentUserWithTools } from "@/lib/access/current";
-import { TOOL_NAMES, isToolKey } from "@/lib/access/tools";
+import ToolPicker from "@/components/ToolPicker";
+import { HIDDEN_TOOLS_COOKIE, TOOL_NAMES, isToolKey, parseHiddenTools, type ToolKey } from "@/lib/access/tools";
 
 /** Vad varje verktyg gör, en rad. Nyckeln är verktygets adress. */
 const DOES: Record<string, string> = {
@@ -16,9 +18,12 @@ const DOES: Record<string, string> = {
 };
 
 export default async function HubPage({ searchParams }: { searchParams: Promise<{ nekad?: string }> }) {
-  const [user, { nekad }] = await Promise.all([currentUserWithTools(), searchParams]);
-  // Samma lista som menyn, så att hubben och menyn alltid visar samma verktyg.
-  const tools = user ? TOOLS.filter((t) => (user.tools as string[]).includes(t.href.slice(1))) : TOOLS;
+  const [user, { nekad }, jar] = await Promise.all([currentUserWithTools(), searchParams, cookies()]);
+  // Samma regel som menyn: verktygen användaren får använda, minus dem hon själv har dolt.
+  const available = user ? TOOLS.filter((t) => (user.tools as string[]).includes(t.href.slice(1))) : TOOLS;
+  const availableKeys = available.map((t) => t.href.slice(1) as ToolKey);
+  const hidden = parseHiddenTools(jar.get(HIDDEN_TOOLS_COOKIE)?.value).filter((k) => availableKeys.includes(k));
+  const tools = available.filter((t) => !hidden.includes(t.href.slice(1) as ToolKey));
   const denied = isToolKey(nekad) ? TOOL_NAMES[nekad] : null;
 
   return (
@@ -51,8 +56,11 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
             Du har inte tillgång till {denied}. Be en admin om åtkomst.
           </p>
         )}
-        {tools.length === 0 ? (
+        {user && available.length > 0 && <ToolPicker available={availableKeys} hidden={hidden} />}
+        {available.length === 0 ? (
           <p className="mt-8 bg-white px-5 py-6 max-w-[70ch] text-gray-800">Du har inga verktyg än. Be en admin om åtkomst.</p>
+        ) : tools.length === 0 ? (
+          <p className="mt-8 bg-white px-5 py-6 max-w-[70ch] text-gray-800">Du har dolt alla verktyg. Välj vilka du vill se ovan.</p>
         ) : (
           <ul className="mt-14 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-14 gap-y-20">
             {tools.map((t, i) => (

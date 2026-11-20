@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Lightbulb, Library, SlidersHorizontal } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import MilouLogo from "./MilouLogo";
+import { HIDDEN_TOOLS_COOKIE, HIDDEN_TOOLS_EVENT, parseHiddenTools } from "@/lib/access/tools";
 import { TOOLS, type ToolLink } from "./tools";
 
 // På smala skärmar visas bara ikonerna, så att alla verktyg får plats.
@@ -44,10 +45,28 @@ export default function TopBanner() {
     };
   }, [hidden, pathname]);
 
+  // Ritar om menyn när verktygsväljaren på startsidan ändrar kakan.
+  const [, setPickerTick] = useState(0);
+  useEffect(() => {
+    const onChange = () => setPickerTick((n) => n + 1);
+    window.addEventListener(HIDDEN_TOOLS_EVENT, onChange);
+    return () => window.removeEventListener(HIDDEN_TOOLS_EVENT, onChange);
+  }, []);
+
   if (hidden) return null;
 
   // Menyn visas först när åtkomsten är känd, så att ingen ser verktyg hon inte får öppna.
-  const tools = user?.tools ? TOOLS.filter((t) => user.tools!.includes(t.href.slice(1))) : [];
+  // Verktyg användaren själv har dolt (startsidans verktygsväljare) visas inte heller,
+  // utom det verktyg hon står i just nu.
+  const hiddenTools: string[] =
+    typeof document === "undefined"
+      ? []
+      : parseHiddenTools(document.cookie.match(new RegExp(`(?:^|; )${HIDDEN_TOOLS_COOKIE}=([^;]*)`))?.[1]);
+  const tools = user?.tools
+    ? TOOLS.filter(
+        (t) => user.tools!.includes(t.href.slice(1)) && (!hiddenTools.includes(t.href.slice(1)) || pathname.startsWith(t.href)),
+      )
+    : [];
 
   return (
     <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">

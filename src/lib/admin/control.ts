@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionToken, validateSession, type ValidatedUser } from "@/lib/auth/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { TOOL_KEYS, isToolKey, type ToolKey } from "@/lib/access/tools";
+import { GRANTABLE_TOOLS, isToolKey, type ToolKey } from "@/lib/access/tools";
 
 /**
  * Kontrollcentret: data och skrivningar för /admin. Allt går med
@@ -57,9 +57,9 @@ export async function listControlUsers(): Promise<ControlUser[]> {
 /** Sparar verktygen. Alla verktyg valda = ingen begränsning, så att nya verktyg följer med. */
 export async function setTools(userId: string, tools: ToolKey[]): Promise<void> {
   const sb = getSupabaseAdminClient();
-  const unique = TOOL_KEYS.filter((k) => tools.includes(k));
+  const unique = GRANTABLE_TOOLS.filter((k) => tools.includes(k));
   const { error } =
-    unique.length === TOOL_KEYS.length
+    unique.length === GRANTABLE_TOOLS.length
       ? await sb.from("agency_user_tools").delete().eq("user_id", userId)
       : await sb.from("agency_user_tools").upsert({ user_id: userId, tools: unique, updated_at: new Date().toISOString() });
   if (error) throw new Error(error.message);

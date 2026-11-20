@@ -190,7 +190,12 @@ export default function TodoPage() {
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((d) => setCurrentUser(d.user ? { id: d.user.id, name: d.user.name } : null))
+      .then((d) => {
+        setCurrentUser(d.user ? { id: d.user.id, name: d.user.name } : null);
+        // Tavlan öppnar filtrerad på den inloggades objekt. Personfiltret i
+        // verktygsraden tar bort eller ändrar det.
+        if (d.user) setFilters((f) => (f.persons.length ? f : { ...f, persons: [d.user.id] }));
+      })
       .catch(() => {});
   }, []);
 

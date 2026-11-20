@@ -16,6 +16,24 @@ export const TOOL_NAMES: Record<ToolKey, string> = {
   kanban: "Kanban",
 };
 
+/** Verktyg som bara admin når. Kan inte ges till andra i kontrollcentret. */
+export const ADMIN_ONLY: readonly ToolKey[] = ["kanban"];
+/** Verktygen en admin kan ge eller ta ifrån en vanlig användare. */
+export const GRANTABLE_TOOLS: ToolKey[] = TOOL_KEYS.filter((k) => !ADMIN_ONLY.includes(k));
+
+/**
+ * Kaka med verktygen användaren själv har dolt på startsidan och i menyn.
+ * Gäller bara visningen; åtkomsten styrs av kontrollcentret.
+ */
+export const HIDDEN_TOOLS_COOKIE = "hidden_tools";
+/** Fönsterhändelse när valet ändras, så att menyn ritas om utan sidbyte. */
+export const HIDDEN_TOOLS_EVENT = "hidden-tools-change";
+
+export function parseHiddenTools(value: string | undefined): ToolKey[] {
+  if (!value) return [];
+  return decodeURIComponent(value).split(",").filter(isToolKey);
+}
+
 export const isToolKey = (v: unknown): v is ToolKey => typeof v === "string" && (TOOL_KEYS as readonly string[]).includes(v);
 
 /** API-prefix som hör till ett verktyg utan att heta som det. */

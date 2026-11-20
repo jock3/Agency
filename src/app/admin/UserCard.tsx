@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dices, KeyRound, Loader2, LockOpen } from "lucide-react";
-import { TOOL_KEYS, TOOL_NAMES, type ToolKey } from "@/lib/access/tools";
+import { GRANTABLE_TOOLS, TOOL_NAMES, type ToolKey } from "@/lib/access/tools";
 import type { ControlUser } from "@/lib/admin/control";
 import { ADMIN_ERRORS, FALLBACK, randomPin } from "./errors";
 
@@ -16,7 +16,7 @@ export default function UserCard({ user, isMe }: { user: ControlUser; isMe: bool
   const [pin, setPin] = useState("");
   const [pinDone, setPinDone] = useState<string | null>(null);
 
-  const tools: ToolKey[] = user.tools ?? [...TOOL_KEYS];
+  const tools: ToolKey[] = user.tools ?? [...GRANTABLE_TOOLS];
 
   async function call(what: string, url: string, method: string, body: unknown): Promise<boolean> {
     setBusy(what);
@@ -83,10 +83,10 @@ export default function UserCard({ user, isMe }: { user: ControlUser; isMe: bool
 
       <fieldset className="mt-4" disabled={!!busy || user.is_admin}>
         <legend className="text-sm text-gray-600 mb-2">
-          Verktyg {user.is_admin ? "(admin har alltid alla)" : `(${tools.length} av ${TOOL_KEYS.length})`}
+          Verktyg {user.is_admin ? "(admin har alltid alla)" : `(${tools.length} av ${GRANTABLE_TOOLS.length})`}
         </legend>
         <div className="flex flex-wrap gap-2">
-          {TOOL_KEYS.map((key) => {
+          {GRANTABLE_TOOLS.map((key) => {
             const on = user.is_admin || tools.includes(key);
             return (
               <label
