@@ -7,7 +7,14 @@ const nextConfig = {
   serverExternalPackages: ["puppeteer-core", "axe-core"],
   outputFileTracingIncludes: {
     "/api/tillganglighet/run": ["./node_modules/@sparticuz/chromium/bin/**/*"],
-    "/api/mediaplan/rapport/*/pdf": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+  },
+  // Mediaplaner och Kampanjer har flyttat till en egen app. Gamla bokmärken
+  // skickas dit; delningslänkarna /share/[token] skickas vidare från sin sida.
+  async redirects() {
+    return [
+      { source: "/mediaplan/:path*", destination: "https://mediaplan.milou.se/mediaplan/:path*", permanent: false },
+      { source: "/kampanj", destination: "https://mediaplan.milou.se/mediaplan", permanent: false },
+    ];
   },
   async headers() {
     return [

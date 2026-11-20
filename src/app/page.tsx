@@ -19,24 +19,6 @@ interface Tool {
 
 const CAPSULES: Tool[] = [
   {
-    href: "/mediaplan",
-    name: "Mediaplaner",
-    does: "Budget, kanaler och tidsplan i en vy.",
-    tone: "bg-plum text-white",
-    offset: "md:mt-0",
-    plate: "#FFBFB6",
-    plateX: "-12px",
-  },
-  {
-    href: "/kampanj",
-    name: "Kampanjer",
-    does: "Kampanjplaner per plattform, med tidslinje.",
-    tone: "bg-blush text-gray-900",
-    offset: "md:mt-12",
-    plate: "#5B173C",
-    plateX: "12px",
-  },
-  {
     href: "/formatkoll",
     name: "Formatkoll",
     does: "Annonsen i rätt format, före lansering.",

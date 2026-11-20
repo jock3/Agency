@@ -4,12 +4,10 @@
  * Filen är ren (inga ikoner, ingen server-kod) så att proxyn, servern och
  * klienten kan läsa den.
  */
-export const TOOL_KEYS = ["mediaplan", "kampanj", "formatkoll", "social", "audit", "tillganglighet", "todo", "kanban"] as const;
+export const TOOL_KEYS = ["formatkoll", "social", "audit", "tillganglighet", "todo", "kanban"] as const;
 export type ToolKey = (typeof TOOL_KEYS)[number];
 
 export const TOOL_NAMES: Record<ToolKey, string> = {
-  mediaplan: "Mediaplaner",
-  kampanj: "Kampanjer",
   formatkoll: "Formatkoll",
   social: "Social media",
   audit: "SEO/GEO-audit",
