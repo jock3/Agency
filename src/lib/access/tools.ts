@@ -31,7 +31,14 @@ export const HIDDEN_TOOLS_EVENT = "hidden-tools-change";
 
 export function parseHiddenTools(value: string | undefined): ToolKey[] {
   if (!value) return [];
-  return decodeURIComponent(value).split(",").filter(isToolKey);
+  // En trasig kaka får inte kasta fel: då kraschar hubben och menyn.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return [];
+  }
+  return decoded.split(",").filter(isToolKey);
 }
 
 export const isToolKey = (v: unknown): v is ToolKey => typeof v === "string" && (TOOL_KEYS as readonly string[]).includes(v);
