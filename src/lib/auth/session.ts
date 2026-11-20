@@ -111,6 +111,29 @@ export async function adminSetAdmin(token: string, targetUserId: string, isAdmin
   await callRpc<null>("app_admin_set_admin", { p_token: token, p_target_user_id: targetUserId, p_is_admin: isAdmin });
 }
 
+/** För- och efternamn: bokstäver, mellanslag, bindestreck och apostrof, högst 40 tecken var. */
+const NAME_PART = /^\p{L}[\p{L}' -]{0,39}$/u;
+
+/** Slår ihop för- och efternamn till inloggningsnamnet, eller null om något är ogiltigt. */
+export function fullNameOf(first: unknown, last: unknown): string | null {
+  if (typeof first !== "string" || typeof last !== "string") return null;
+  const f = first.trim().replace(/\s+/g, " ");
+  const l = last.trim().replace(/\s+/g, " ");
+  return NAME_PART.test(f) && NAME_PART.test(l) ? `${f} ${l}` : null;
+}
+
+/**
+ * Öppen registrering: vem som helst kan skapa ett konto och loggas in direkt.
+ * shortcut: inget godkännande eller inbjudan, beslutat 2026-11-20 som tillfälligt;
+ * app_users delas med de andra apparna, så kontot gäller där också.
+ */
+export async function signup(name: string, pin: string): Promise<AuthSession> {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to create users");
+  const rows = await callRpc<AuthRpcRow[]>("app_signup", { p_name: name, p_pin: pin }, serviceKey);
+  return unwrapAuthRow(rows[0]);
+}
+
 /**
  * Creates an account on behalf of an admin. There is no open signup: the anon
  * role cannot execute `app_signup`, so accounts only come into being here.

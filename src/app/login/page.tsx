@@ -8,6 +8,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   ACCOUNT_LOCKED: "Kontot är tillfälligt låst efter för många felaktiga försök. Be en admin låsa upp det, eller försök igen om 15 minuter.",
   INVALID_PIN: "PIN-koden måste vara exakt 6 siffror.",
   INVALID_INPUT: "Något gick fel. Försök igen.",
+  INVALID_NAME: "Skriv förnamn och efternamn med bokstäver, högst 40 tecken var.",
+  NAME_TAKEN: "Det finns redan ett konto med det namnet. Logga in i stället.",
 };
 
 function errorText(code: string | null): string | null {
@@ -16,7 +18,10 @@ function errorText(code: string | null): string | null {
 }
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,10 +37,10 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, pin }),
+        body: JSON.stringify(mode === "login" ? { name, pin } : { firstName, lastName, pin }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -63,7 +68,9 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white text-gray-900 shadow-plate-peach p-6 sm:p-8 flex flex-col gap-5 ml-5 lg:ml-0">
-          <p className="text-gray-600">Ange namn och PIN-kod.</p>
+          <p className="text-gray-600">
+            {mode === "login" ? "Ange namn och PIN-kod." : "Skapa ett konto. Du loggar sedan in med för- och efternamn och din PIN-kod."}
+          </p>
 
           {error && (
             <p role="alert" className="text-sm text-milou-600 bg-milou-50 border-l-4 border-milou-500 px-3 py-2">
@@ -71,21 +78,57 @@ export default function LoginPage() {
             </p>
           )}
 
-          <div>
-            <label htmlFor="login-name" className="block text-sm font-bold text-gray-800 mb-1.5">
-              Namn
-            </label>
-            <input
-              id="login-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-              autoComplete="name"
-              required
-              className="w-full h-11 border border-gray-500 px-3 focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
-            />
-          </div>
+          {mode === "login" ? (
+            <div>
+              <label htmlFor="login-name" className="block text-sm font-bold text-gray-800 mb-1.5">
+                Namn
+              </label>
+              <input
+                id="login-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+                autoComplete="name"
+                required
+                className="w-full h-11 border border-gray-500 px-3 focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="signup-first" className="block text-sm font-bold text-gray-800 mb-1.5">
+                  Förnamn
+                </label>
+                <input
+                  id="signup-first"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoFocus
+                  autoComplete="given-name"
+                  maxLength={40}
+                  required
+                  className="w-full h-11 border border-gray-500 px-3 focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="signup-last" className="block text-sm font-bold text-gray-800 mb-1.5">
+                  Efternamn
+                </label>
+                <input
+                  id="signup-last"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  maxLength={40}
+                  required
+                  className="w-full h-11 border border-gray-500 px-3 focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="login-pin" className="block text-sm font-bold text-gray-800 mb-1.5">
@@ -99,17 +142,26 @@ export default function LoginPage() {
               maxLength={6}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              autoComplete="current-password"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
               required
               className="w-full h-11 border border-gray-500 px-3 tracking-[0.3em] focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
             />
           </div>
 
           <button type="submit" disabled={submitting} className="milou-btn milou-btn-red w-full mt-1">
-            {submitting ? "Skickar..." : "Logga in"}
+            {submitting ? "Skickar..." : mode === "login" ? "Logga in" : "Skapa konto"}
           </button>
 
-          <p className="text-sm text-gray-600 text-center">Inget konto? Be en admin lägga till dig.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setError(null);
+            }}
+            className="text-sm text-gray-700 underline underline-offset-4 hover:text-milou-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-milou-500"
+          >
+            {mode === "login" ? "Inget konto? Skapa ett" : "Har du redan ett konto? Logga in"}
+          </button>
         </form>
       </div>
     </div>
