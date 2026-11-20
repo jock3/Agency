@@ -51,39 +51,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-sm shadow-plate-peach">
-        <div className="bg-red-fade px-6 py-6 flex items-center gap-3">
-          <MilouLogo className="h-7 w-auto text-white" />
+    <div className="min-h-screen bg-gray-900 text-white flex items-center">
+      <div className="w-full max-w-[1112px] mx-auto px-6 md:px-8 py-12 grid gap-12 lg:grid-cols-[1fr_400px] lg:items-center">
+        <div>
+          <MilouLogo className="h-6 w-auto text-white" />
+          <p className="milou-kicker mt-12 lg:mt-16">Milou AI-hub</p>
+          <h1 className="milou-display mt-4">
+            Logga in.
+            <span className="block text-blush">Verktygen väntar.</span>
+          </h1>
         </div>
 
-
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Logga in</h1>
-            <p className="text-sm text-gray-500 mt-1">Ange namn och PIN-kod.</p>
-          </div>
+        <form onSubmit={handleSubmit} className="bg-white text-gray-900 shadow-plate-peach p-6 sm:p-8 flex flex-col gap-5 ml-5 lg:ml-0">
+          <p className="text-gray-600">Ange namn och PIN-kod.</p>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+            <p role="alert" className="text-sm text-milou-600 bg-milou-50 border-l-4 border-milou-500 px-3 py-2">
+              {error}
+            </p>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Namn</label>
+            <label htmlFor="login-name" className="block text-sm font-bold text-gray-800 mb-1.5">
+              Namn
+            </label>
             <input
+              id="login-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
               autoComplete="name"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-milou-500"
+              className="w-full h-11 border border-gray-500 px-3 focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">PIN-kod (6 siffror)</label>
+            <label htmlFor="login-pin" className="block text-sm font-bold text-gray-800 mb-1.5">
+              PIN-kod (6 siffror)
+            </label>
             <input
+              id="login-pin"
               type="password"
               inputMode="numeric"
               pattern="[0-9]{6}"
@@ -92,20 +101,15 @@ export default function LoginPage() {
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
               autoComplete="current-password"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-milou-500"
+              className="w-full h-11 border border-gray-500 px-3 tracking-[0.3em] focus:outline-none focus:border-milou-500 focus:ring-2 focus:ring-milou-500"
             />
           </div>
 
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full px-4 py-2 rounded-lg bg-milou-500 text-white text-sm font-medium hover:bg-milou-600 transition-colors disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="milou-btn milou-btn-red w-full mt-1">
             {submitting ? "Skickar..." : "Logga in"}
           </button>
 
-          <p className="text-xs text-gray-400 text-center">Inget konto? Be en admin lägga till dig.</p>
+          <p className="text-sm text-gray-600 text-center">Inget konto? Be en admin lägga till dig.</p>
         </form>
       </div>
     </div>

@@ -59,11 +59,12 @@ const config: Config = {
         "2xl": "0",
         "3xl": "0",
       },
-      // Förskjuten färgplatta utan oskärpa, som bakom bilderna på milou.se.
+      // Förskjuten färgplatta utan oskärpa, med sajtens mått (se docs, "Tjänstesidor 2026-11").
       boxShadow: {
-        "plate-peach": "-12px 12px 0 0 #FFBFB6",
-        "plate-beige": "12px -12px 0 0 #FFDED0",
-        "plate-blush": "-12px -12px 0 0 #FF999C",
+        "plate-peach": "-1.25rem 1.25rem 0 0 #FFBFB6",
+        "plate-beige": "1.25rem -2rem 0 0 #FFDED0",
+        "plate-blush": "-1.5rem -1.25rem 0 0 #FF999C",
+        glow: "0 32px 64px -24px #E6033059",
       },
       backgroundImage: {
         "red-fade":

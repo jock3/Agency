@@ -21,7 +21,7 @@ function NavLink({ href, label, Icon, active }: ToolLink & { active: boolean }) 
       }`}
     >
       <Icon className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
-      <span className="hidden md:inline">{label}</span>
+      <span className="hidden xl:inline">{label}</span>
     </Link>
   );
 }
@@ -76,7 +76,7 @@ export default function TopBanner() {
           }`}
         >
           <Library className="w-4 h-4" aria-hidden />
-          <span className="hidden lg:inline">Resurser</span>
+          <span className="hidden 2xl:inline">Resurser</span>
         </Link>
       )}
       {user && (
@@ -90,7 +90,7 @@ export default function TopBanner() {
           }`}
         >
           <Lightbulb className="w-4 h-4" aria-hidden />
-          <span className="hidden lg:inline">Förslag</span>
+          <span className="hidden 2xl:inline">Förslag</span>
         </Link>
       )}
       {user?.isAdmin && (
@@ -104,7 +104,7 @@ export default function TopBanner() {
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" aria-hidden />
-          <span className="hidden lg:inline">Kontrollcenter</span>
+          <span className="hidden 2xl:inline">Kontrollcenter</span>
         </Link>
       )}
       <a href="/api/auth/logout" className="hidden md:block shrink-0 px-3 text-sm text-gray-400 hover:text-white transition-colors">

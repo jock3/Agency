@@ -64,28 +64,19 @@
   }
 }
 
-/* Milou-plattan: solid, oskarp färgyta förskjuten bakom kort, som bakom
-   bilderna på milou.se. Färg och riktning roterar per position i rutnätet så
-   intilliggande kort inte får samma platta. */
+/* Milou-plattan: solid, oskarp färgyta förskjuten bakom kort, med samma mått
+   och ordning som korten på milou.se:s tjänstesidor (ljusröd, beige, persika).
+   Färg och riktning roterar per position så intilliggande kort skiljer sig. */
 @layer components {
   .milou-plate {
-    box-shadow: -12px 12px 0 0 #ffbfb6;
-    transition: box-shadow 0.3s ease-in-out;
+    box-shadow: -1.5rem -1.25rem 0 0 #ff999c;
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
   }
   .milou-plate:nth-child(3n + 2) {
-    box-shadow: 12px -12px 0 0 #ffded0;
+    box-shadow: 1.25rem -2rem 0 0 #ffded0;
   }
   .milou-plate:nth-child(3n) {
-    box-shadow: -12px -12px 0 0 #ff999c;
-  }
-  .milou-plate:hover {
-    box-shadow: -16px 16px 0 0 #ffbfb6;
-  }
-  .milou-plate:nth-child(3n + 2):hover {
-    box-shadow: 16px -16px 0 0 #ffded0;
-  }
-  .milou-plate:nth-child(3n):hover {
-    box-shadow: -16px -16px 0 0 #ff999c;
+    box-shadow: -1.25rem 1.25rem 0 0 #ffbfb6;
   }
 
   /* Hubbens kapslar glider upp till sina förskjutna höjder när sidan laddas.
@@ -128,42 +119,11 @@
     }
   }
 
-  /* Hover på en kapsel: Milou-plattan, en solid förskjuten färgyta, skjuts
-     fram bakom kapseln medan den lyfter. Färg och riktning sätts per kapsel
-     med --plate och --plate-x. */
-  .hub-link {
-    transition:
-      transform 0.3s ease-in-out,
-      box-shadow 0.3s ease-in-out;
-    box-shadow: 0 0 0 0 var(--plate);
-  }
-  .hub-link:hover,
-  .hub-link:focus-visible {
-    transform: translateY(-6px);
-    box-shadow: var(--plate-x, -12px) 12px 0 0 var(--plate);
-  }
-  .hub-link .hub-icon,
-  .hub-link .hub-arrow {
-    transition: transform 0.3s ease-in-out;
-  }
-  .hub-link:hover .hub-icon {
-    transform: rotate(-8deg) scale(1.1);
-  }
-  .hub-link:hover .hub-arrow {
-    transform: translateX(4px);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .hub-capsule,
     .hub-band,
     .hub-fade {
       animation: none;
-    }
-    .hub-link:hover,
-    .hub-link:focus-visible,
-    .hub-link:hover .hub-icon,
-    .hub-link:hover .hub-arrow {
-      transform: none;
     }
   }
 
@@ -247,12 +207,6 @@
     }
   }
 
-  /* Rubrikband: tätt färgblock bakom varje textrad, som hero-rubrikerna. */
-  .milou-band {
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-    padding: 0 0.2em;
-  }
 }
 
 /* Rutmönster bakom PNG-mallar, så att genomskinligheten syns. */
@@ -297,5 +251,188 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .mp-pulse { animation: none; }
+  }
+}
+
+/* Milous tjänstesidor (2026-11): etikett, stor rubrik, knappar, nummer och
+   rullande remsa. Mått från milou.se, se docs/milou-grafiskt-uttryck.md. */
+@layer components {
+  .milou-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffbfb6;
+  }
+  .milou-display {
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: clamp(2.625rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .milou-display-sm {
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+  /* Bara på ljus botten: på #1C1C1C når gradienten inte 3:1. */
+  .milou-gradient-text {
+    background-image: linear-gradient(121deg, #e60330 3.15%, #c02058 72.68%, #ba245e 83.11%, #b52863 92.15%, #b02c68 101.88%, #9d3a7c 136.65%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Knappar. Persika på mörk botten, röd på ljus, kantade som andrahandsval. */
+  .milou-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.75rem 1.25rem;
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.125;
+    border: 1px solid transparent;
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+  }
+  .milou-btn:focus-visible {
+    outline: 2px solid #ffbfb6;
+    outline-offset: 2px;
+  }
+  .milou-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .milou-btn-peach {
+    background-color: #ffbfb6;
+    border-color: #ffbfb6;
+    color: #2b2b2b;
+  }
+  .milou-btn-peach:hover:not(:disabled) {
+    background-color: #fff;
+    border-color: #fff;
+  }
+  .milou-btn-beige {
+    background-color: #ffded0;
+    border-color: #ffded0;
+    color: #2b2b2b;
+  }
+  .milou-btn-beige:hover:not(:disabled) {
+    background-color: #fff;
+    border-color: #fff;
+  }
+  .milou-btn-ghost {
+    background-color: transparent;
+    border-color: #ffbfb6;
+    color: #fff;
+  }
+  .milou-btn-ghost:hover:not(:disabled) {
+    background-color: rgb(255 191 182 / 0.12);
+  }
+  .milou-btn-outline {
+    background-color: transparent;
+    border-color: #931644;
+    color: #931644;
+  }
+  .milou-btn-outline:hover:not(:disabled) {
+    background-color: #5b173c;
+    border-color: transparent;
+    color: #fff;
+  }
+  .milou-btn-outline:focus-visible {
+    outline-color: #931644;
+  }
+  .milou-btn-red {
+    background-color: #e60330;
+    border-color: #e60330;
+    color: #fff;
+  }
+  .milou-btn-red:hover:not(:disabled) {
+    background-color: #b80226;
+    border-color: #b80226;
+  }
+  .milou-btn-red:focus-visible {
+    outline-color: #e60330;
+  }
+
+  /* Numrerad cirkel, som "01" i tjänstelistorna. */
+  .milou-num {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  /* Rullande remsa i röd gradient. Den andra halvan är en kopia för en sömlös
+     slinga och döljs för skärmläsare. Står still vid reducerad rörelse och när
+     den pausas. */
+  .milou-ticker {
+    position: relative;
+    overflow: hidden;
+    padding-block: 1.125rem;
+    background-image: linear-gradient(121deg, #e60330 3.15%, #c02058 72.68%, #ba245e 83.11%, #b52863 92.15%, #b02c68 101.88%, #9d3a7c 136.65%);
+  }
+  .milou-ticker-track {
+    display: flex;
+    width: max-content;
+    animation: milou-marquee 26s linear infinite;
+  }
+  .milou-ticker[data-paused="true"] .milou-ticker-track {
+    animation-play-state: paused;
+  }
+  .milou-ticker-half {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2.5rem;
+    padding-right: 2.5rem;
+  }
+  .milou-ticker-half span {
+    font-family: var(--font-rem), "Komet", system-ui, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #fff;
+  }
+  .milou-ticker-half .sep {
+    color: rgb(255 255 255 / 0.6);
+  }
+  @keyframes milou-marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (min-width: 640px) {
+    .milou-ticker {
+      padding-block: 1.75rem;
+    }
+    .milou-ticker-half span {
+      font-size: 1.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .milou-ticker-track {
+      animation: none;
+    }
+    .milou-ticker-pause {
+      display: none;
+    }
   }
 }

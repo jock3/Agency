@@ -135,7 +135,8 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
         </p>
       )}
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <h1 className="text-center text-3xl sm:text-5xl font-bold leading-tight">
+        <p className="milou-kicker !text-white w-full justify-center">SEO/GEO-audit</p>
+        <h1 className="milou-display-sm mt-4 text-center">
           Hur synlig är din sajt
           <br />
           i Google och i AI-sök?
@@ -240,7 +241,7 @@ export default function AuditTool({ demo = false }: { demo?: boolean }) {
                 formRef.current?.requestSubmit();
               }
             }}
-            className={`w-full bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 text-lg text-center cursor-pointer transition-colors ${running ? "opacity-50" : ""}`}
+            className={`milou-btn milou-btn-beige w-full !text-lg !py-4 cursor-pointer ${running ? "opacity-50" : ""}`}
           >
             {running ? "Granskar…" : "Granska"}
           </div>

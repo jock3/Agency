@@ -15,7 +15,7 @@ function expiry(row: FormatkollListRow): { label: string; tone: string } {
   const days = Math.ceil(left / DAY);
   return {
     label: days === 1 ? "1 dag kvar" : `${days} dagar kvar`,
-    tone: days <= 1 ? "text-amber-600" : "text-gray-400",
+    tone: days <= 1 ? "text-amber-700" : "text-gray-600",
   };
 }
 
@@ -83,7 +83,7 @@ export default function FormatkollDashboard() {
         action={<PageHeaderButton onClick={() => setShowNew(true)}>+ Nytt projekt</PageHeaderButton>}
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 md:px-8 pt-16 pb-16">
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -91,19 +91,19 @@ export default function FormatkollDashboard() {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-14 gap-y-20">
             {[0, 1, 2].map((i) => (
               <div key={i} className="bg-white rounded-xl h-36 animate-pulse border border-gray-100" />
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-gray-600">
             <div className="text-5xl mb-4">🎬</div>
-            <p className="text-lg font-medium text-gray-500">Inga projekt än</p>
+            <p className="text-lg font-medium text-gray-700">Inga projekt än</p>
             <p className="text-sm mt-1">Skapa ett projekt, ladda upp tre format och skicka länken till kund.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-14 gap-y-20">
             {rows.map((row) => {
               const e = expiry(row);
               return (
@@ -114,10 +114,10 @@ export default function FormatkollDashboard() {
                   <div className="p-4 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <h2 className="font-extrabold text-plum-dark text-xl leading-tight">{row.title}</h2>
-                      <span className="text-xs text-gray-400 shrink-0">{row.asset_count}/3</span>
+                      <span className="text-xs text-gray-600 shrink-0">{row.asset_count}/3</span>
                     </div>
                     {row.client_name && (
-                      <p className="text-sm text-gray-500 mt-0.5">{row.client_name}</p>
+                      <p className="text-sm text-gray-600 mt-0.5">{row.client_name}</p>
                     )}
                     <p className={`text-xs mt-2 ${e.tone}`}>{e.label}</p>
                   </div>
@@ -126,7 +126,7 @@ export default function FormatkollDashboard() {
                       <ArrowSquare />
                     </Link>
                     <span className="flex items-center gap-3 text-xs">
-                      <button onClick={() => copy(row)} className="text-gray-500 hover:text-gray-700">
+                      <button onClick={() => copy(row)} className="text-gray-600 hover:text-gray-900">
                         {copied === row.id ? "Kopierad" : "Kopiera länk"}
                       </button>
                       <button onClick={() => remove(row)} className="text-red-500 hover:text-red-600">
@@ -181,7 +181,7 @@ export default function FormatkollDashboard() {
               <button
                 type="button"
                 onClick={() => setShowNew(false)}
-                className="px-4 py-2 text-sm text-gray-500"
+                className="px-4 py-2 text-sm text-gray-600"
               >
                 Avbryt
               </button>
