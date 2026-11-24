@@ -11,10 +11,10 @@ export default function CampaignShareView({ plan }: { plan: FullCampaignPlan }) 
     <div className="min-h-screen flex flex-col bg-white">
       <div className="bg-[#1C1C1C] text-white px-6 py-4">
         <div className="max-w-screen-2xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <MilouLogo className="h-7 w-auto text-white" />
+          <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+            <MilouLogo className="h-7 w-auto text-white shrink-0" />
             <div className="min-w-0">
-              <h1 className="text-base font-semibold truncate">{plan.name}</h1>
+              <h1 className="text-base font-semibold sm:truncate">{plan.name}</h1>
               <p className="text-sm text-gray-400">
                 {formatSwedishDateFull(plan.period_start)} – {formatSwedishDateFull(plan.period_end)}
               </p>
