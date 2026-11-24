@@ -21,7 +21,7 @@ export default function CampaignShareView({ plan }: { plan: FullCampaignPlan }) 
             </div>
           </div>
           <div className="flex items-center gap-4 shrink-0 mt-2 sm:mt-0">
-            <div className="hidden sm:block text-right">
+            <div className="sm:text-right">
               <div className="text-xs text-gray-400">Total budget</div>
               <div className="text-sm font-bold text-white">{formatSEK(calcCampaignPlanTotal(plan))}</div>
             </div>
@@ -44,18 +44,6 @@ export default function CampaignShareView({ plan }: { plan: FullCampaignPlan }) 
       )}
 
       <div className="bg-white overflow-x-auto">
-        <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-white">
-          <div>
-            <h2 className="text-base font-bold text-[#1C1C1C]">{plan.name}</h2>
-            <p className="text-xs text-[#6C6C6C]">
-              {formatSwedishDateFull(plan.period_start)} – {formatSwedishDateFull(plan.period_end)}
-            </p>
-          </div>
-          <div>
-            <div className="text-xs text-[#AAAAAA]">Total budget</div>
-            <div className="text-sm font-bold text-[#1C1C1C]">{formatSEK(calcCampaignPlanTotal(plan))}</div>
-          </div>
-        </div>
         <div className="max-w-screen-2xl mx-auto">
           <CampaignTimeline plan={plan} readOnly compact onPlanChanged={() => {}} />
         </div>
