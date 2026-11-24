@@ -28,7 +28,8 @@ export default function CampaignTimeline({ plan, readOnly, compact, onPlanChange
   const INFO_COL_COUNT = compact ? 2 : 3;
   const gridCols = `${compact ? INFO_COLS_COMPACT : INFO_COLS_FULL} repeat(${weekCount}, minmax(20px, 1fr))`;
   const cellClass = "border-b border-gray-100 px-3 min-h-[48px] text-sm flex items-center";
-  const stickyClass = "sticky left-0 z-10 bg-white";
+  // På mobil skulle de låsta kolumnerna (380 px) täcka hela skärmen, så de låses bara från md.
+  const stickyClass = "md:sticky left-0 z-10 bg-white";
 
   const getSpan = (startDate: string | null, endDate: string | null) => {
     if (!startDate || !endDate) return null;
@@ -49,7 +50,7 @@ export default function CampaignTimeline({ plan, readOnly, compact, onPlanChange
   };
 
   return (
-    <div className="overflow-x-auto scrollbar-thin px-4 py-2 hidden md:block">
+    <div className="overflow-x-auto scrollbar-thin px-4 py-2">
       <div
         style={{ display: "grid", gridTemplateColumns: gridCols }}
         className="min-w-max bg-white"
