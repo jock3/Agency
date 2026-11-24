@@ -5,7 +5,7 @@ import { TOOLS } from "@/components/tools";
 import Ticker from "@/components/Ticker";
 import { currentUserWithTools } from "@/lib/access/current";
 import ToolPicker from "@/components/ToolPicker";
-import { HIDDEN_TOOLS_COOKIE, TOOL_NAMES, isToolKey, parseHiddenTools, type ToolKey } from "@/lib/access/tools";
+import { ADMIN_ONLY, HIDDEN_TOOLS_COOKIE, TOOL_NAMES, isToolKey, parseHiddenTools, type ToolKey } from "@/lib/access/tools";
 
 /** Vad varje verktyg gör, en rad. Nyckeln är verktygets adress. */
 const DOES: Record<string, string> = {
@@ -25,6 +25,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
   const hidden = parseHiddenTools(jar.get(HIDDEN_TOOLS_COOKIE)?.value).filter((k) => availableKeys.includes(k));
   const tools = available.filter((t) => !hidden.includes(t.href.slice(1) as ToolKey));
   const denied = isToolKey(nekad) ? TOOL_NAMES[nekad] : null;
+  const deniedAdminOnly = isToolKey(nekad) && ADMIN_ONLY.includes(nekad);
 
   return (
     <main className="flex-1 bg-gray-50">
@@ -53,7 +54,8 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
 
         {denied && (
           <p role="status" className="mt-8 bg-white border-l-4 border-milou-500 px-5 py-4 max-w-[70ch] text-gray-800">
-            Du har inte tillgång till {denied}. Be en admin om åtkomst.
+            Du har inte tillgång till {denied}.{" "}
+            {deniedAdminOnly ? "Det verktyget är bara för admin." : "Be en admin om åtkomst."}
           </p>
         )}
         {user && available.length > 0 && <ToolPicker available={availableKeys} hidden={hidden} />}
