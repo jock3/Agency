@@ -14,8 +14,6 @@ const RUNS_PER_HOUR = 10;
 /** En färsk körning av samma URL återanvänds — snabbare för besökaren och
  *  skonsamt mot sajten som granskas. */
 const CACHE_MS = 24 * HOUR;
-/** Granskningar lagrade före det här klockslaget har gamla förklaringstexter och återanvänds inte. */
-const CACHE_NOT_BEFORE = new Date("2026-11-19T15:50:00Z").getTime();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
       .from("audit_runs")
       .select("id, url, host, score, seo_score, geo_score, checks, pages")
       .eq("url", url)
-      .gt("created_at", new Date(Math.max(Date.now() - CACHE_MS, CACHE_NOT_BEFORE)).toISOString())
+      .gt("created_at", new Date(Date.now() - CACHE_MS).toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
