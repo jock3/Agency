@@ -900,9 +900,9 @@ export default function TodoPage() {
   /* ── Render ──────────────────────────────────────────────────── */
 
   return (
-    // Fast höjd under toppbaren (h-14), så att bara huvudytan scrollar och
-    // sidomenyn står kvar.
-    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 bg-gray-50">
+    // Fast höjd under toppbaren (h-20 på mobil, h-14 från md), så att bara
+    // huvudytan scrollar och sidomenyn står kvar.
+    <div className="flex h-[calc(100dvh-5rem)] md:h-[calc(100dvh-3.5rem)] min-h-0 bg-gray-50">
       <TodoSidebar
         lists={activeLists}
         quickView={quickView}

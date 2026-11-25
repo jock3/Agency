@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lightbulb, Library, SlidersHorizontal } from "lucide-react";
+import { Lightbulb, Library, LogOut, SlidersHorizontal } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import MilouLogo from "./MilouLogo";
 import { HIDDEN_TOOLS_COOKIE, HIDDEN_TOOLS_EVENT, parseHiddenTools } from "@/lib/access/tools";
@@ -69,17 +69,19 @@ export default function TopBanner() {
     : [];
 
   return (
-    <div className="bg-gray-900 text-white h-14 flex items-center gap-4 md:gap-6 px-4 sm:px-8 shrink-0">
+    // Under md ligger verktygen på en egen rad under logga och ikoner, så att de inte trängs ihop.
+    // Höjden (h-20 / h-14) används av Uppgiftstavlan (todo/page.tsx).
+    <div className="bg-gray-900 text-white h-20 md:h-14 flex flex-wrap md:flex-nowrap content-center items-center gap-x-1 gap-y-2 md:gap-x-6 px-4 sm:px-8 shrink-0">
       {!pathname.startsWith("/audit/intern") && (
         <Link
           href="/"
           aria-label="Till AI-hubben"
-          className="shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-peach"
+          className="shrink-0 mr-auto md:mr-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-peach"
         >
           <MilouLogo className="h-[18px] w-auto text-white" />
         </Link>
       )}
-      <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
+      <nav className="order-last w-full md:order-none md:w-auto md:flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none">
         {tools.map((t) => (
           <NavLink key={t.href} {...t} active={pathname.startsWith(t.href)} />
         ))}
@@ -126,8 +128,14 @@ export default function TopBanner() {
           <span className="hidden 2xl:inline">Kontrollcenter</span>
         </Link>
       )}
-      <a href="/api/auth/logout" className="hidden md:block shrink-0 px-3 text-sm text-gray-400 hover:text-white transition-colors">
-        Logga ut
+      <a
+        href="/api/auth/logout"
+        aria-label="Logga ut"
+        title="Logga ut"
+        className="shrink-0 h-8 px-2.5 md:px-3 flex items-center text-sm text-gray-400 hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-peach"
+      >
+        <LogOut className="w-4 h-4 md:hidden" aria-hidden />
+        <span className="hidden md:inline">Logga ut</span>
       </a>
     </div>
   );
