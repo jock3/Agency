@@ -26,6 +26,8 @@ export default function Board() {
   const [loading, setLoading] = useState(false);
   const [project, setProject] = useState<string>("alla");
   const [onlyHigh, setOnlyHigh] = useState(false);
+  // Klara kort ligger kvar i vaultet men döljs och räknas inte, tills man väljer att visa dem.
+  const [showDone, setShowDone] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<StatusKey | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -52,14 +54,18 @@ export default function Board() {
   }, [load]);
   useEffect(() => () => void (undoTimer.current && clearTimeout(undoTimer.current)), []);
 
+  const shown = useMemo(() => (cards ?? []).filter((c) => showDone || c.status !== "done"), [cards, showDone]);
+  const doneCount = (cards ?? []).filter((c) => c.status === "done").length;
+
   const projects = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const c of cards ?? []) counts.set(c.project, (counts.get(c.project) ?? 0) + 1);
+    for (const c of shown) counts.set(c.project, (counts.get(c.project) ?? 0) + 1);
     return Array.from(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [cards]);
+  }, [shown]);
 
-  const visible = (cards ?? []).filter((c) => (project === "alla" || c.project === project) && (!onlyHigh || c.prio === "hog"));
-  const columns = STATUSES.map((s) => ({ ...s, items: visible.filter((c) => c.status === s.key).sort(byPrio) }));
+  const visible = shown.filter((c) => (project === "alla" || c.project === project) && (!onlyHigh || c.prio === "hog"));
+  const columns = STATUSES.filter((s) => showDone || s.key !== "done").map((s) => ({ ...s, items: visible.filter((c) => c.status === s.key).sort(byPrio) }));
+  const activeTab = !showDone && tab === "done" ? "todo" : tab;
 
   async function move(id: string, status: StatusKey, { record = true } = {}) {
     const card = cards?.find((c) => c.id === id);
@@ -105,7 +111,7 @@ export default function Board() {
       <div className="flex flex-col lg:flex-row lg:items-start gap-3 mb-6">
         <div role="group" aria-label="Filtrera på projekt" className="flex gap-2 overflow-x-auto -mx-6 px-6 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none]">
           <button onClick={() => setProject("alla")} aria-pressed={project === "alla"} className={`shrink-0 ${chip(project === "alla")}`}>
-            Alla projekt <span className="tabular-nums font-normal opacity-70">{cards.length}</span>
+            Alla projekt <span className="tabular-nums font-normal opacity-70">{shown.length}</span>
           </button>
           {projects.map(([p, n]) => (
             <button key={p} onClick={() => setProject(p)} aria-pressed={project === p} className={`shrink-0 ${chip(project === p)}`}>
@@ -116,6 +122,9 @@ export default function Board() {
         <div className="flex items-center gap-2 lg:ml-auto shrink-0">
           <button onClick={() => setOnlyHigh((v) => !v)} aria-pressed={onlyHigh} className={chip(onlyHigh)}>
             Bara hög prio
+          </button>
+          <button onClick={() => setShowDone((v) => !v)} aria-pressed={showDone} className={chip(showDone)}>
+            Visa klara <span className="tabular-nums font-normal opacity-70">{doneCount}</span>
           </button>
           <button
             onClick={load}
@@ -140,10 +149,10 @@ export default function Board() {
           <button
             key={col.key}
             role="tab"
-            aria-selected={tab === col.key}
+            aria-selected={activeTab === col.key}
             onClick={() => setTab(col.key)}
             className={`shrink-0 h-11 px-3 text-sm font-bold -mb-[2px] border-b-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-milou-500 ${
-              tab === col.key ? "border-milou-500 text-gray-900" : "border-transparent text-gray-600"
+              activeTab === col.key ? "border-milou-500 text-gray-900" : "border-transparent text-gray-600"
             }`}
           >
             {col.label} <span className="tabular-nums font-normal">{col.items.length}</span>
@@ -151,7 +160,7 @@ export default function Board() {
         ))}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[repeat(5,minmax(0,1fr))]">
+      <div className={`grid gap-5 ${showDone ? "lg:grid-cols-[repeat(5,minmax(0,1fr))]" : "lg:grid-cols-[repeat(4,minmax(0,1fr))]"}`}>
         {columns.map((col) => {
           const focus = col.key === FOCUS;
           return (
@@ -170,7 +179,7 @@ export default function Board() {
                 if (dragId) move(dragId, col.key);
                 setDragId(null);
               }}
-              className={`${tab === col.key ? "flex" : "hidden"} lg:flex flex-col min-w-0 ${
+              className={`${activeTab === col.key ? "flex" : "hidden"} lg:flex flex-col min-w-0 ${
                 over === col.key ? "outline outline-2 outline-dashed outline-gray-900 outline-offset-4" : ""
               }`}
             >
