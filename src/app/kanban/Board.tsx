@@ -20,6 +20,8 @@ interface Undo {
   to: StatusKey;
 }
 
+const SHOW_DONE_KEY = "kanban-visa-klara";
+
 export default function Board() {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,21 @@ export default function Board() {
   const [project, setProject] = useState<string>("alla");
   const [onlyHigh, setOnlyHigh] = useState(false);
   // Klara kort ligger kvar i vaultet men döljs och räknas inte, tills man väljer att visa dem.
+  // Valet sparas i webbläsaren, så det står kvar nästa gång tavlan öppnas.
   const [showDone, setShowDone] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SHOW_DONE_KEY) === "1") setShowDone(true);
+    } catch {}
+  }, []);
+  function toggleDone() {
+    setShowDone((v) => {
+      try {
+        localStorage.setItem(SHOW_DONE_KEY, v ? "0" : "1");
+      } catch {}
+      return !v;
+    });
+  }
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<StatusKey | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -123,7 +139,7 @@ export default function Board() {
           <button onClick={() => setOnlyHigh((v) => !v)} aria-pressed={onlyHigh} className={chip(onlyHigh)}>
             Bara hög prio
           </button>
-          <button onClick={() => setShowDone((v) => !v)} aria-pressed={showDone} className={chip(showDone)}>
+          <button onClick={toggleDone} aria-pressed={showDone} className={chip(showDone)}>
             Visa klara <span className="tabular-nums font-normal opacity-70">{doneCount}</span>
           </button>
           <button
