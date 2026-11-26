@@ -41,6 +41,12 @@ export function parseHiddenTools(value: string | undefined): ToolKey[] {
   return decoded.split(",").filter(isToolKey);
 }
 
+/** Verktygslistan från ett anrop, eller null om den inte är en lista med giltiga verktyg. Dubbletter tas bort. */
+export function sanitizeHiddenTools(value: unknown): ToolKey[] | null {
+  if (!Array.isArray(value) || !value.every(isToolKey)) return null;
+  return [...new Set(value)];
+}
+
 export const isToolKey = (v: unknown): v is ToolKey => typeof v === "string" && (TOOL_KEYS as readonly string[]).includes(v);
 
 /** API-prefix som hör till ett verktyg utan att heta som det. */

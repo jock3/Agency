@@ -183,6 +183,8 @@ export interface AppUser {
   isAdmin: boolean;
   /** Verktygen användaren får använda (nycklar ur lib/access/tools). */
   tools?: string[];
+  /** Verktygen användaren själv har dolt (nycklar ur lib/access/tools). */
+  hiddenTools?: string[];
 }
 
 export interface TodoSubtask {

@@ -7,16 +7,21 @@ import { HIDDEN_TOOLS_COOKIE, HIDDEN_TOOLS_EVENT, TOOL_NAMES, type ToolKey } fro
 
 /**
  * Låter användaren själv välja vilka av sina verktyg som syns på startsidan
- * och i menyn. Valet sparas i en kaka i webbläsaren, ett år.
+ * och i menyn. Valet sparas på kontot, så att det följer med till andra enheter, och i en kaka som reserv.
  */
 export default function ToolPicker({ available, hidden }: { available: ToolKey[]; hidden: ToolKey[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  function toggle(key: ToolKey, show: boolean) {
+  async function toggle(key: ToolKey, show: boolean) {
     const next = show ? hidden.filter((k) => k !== key) : [...hidden, key];
     document.cookie = `${HIDDEN_TOOLS_COOKIE}=${encodeURIComponent(next.join(","))}; path=/; max-age=31536000; samesite=lax`;
-    // Menyn läser kakan själv och behöver veta att den ändrats.
+    await fetch("/api/hidden-tools", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hidden: next }),
+    }).catch(() => {});
+    // Menyn hämtar valet på nytt och behöver veta att det ändrats.
     window.dispatchEvent(new Event(HIDDEN_TOOLS_EVENT));
     router.refresh();
   }
