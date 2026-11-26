@@ -3,6 +3,7 @@
 import { ChevronDown, X, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { STATUSES, STATUS_MAP } from "@/lib/todo/constants";
+import { textOn } from "@/lib/todo/utils";
 import type { Automation, AutomationType, TodoList, TodoStatus } from "@/lib/types";
 
 interface Props {
@@ -197,9 +198,9 @@ function GroupSelect({
   return (
     <span
       className={`relative inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${
-        g ? "text-white" : "border border-dashed border-gray-300 text-gray-500"
+        g ? "" : "border border-dashed border-gray-300 text-gray-500"
       }`}
-      style={g ? { background: g.color } : undefined}
+      style={g ? { background: g.color, color: textOn(g.color) } : undefined}
     >
       {g ? g.name : "välj grupp"}
       <ChevronDown size={11} strokeWidth={2.5} />

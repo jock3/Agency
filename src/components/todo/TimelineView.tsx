@@ -3,7 +3,7 @@
 import { GanttChart } from "lucide-react";
 import { useMemo } from "react";
 import { MON_SHORT } from "@/lib/todo/constants";
-import { daysBetween, dkey, parseDate } from "@/lib/todo/utils";
+import { daysBetween, dkey, parseDate, textOn, textOnWhite } from "@/lib/todo/utils";
 import type { TodoList, TodoTask } from "@/lib/types";
 
 const DAY_W = 34;
@@ -107,7 +107,7 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
               <div key={l.id} className="border-b border-gray-100 last:border-b-0">
                 <div
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
-                  style={{ color: l.color }}
+                  style={{ color: textOnWhite(l.color) }}
                 >
                   <span className="h-2 w-2 rounded-full" style={{ background: l.color }} />
                   {l.name}
@@ -133,13 +133,14 @@ export default function TimelineView({ lists, tasksByList, onOpen }: Props) {
                           title={`${t.title} · ${t.start_date}${
                             t.end_date && t.end_date !== t.start_date ? " – " + t.end_date : ""
                           }`}
-                          className={`absolute top-1 flex h-5 items-center overflow-hidden px-2 text-[11px] font-medium text-white transition-opacity hover:opacity-90 ${
+                          className={`absolute top-1 flex h-5 items-center overflow-hidden px-2 text-[11px] font-medium transition-opacity hover:opacity-90 ${
                             t.status === "done" ? "opacity-60" : ""
                           }`}
                           style={{
                             left: off * DAY_W,
                             width: span * DAY_W - 5,
                             background: l.color,
+                            color: textOn(l.color),
                           }}
                         >
                           <span className="truncate">{t.title}</span>

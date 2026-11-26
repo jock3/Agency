@@ -7,7 +7,7 @@ import TaskRow, { gridTemplate, type DragProps, type MutationEvent } from "./Tas
 import DistBar from "./DistBar";
 import { AvatarStack } from "./Avatar";
 import { COLUMNS } from "@/lib/todo/constants";
-import { elapsedPct, fmtRange, groupTimeline } from "@/lib/todo/utils";
+import { elapsedPct, fmtRange, groupTimeline, textOn } from "@/lib/todo/utils";
 import type { UserOption } from "@/lib/api/todo";
 import type { TodoList, TodoSubtask, TodoTask } from "@/lib/types";
 
@@ -325,11 +325,11 @@ function SummaryRow({
           {col.key === "status" && <DistBar tasks={tasks} />}
           {col.key === "timeline" && (tl.min || tl.max) && (
             <span
-              className="relative w-full overflow-hidden px-3 py-1 text-center text-[11px] font-medium text-white"
-              style={{ background: list.color }}
+              className="relative w-full overflow-hidden px-3 py-1 text-center text-[11px] font-medium"
+              style={{ background: list.color, color: textOn(list.color) }}
             >
               <span
-                className="absolute inset-y-0 left-0 bg-black/20"
+                className={`absolute inset-y-0 left-0 ${textOn(list.color) === "#ffffff" ? "bg-black/20" : "bg-white/30"}`}
                 style={{ width: elapsedPct(tl.min, tl.max) + "%" }}
               />
               <span className="relative">{fmtRange(tl.min, tl.max)}</span>

@@ -1,4 +1,5 @@
 import { GROUP_COLORS, STATUSES } from "./constants";
+import { fixForeground, ratioOf } from "@/lib/a11y/contrast";
 import type { TodoRepeat, TodoStatus, TodoSubtask, TodoTask } from "@/lib/types";
 
 export const todayISO = (): string => dkey(new Date());
@@ -61,6 +62,18 @@ export function hashColor(name: string | null): string {
   let h = 0;
   for (let i = 0; i < (name || "").length; i++) h = (h * 31 + (name as string).charCodeAt(i)) >>> 0;
   return GROUP_COLORS[h % GROUP_COLORS.length];
+}
+
+const INK = "#111827";
+
+/** Group colour is user data: pick white or dark text, whichever contrasts more. */
+export function textOn(bg: string): string {
+  return ratioOf("#ffffff", bg) >= ratioOf(INK, bg) ? "#ffffff" : INK;
+}
+
+/** Group colour as text on white: darkened just enough to reach 4.5:1. */
+export function textOnWhite(color: string): string {
+  return fixForeground({ fg: color, bg: "#ffffff", ratio: ratioOf(color, "#ffffff"), expected: 4.5 })?.color ?? INK;
 }
 
 export function countByStatus(tasks: { status: TodoStatus }[]): Record<TodoStatus, number> {

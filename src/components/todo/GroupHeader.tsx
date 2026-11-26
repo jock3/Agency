@@ -17,6 +17,7 @@ import Popover, { PopItem, PopSeparator } from "./Popover";
 import EditInput from "./EditInput";
 import DistBar from "./DistBar";
 import { GROUP_COLORS } from "@/lib/todo/constants";
+import { textOnWhite } from "@/lib/todo/utils";
 import type { TodoList, TodoTask } from "@/lib/types";
 
 interface Props {
@@ -58,7 +59,7 @@ export default function GroupHeader({
         aria-label={list.collapsed ? "Fäll ut grupp" : "Fäll ihop grupp"}
         aria-expanded={!list.collapsed}
         className="rounded p-0.5 transition-colors hover:bg-gray-200"
-        style={{ color: list.color }}
+        style={{ color: textOnWhite(list.color) }}
       >
         {list.collapsed ? (
           <ChevronRight size={17} strokeWidth={2.5} />
@@ -83,7 +84,7 @@ export default function GroupHeader({
           onClick={() => setEditing(true)}
           title="Byt namn"
           className="text-base font-semibold hover:underline"
-          style={{ color: list.color }}
+          style={{ color: textOnWhite(list.color) }}
         >
           {list.name}
         </button>
