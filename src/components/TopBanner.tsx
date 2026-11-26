@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Lightbulb, Library, LogOut, SlidersHorizontal } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import MilouLogo from "./MilouLogo";
-import { HIDDEN_TOOLS_COOKIE, HIDDEN_TOOLS_EVENT, parseHiddenTools } from "@/lib/access/tools";
+import { HIDDEN_TOOLS_EVENT } from "@/lib/access/tools";
 import { TOOLS, type ToolLink } from "./tools";
 
 // På smala skärmar visas bara ikonerna, så att alla verktyg får plats.
@@ -32,7 +32,9 @@ export default function TopBanner() {
   const hidden = pathname.startsWith("/login") || pathname.startsWith("/share");
   const [user, setUser] = useState<AppUser | null>(null);
 
-  // Hämtas om vid inloggning och efter ändringar i kontrollcentret (sidbyte).
+  // Hämtas om vid inloggning, efter ändringar i kontrollcentret (sidbyte) och när
+  // verktygsväljaren på startsidan ändrar valet.
+  const [reloadTick, setReloadTick] = useState(0);
   useEffect(() => {
     if (hidden) return;
     let live = true;
@@ -43,12 +45,10 @@ export default function TopBanner() {
     return () => {
       live = false;
     };
-  }, [hidden, pathname]);
+  }, [hidden, pathname, reloadTick]);
 
-  // Ritar om menyn när verktygsväljaren på startsidan ändrar kakan.
-  const [, setPickerTick] = useState(0);
   useEffect(() => {
-    const onChange = () => setPickerTick((n) => n + 1);
+    const onChange = () => setReloadTick((n) => n + 1);
     window.addEventListener(HIDDEN_TOOLS_EVENT, onChange);
     return () => window.removeEventListener(HIDDEN_TOOLS_EVENT, onChange);
   }, []);
@@ -58,10 +58,7 @@ export default function TopBanner() {
   // Menyn visas först när åtkomsten är känd, så att ingen ser verktyg hon inte får öppna.
   // Verktyg användaren själv har dolt (startsidans verktygsväljare) visas inte heller,
   // utom det verktyg hon står i just nu.
-  const hiddenTools: string[] =
-    typeof document === "undefined"
-      ? []
-      : parseHiddenTools(document.cookie.match(new RegExp(`(?:^|; )${HIDDEN_TOOLS_COOKIE}=([^;]*)`))?.[1]);
+  const hiddenTools: string[] = user?.hiddenTools ?? [];
   const tools = user?.tools
     ? TOOLS.filter(
         (t) => user.tools!.includes(t.href.slice(1)) && (!hiddenTools.includes(t.href.slice(1)) || pathname.startsWith(t.href)),

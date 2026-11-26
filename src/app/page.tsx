@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { TOOLS } from "@/components/tools";
 import Ticker from "@/components/Ticker";
 import { currentUserWithTools } from "@/lib/access/current";
+import { hiddenToolsFor } from "@/lib/access/server";
 import ToolPicker from "@/components/ToolPicker";
 import { ADMIN_ONLY, HIDDEN_TOOLS_COOKIE, TOOL_NAMES, isToolKey, parseHiddenTools, type ToolKey } from "@/lib/access/tools";
 
@@ -22,7 +23,9 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
   // Samma regel som menyn: verktygen användaren får använda, minus dem hon själv har dolt.
   const available = user ? TOOLS.filter((t) => (user.tools as string[]).includes(t.href.slice(1))) : TOOLS;
   const availableKeys = available.map((t) => t.href.slice(1) as ToolKey);
-  const hidden = parseHiddenTools(jar.get(HIDDEN_TOOLS_COOKIE)?.value).filter((k) => availableKeys.includes(k));
+  const cookieValue = jar.get(HIDDEN_TOOLS_COOKIE)?.value;
+  const saved = user ? await hiddenToolsFor(user, cookieValue).catch(() => parseHiddenTools(cookieValue)) : parseHiddenTools(cookieValue);
+  const hidden = saved.filter((k) => availableKeys.includes(k));
   const tools = available.filter((t) => !hidden.includes(t.href.slice(1) as ToolKey));
   const denied = isToolKey(nekad) ? TOOL_NAMES[nekad] : null;
   const deniedAdminOnly = isToolKey(nekad) && ADMIN_ONLY.includes(nekad);
